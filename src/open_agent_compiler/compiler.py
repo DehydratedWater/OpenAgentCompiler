@@ -100,10 +100,16 @@ def _auto_tool_permissions(
         "todowrite": False,
     }
 
-    # Workflow needs todoread/todowrite
+    # Workflow needs progress tracking
     if defn.workflow:
-        result["todoread"] = True
-        result["todowrite"] = True
+        if defn.mode == "subagent":
+            # Subagents use subagent_todo.py instead of todoread/todowrite
+            result["todoread"] = False
+            result["todowrite"] = False
+            bash_perms["uv run scripts/subagent_todo.py *"] = "allow"
+        else:
+            result["todoread"] = True
+            result["todowrite"] = True
 
     # Subagents need task
     if defn.subagents:
@@ -291,6 +297,8 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
     """Generate the full system prompt for a workflow agent."""
     tool_lookup = _build_tool_lookup(defn)
     tool_skill_lookup = _build_tool_skill_lookup(defn)
+    is_subagent = defn.mode == "subagent"
+    agent_name = defn.name
     parts: list[str] = []
 
     # Preamble
@@ -325,7 +333,10 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
     parts.append("## MANDATORY WORKFLOW")
     parts.append("")
     parts.append("Follow these steps for EVERY incoming message.")
-    parts.append("**Use todowrite and todoread tools to track your progress!**")
+    if is_subagent:
+        parts.append("**Use `subagent_todo.py` to track your progress!**")
+    else:
+        parts.append("**Use todowrite and todoread tools to track your progress!**")
     parts.append("")
 
     # Collect unique todo items (preserving first-seen order)
@@ -337,17 +348,50 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
             seen_todos.add(resolved_name)
             todo_items.append((resolved_name, step.todo_description))
 
-    # STEP 0: Create Task List
-    parts.append("### STEP 0: Create Task List (FIRST!)")
-    parts.append("")
-    parts.append("**Before doing anything else, create tasks using todowrite:**")
-    parts.append("")
-    parts.append("Use todowrite to create these tasks:")
-    for i, (name, desc) in enumerate(todo_items, 1):
-        if desc:
-            parts.append(f'{i}. "{name}" - {desc}')
-        else:
-            parts.append(f'{i}. "{name}"')
+    # STEP 0: Create Task List / Initialize Progress Tracking
+    if is_subagent:
+        parts.append("### STEP 0: Initialize Progress Tracking (FIRST!)")
+        parts.append("")
+        parts.append("**Before doing anything else, initialize your todo list:**")
+        parts.append("")
+        parts.append("```bash")
+        parts.append(f'uv run scripts/subagent_todo.py init "{agent_name}"')
+        parts.append("```")
+        parts.append("")
+        parts.append(
+            "Save the `run_id` from the response — you need it for all subsequent calls."  # noqa: E501
+        )
+        parts.append("")
+        parts.append("Then create your tasks:")
+        for i, (name, desc) in enumerate(todo_items, 1):
+            if desc:
+                parts.append(f"{i}. `{name}` — {desc}")
+            else:
+                parts.append(f"{i}. `{name}`")
+            parts.append("```bash")
+            parts.append(
+                f'uv run scripts/subagent_todo.py add "{agent_name}" '
+                f'--run-id "{{run_id}}" '
+                f'--subject "{name}"'
+                + (f' --description "{desc}"' if desc else "")
+                + f' --active-form "Working on: {name}"'
+            )
+            parts.append("```")
+        parts.append("")
+        parts.append(
+            "Save each task's `id` from the response for updating status later."
+        )
+    else:
+        parts.append("### STEP 0: Create Task List (FIRST!)")
+        parts.append("")
+        parts.append("**Before doing anything else, create tasks using todowrite:**")
+        parts.append("")
+        parts.append("Use todowrite to create these tasks:")
+        for i, (name, desc) in enumerate(todo_items, 1):
+            if desc:
+                parts.append(f'{i}. "{name}" - {desc}')
+            else:
+                parts.append(f'{i}. "{name}"')
     parts.append("")
     parts.append("CRITICAL: YOU MUST EXECUTE ALL POINTS WITHOUT ANY USER INPUT,")
     parts.append("DO NOT STOP UNTIL YOU FINISHED ALL POINTS FROM YOUR TODO LIST")
@@ -400,8 +444,19 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
             parts.append("")
 
         # Marks done
-        for name in step.marks_done:
-            parts.append(f'**todowrite: Mark "{name}" as done**')
+        if is_subagent:
+            for name in step.marks_done:
+                parts.append("**Mark task as completed:**")
+                parts.append("```bash")
+                parts.append(
+                    f'uv run scripts/subagent_todo.py update "{agent_name}" '
+                    f'"{{task_id}}" --run-id "{{run_id}}" --status "completed"'
+                )
+                parts.append("```")
+                parts.append(f'(where `{{task_id}}` is the id for "{name}")')
+        else:
+            for name in step.marks_done:
+                parts.append(f'**todowrite: Mark "{name}" as done**')
         if step.marks_done:
             parts.append("")
 
@@ -421,7 +476,18 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
     # Final checklist
     parts.append("## FINAL CHECKLIST - Before You Finish")
     parts.append("")
-    parts.append("**Use todoread to verify all tasks are completed!**")
+    if is_subagent:
+        parts.append("**Verify all tasks completed:**")
+        parts.append("")
+        parts.append("```bash")
+        parts.append(
+            f'uv run scripts/subagent_todo.py list "{agent_name}" --run-id "{{run_id}}"'
+        )
+        parts.append("```")
+        parts.append("")
+        parts.append('All tasks must show status "completed" before finishing!')
+    else:
+        parts.append("**Use todoread to verify all tasks are completed!**")
     parts.append("")
     parts.append("**ASK YOURSELF:**")
     for name, _desc in todo_items:

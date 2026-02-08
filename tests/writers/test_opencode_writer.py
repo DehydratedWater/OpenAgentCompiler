@@ -288,13 +288,17 @@ class TestScriptCopying:
         for script in sample_compiled["scripts"]:
             assert not (out_dir / "scripts" / script).exists()
 
-    def test_no_scripts_dir_skips_copy(
+    def test_no_scripts_dir_skips_user_script_copy(
         self, tmp_path: Path, sample_compiled: dict[str, Any]
     ) -> None:
         writer = OpenCodeWriter(output_dir=tmp_path)
         writer.write(sample_compiled)
 
-        assert not (tmp_path / "scripts").exists()
+        # Bundled scripts are always copied, but user scripts are not
+        scripts_dir = tmp_path / "scripts"
+        assert scripts_dir.exists()  # bundled scripts directory exists
+        for script in sample_compiled["scripts"]:
+            assert not (scripts_dir / script).exists()  # user scripts not copied
 
 
 class TestIdempotent:

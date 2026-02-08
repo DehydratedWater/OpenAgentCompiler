@@ -7,6 +7,8 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from open_agent_compiler.scripts import bundled_script_paths
+
 
 class OpenCodeWriter:
     """Writes compiled OpenCode agent configuration to the filesystem.
@@ -37,12 +39,20 @@ class OpenCodeWriter:
         self._write_agent_md(compiled)
         self._write_subagent_mds(compiled)
         self._write_skill_mds(compiled)
+        self._copy_bundled_scripts()
         if self._scripts_dir is not None:
             self._copy_scripts(compiled)
 
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
+
+    def _copy_bundled_scripts(self) -> None:
+        """Copy bundled infrastructure scripts to output scripts/ dir."""
+        scripts_out = self._output_dir / "scripts"
+        scripts_out.mkdir(parents=True, exist_ok=True)
+        for src in bundled_script_paths():
+            shutil.copy2(src, scripts_out / src.name)
 
     def _write_opencode_json(self, compiled: dict[str, Any]) -> None:
         config = compiled["config"]

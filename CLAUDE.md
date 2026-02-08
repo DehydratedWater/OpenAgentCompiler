@@ -69,6 +69,8 @@ uv run mypy               # type check (strict mode)
 - **ruff** — linting (E, F, W, I, UP, B, SIM, RUF rules) and formatting
 - **mypy** — strict type checking, configured in pyproject.toml
 - **pre-commit** — runs ruff (lint + format), mypy, and basic file checks on every commit
+- **Long command strings** — add `# noqa: E501` to lines containing bash commands or usage examples that exceed 88 chars. These are literal command templates that must stay on one line for readability.
+- **Bundled scripts** (`scripts/subagent_todo.py`, `scripts/opencode_manager.py`) are copied verbatim from v2 and excluded from ruff/mypy via `pyproject.toml` overrides. Do not lint-fix them.
 
 ## Consumer project
 

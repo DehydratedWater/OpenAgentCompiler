@@ -41,9 +41,17 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
 [tool.ruff.lint.per-file-ignores]
 # ScriptTool uses Generic[] for __orig_bases__ introspection — PEP 695 breaks it
 "src/open_agent_compiler/runtime.py" = ["UP046"]
+# Bundled scripts copied verbatim from v2 — not our code to lint
+"src/open_agent_compiler/scripts/subagent_todo.py" = ["ALL"]
+"src/open_agent_compiler/scripts/opencode_manager.py" = ["ALL"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 packages = ["open_agent_compiler"]
 mypy_path = "src"
+
+[[tool.mypy.overrides]]
+# Bundled scripts copied verbatim from v2 — skip type checking
+module = ["open_agent_compiler.scripts.subagent_todo", "open_agent_compiler.scripts.opencode_manager"]
+ignore_errors = true

@@ -1,4 +1,10 @@
-"""Build an orchestrator agent with workflow steps, subagents, and tool examples."""
+"""Build a full orchestrator + subagent setup into a single build directory.
+
+Demonstrates:
+- Primary orchestrator with todowrite-based workflow
+- Subagent with subagent_todo.py-based workflow
+- Shared tools, predefined skills, and bundled scripts
+"""
 
 from __future__ import annotations
 
@@ -20,39 +26,21 @@ from open_agent_compiler.builders import (
     WorkflowStepBuilder,
 )
 from open_agent_compiler.compiler import compile_agent
+from open_agent_compiler.predefined import (
+    agent_orchestration_skill,
+    subagent_todo_skill,
+)
 from open_agent_compiler.writers import OpenCodeWriter
 
 BUILD_DIR = Path(__file__).resolve().parent.parent / "build"
 SCRIPTS_DIR = Path(__file__).resolve().parent / "scripts"
 
 
-def main() -> None:
-    # -- Tools with named examples --
-    context_resolver = (
-        ToolBuilder()
-        .name("context-resolver")
-        .description("Resolve context references from conversation history")
-        .action(
-            ActionDefinition(
-                command_pattern="uv run scripts/context_resolver.py *",
-                description="Resolve context references",
-                usage_example='uv run scripts/context_resolver.py resolve "{user_message}"',  # noqa: E501
-            )
-        )
-        .example(
-            "resolve",
-            "Resolve references from conversation",
-            'uv run scripts/context_resolver.py resolve "{user_message}"',
-        )
-        .example(
-            "lookup",
-            "Look up a specific topic",
-            'uv run scripts/context_resolver.py lookup --topic "{topic}"',
-        )
-        .build()
-    )
+# ── Shared tools ─────────────────────────────────────────────────────────────
 
-    thought_transfer = (
+
+def _build_thought_transfer() -> object:
+    return (
         ToolBuilder()
         .name("thought-transfer")
         .description("Read/write thought data between agents")
@@ -81,6 +69,132 @@ def main() -> None:
         .build()
     )
 
+
+# ── Subagent definition (full AgentDefinition with workflow) ─────────────────
+
+
+def build_quick_ack_subagent(thought_transfer, config):
+    """Build the quick-ack subagent with subagent_todo workflow."""
+
+    step_1 = (
+        WorkflowStepBuilder()
+        .id("1")
+        .name("Read Context")
+        .todo("Read context", "Read resolved context from orchestrator")
+        .use_tool("thought-transfer", "read")
+        .instructions("Read the resolved_context from the orchestrator.")
+        .mark_done("Read context")
+        .build()
+    )
+
+    step_2 = (
+        WorkflowStepBuilder()
+        .id("2")
+        .name("Generate Quick Response")
+        .todo("Generate response", "Create immediate acknowledgment")
+        .instructions(
+            "Based on the context, generate a quick, natural acknowledgment.\n"
+            "Keep it brief — this is meant to be an instant response."
+        )
+        .mark_done("Generate response")
+        .build()
+    )
+
+    step_3 = (
+        WorkflowStepBuilder()
+        .id("3")
+        .name("Determine Routing")
+        .todo("Determine routing", "Decide where to route the request")
+        .evaluate(
+            "routing_recommendation",
+            "What type of handling does this need?",
+            "workflow",
+            "quick_chat",
+            "full_flow",
+        )
+        .instructions(
+            "Analyze the user's message and context to determine routing.\n"
+            "Consider: complexity, intent, whether it needs tools or just chat."
+        )
+        .mark_done("Determine routing")
+        .build()
+    )
+
+    step_4 = (
+        WorkflowStepBuilder()
+        .id("4")
+        .name("Write Results")
+        .todo("Write results", "Save ack and routing decision for orchestrator")
+        .use_tool("thought-transfer", "write")
+        .instructions(
+            "Write both the quick_ack response and routing_decision "
+            "via thought-transfer for the orchestrator to consume."
+        )
+        .mark_done("Write results")
+        .build()
+    )
+
+    return (
+        AgentBuilder()
+        .name("twily_quick_ack-glm-45-air")
+        .description("Instant Natural Response + Routing")
+        .mode("subagent")
+        .agent_dir("persona")
+        .config(config)
+        .tool(thought_transfer)
+        .skill(
+            subagent_todo_skill(),
+            instruction="Use for mandatory progress tracking in every run",
+        )
+        .preamble(
+            "# Quick Ack Subagent\n\n"
+            "You provide instant acknowledgment and routing recommendations.\n"
+            "You are a subagent — you CANNOT use todoread/todowrite tools.\n"
+            "Use `subagent_todo.py` for progress tracking instead."
+        )
+        .workflow_step(step_1)
+        .workflow_step(step_2)
+        .workflow_step(step_3)
+        .workflow_step(step_4)
+        .postamble(
+            "## Important Notes\n\n"
+            "- Keep responses SHORT and natural\n"
+            "- Always write your routing decision before finishing"
+        )
+        .build()
+    )
+
+
+# ── Orchestrator definition (primary with todowrite workflow) ────────────────
+
+
+def build_orchestrator(thought_transfer, config):
+    """Build the primary orchestrator agent."""
+
+    context_resolver = (
+        ToolBuilder()
+        .name("context-resolver")
+        .description("Resolve context references from conversation history")
+        .action(
+            ActionDefinition(
+                command_pattern="uv run scripts/context_resolver.py *",
+                description="Resolve context references",
+                usage_example='uv run scripts/context_resolver.py resolve "{user_message}"',  # noqa: E501
+            )
+        )
+        .example(
+            "resolve",
+            "Resolve references from conversation",
+            'uv run scripts/context_resolver.py resolve "{user_message}"',
+        )
+        .example(
+            "lookup",
+            "Look up a specific topic",
+            'uv run scripts/context_resolver.py lookup --topic "{topic}"',
+        )
+        .build()
+    )
+
     timestamp = (
         ToolBuilder()
         .name("timestamp")
@@ -96,7 +210,6 @@ def main() -> None:
         .build()
     )
 
-    # -- Skills (grouping tools with usage instructions) --
     context_skill = (
         SkillBuilder()
         .name("context-tools")
@@ -112,8 +225,7 @@ def main() -> None:
         .build()
     )
 
-    # -- Subagents --
-    quick_ack = (
+    quick_ack_ref = (
         SubagentBuilder()
         .name("persona/twily_quick_ack-glm-45-air")
         .description("Instant Natural Response + Routing")
@@ -121,27 +233,6 @@ def main() -> None:
             "Sends IMMEDIATE acknowledgment BEFORE everything else.\n"
             "Detects intent and recommends routing."
         )
-        .build()
-    )
-
-    # -- Config --
-    config = (
-        ConfigBuilder()
-        .provider(
-            ProviderConfig(
-                name="anthropic",
-                options=ProviderOptions(api_key="env:ANTHROPIC_API_KEY"),
-                models=(
-                    ModelConfig(
-                        name="sonnet",
-                        id="claude-sonnet-4-5-20250929",
-                        options=ModelOptions(temperature=0.0),
-                    ),
-                ),
-            )
-        )
-        .default_model("anthropic/sonnet")
-        .compaction(auto=True, prune=True)
         .build()
     )
 
@@ -229,8 +320,7 @@ def main() -> None:
         .build()
     )
 
-    # -- Agent --
-    agent_def = (
+    return (
         AgentBuilder()
         .name("twily-orchestrator")
         .description("Primary orchestrator for Twily persona")
@@ -243,7 +333,11 @@ def main() -> None:
             instruction="Use when resolving context or transferring "
             "data between agents",
         )
-        .subagent(quick_ack)
+        .skill(
+            agent_orchestration_skill(),
+            instruction="Use when delegating work to other primary agents",
+        )
+        .subagent(quick_ack_ref)
         .preamble("# Fren Orchestrator\n\nYou orchestrate Twily's persona.")
         .workflow_step(step_1)
         .workflow_step(step_1_5)
@@ -257,33 +351,74 @@ def main() -> None:
         .build()
     )
 
-    # -- Compile & write --
-    compiled = compile_agent(agent_def, target="opencode")
 
-    writer = OpenCodeWriter(
-        output_dir=BUILD_DIR,
-        scripts_dir=SCRIPTS_DIR,
-    )
-    writer.write(compiled)
+# ── Main ─────────────────────────────────────────────────────────────────────
 
-    # Print the generated system prompt for verification
-    print("=== Generated System Prompt ===")
+
+def _print_compiled(label: str, compiled: dict) -> None:
+    print(f"{'=' * 70}")
+    print(f"  {label}")
+    print(f"{'=' * 70}")
+    print()
+    print("--- System Prompt ---")
     print(compiled["agent"]["system_prompt"])
     print()
-
-    # Print tool permissions
-    print("=== Tool Permissions ===")
+    print("--- Tool Permissions ---")
     for key, value in compiled["tool"].items():
         print(f"  {key}: {value}")
-    print()
-
-    # Print agent permissions
     if "permission" in compiled:
-        print("=== Agent Permissions ===")
+        print()
+        print("--- Agent Permissions ---")
         for key, value in compiled["permission"].items():
             print(f"  {key}: {value}")
+    print()
 
-    print(f"\nBuild output written to {BUILD_DIR}")
+
+def main() -> None:
+    # Shared config
+    config = (
+        ConfigBuilder()
+        .provider(
+            ProviderConfig(
+                name="anthropic",
+                options=ProviderOptions(api_key="env:ANTHROPIC_API_KEY"),
+                models=(
+                    ModelConfig(
+                        name="sonnet",
+                        id="claude-sonnet-4-5-20250929",
+                        options=ModelOptions(temperature=0.0),
+                    ),
+                ),
+            )
+        )
+        .default_model("anthropic/sonnet")
+        .compaction(auto=True, prune=True)
+        .build()
+    )
+
+    # Shared tool
+    thought_transfer = _build_thought_transfer()
+
+    # Build both agents
+    orchestrator_def = build_orchestrator(thought_transfer, config)
+    subagent_def = build_quick_ack_subagent(thought_transfer, config)
+
+    # Compile both
+    orchestrator_compiled = compile_agent(orchestrator_def, target="opencode")
+    subagent_compiled = compile_agent(subagent_def, target="opencode")
+
+    # Write both to same build directory
+    writer = OpenCodeWriter(output_dir=BUILD_DIR, scripts_dir=SCRIPTS_DIR)
+    writer.write(orchestrator_compiled)
+    writer.write(subagent_compiled)
+
+    # Print results
+    _print_compiled(
+        "ORCHESTRATOR (primary — todowrite workflow)", orchestrator_compiled
+    )
+    _print_compiled("SUBAGENT (subagent — subagent_todo workflow)", subagent_compiled)
+
+    print(f"Build output written to {BUILD_DIR}")
 
 
 if __name__ == "__main__":
