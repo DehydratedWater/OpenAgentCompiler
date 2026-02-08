@@ -26,8 +26,8 @@ class WorkflowStepBuilder(Builder[WorkflowStepDefinition]):
         self._todo_description: str = ""
         self._subagents: list[str] = []
         self._tool_uses: list[ToolUse] = []
-        self._marks_in_progress: list[str] = []
-        self._marks_completed: list[str] = []
+        self._marks_done: list[str] = []
+        self._marks_done_called: bool = False
         self._evaluates: list[Criterion] = []
         self._gate_checks: list[tuple[str, str]] = []
         self._gate_logic: str | None = None
@@ -59,12 +59,9 @@ class WorkflowStepBuilder(Builder[WorkflowStepDefinition]):
         self._tool_uses.append(ToolUse(tool_name, tuple(example_names)))
         return self
 
-    def mark_in_progress(self, *names: str) -> WorkflowStepBuilder:
-        self._marks_in_progress.extend(names)
-        return self
-
-    def mark_completed(self, *names: str) -> WorkflowStepBuilder:
-        self._marks_completed.extend(names)
+    def mark_done(self, *names: str) -> WorkflowStepBuilder:
+        self._marks_done.extend(names)
+        self._marks_done_called = True
         return self
 
     def evaluate(
@@ -100,12 +97,10 @@ class WorkflowStepBuilder(Builder[WorkflowStepDefinition]):
         # Resolve todo_name default
         todo_name = self._todo_name or self._name
 
-        # Auto-set marks if neither was explicitly called
-        marks_in_progress = tuple(self._marks_in_progress)
-        marks_completed = tuple(self._marks_completed)
-        if not self._marks_in_progress and not self._marks_completed:
-            marks_in_progress = (todo_name,)
-            marks_completed = (todo_name,)
+        # Auto-set marks_done if not explicitly called
+        marks_done = tuple(self._marks_done)
+        if not self._marks_done_called:
+            marks_done = (todo_name,)
 
         # Build gate if checks exist
         gate: ConditionGate | None = None
@@ -123,8 +118,7 @@ class WorkflowStepBuilder(Builder[WorkflowStepDefinition]):
             todo_description=self._todo_description,
             subagents=tuple(self._subagents),
             tool_uses=tuple(self._tool_uses),
-            marks_in_progress=marks_in_progress,
-            marks_completed=marks_completed,
+            marks_done=marks_done,
             evaluates=tuple(self._evaluates),
             gate=gate,
             routes=tuple(self._routes),

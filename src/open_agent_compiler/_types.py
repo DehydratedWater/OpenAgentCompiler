@@ -120,8 +120,7 @@ class WorkflowStepDefinition:
     todo_description: str = ""  # Short description for todo item
     subagents: tuple[str, ...] = ()  # Subagent names invoked
     tool_uses: tuple[ToolUse, ...] = ()  # Tools used in this step
-    marks_in_progress: tuple[str, ...] = ()  # Todo names to mark in_progress at START
-    marks_completed: tuple[str, ...] = ()  # Todo names to mark completed at END
+    marks_done: tuple[str, ...] = ()  # Todo names to mark done at END
     evaluates: tuple[Criterion, ...] = ()  # Criteria evaluated IN this step
     gate: ConditionGate | None = None  # Precondition to execute this step
     routes: tuple[ConditionRoute, ...] = ()  # Where to go after this step

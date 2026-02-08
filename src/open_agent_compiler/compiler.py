@@ -235,9 +235,22 @@ def _build_tool_lookup(defn: AgentDefinition) -> dict[str, ToolDefinition]:
     return lookup
 
 
+def _build_tool_skill_lookup(
+    defn: AgentDefinition,
+) -> dict[str, str]:
+    """Build tool_name -> skill_name mapping for skill-owned tools."""
+    lookup: dict[str, str] = {}
+    for skill in defn.skills:
+        for t in skill.tools:
+            if t.name not in lookup:
+                lookup[t.name] = skill.name
+    return lookup
+
+
 def _render_tool_use_docs(
     step: WorkflowStepDefinition,
     tool_lookup: dict[str, ToolDefinition],
+    tool_skill_lookup: dict[str, str],
 ) -> str:
     """Render tool documentation for a step's tool_uses."""
     if not step.tool_uses:
@@ -249,7 +262,13 @@ def _render_tool_use_docs(
         if tool is None:
             continue
 
-        lines.append(f"**{tool.name}** — {tool.description}")
+        skill_name = tool_skill_lookup.get(tool.name)
+        if skill_name:
+            lines.append(
+                f"**{tool.name}** (skill: `{skill_name}`) — {tool.description}"
+            )
+        else:
+            lines.append(f"**{tool.name}** — {tool.description}")
         lines.append("")
 
         # Filter examples
@@ -270,6 +289,7 @@ def _render_tool_use_docs(
 def _compile_workflow_prompt(defn: AgentDefinition) -> str:
     """Generate the full system prompt for a workflow agent."""
     tool_lookup = _build_tool_lookup(defn)
+    tool_skill_lookup = _build_tool_skill_lookup(defn)
     parts: list[str] = []
 
     # Preamble
@@ -285,6 +305,19 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
             parts.append(f"### {i}. `{sa.name}` ({sa.description})")
             if sa.notes:
                 parts.append(sa.notes)
+            parts.append("")
+
+    # Skills section
+    if defn.skills:
+        parts.append("## Your Skills")
+        parts.append("")
+        for skill in defn.skills:
+            parts.append(f"### `{skill.name}` — {skill.description}")
+            if skill.instructions:
+                parts.append(skill.instructions)
+            if skill.tools:
+                tool_names = ", ".join(f"`{t.name}`" for t in skill.tools)
+                parts.append(f"Tools: {tool_names}")
             parts.append("")
 
     # Mandatory Workflow header
@@ -344,7 +377,7 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
             parts.append("")
 
         # Tool use docs
-        tool_docs = _render_tool_use_docs(step, tool_lookup)
+        tool_docs = _render_tool_use_docs(step, tool_lookup, tool_skill_lookup)
         if tool_docs:
             parts.append(tool_docs)
 
@@ -360,21 +393,15 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
                     parts.append(f"- **{crit.name}**: {crit.question}")
             parts.append("")
 
-        # Marks in_progress
-        for name in step.marks_in_progress:
-            parts.append(f'**todowrite: Mark "{name}" as in_progress**')
-        if step.marks_in_progress:
-            parts.append("")
-
         # Instructions
         if step.instructions:
             parts.append(step.instructions)
             parts.append("")
 
-        # Marks completed
-        for name in step.marks_completed:
-            parts.append(f'**todowrite: Mark "{name}" as completed**')
-        if step.marks_completed:
+        # Marks done
+        for name in step.marks_done:
+            parts.append(f'**todowrite: Mark "{name}" as done**')
+        if step.marks_done:
             parts.append("")
 
         # Routes

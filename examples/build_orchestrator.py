@@ -14,6 +14,7 @@ from open_agent_compiler._types import (
 from open_agent_compiler.builders import (
     AgentBuilder,
     ConfigBuilder,
+    SkillBuilder,
     SubagentBuilder,
     ToolBuilder,
     WorkflowStepBuilder,
@@ -95,6 +96,22 @@ def main() -> None:
         .build()
     )
 
+    # -- Skills (grouping tools with usage instructions) --
+    context_skill = (
+        SkillBuilder()
+        .name("context-tools")
+        .description("Context resolution and thought transfer")
+        .instructions(
+            "Use context-resolver to resolve references like "
+            "'this', 'that', 'it' from conversation history.\n"
+            "Use thought-transfer to pass resolved data between "
+            "agents in the orchestration pipeline."
+        )
+        .tool(context_resolver)
+        .tool(thought_transfer)
+        .build()
+    )
+
     # -- Subagents --
     quick_ack = (
         SubagentBuilder()
@@ -135,8 +152,6 @@ def main() -> None:
         .name("Record Start Time")
         .todo("Record timestamp", "Get start time for new message check")
         .use_tool("timestamp")
-        .mark_in_progress("Record timestamp")
-        .mark_completed("Record timestamp")
         .instructions("Get the current timestamp and save it.")
         .build()
     )
@@ -148,8 +163,6 @@ def main() -> None:
         .todo("Resolve context", "Resolve references like 'this', 'that'")
         .use_tool("context-resolver", "resolve")
         .use_tool("thought-transfer", "write")
-        .mark_in_progress("Resolve context")
-        .mark_completed("Resolve context")
         .instructions("Run the context resolver, then save the output.")
         .build()
     )
@@ -161,8 +174,6 @@ def main() -> None:
         .todo("Send quick ack", "Immediate feedback + routing decision")
         .subagent("persona/twily_quick_ack-glm-45-air")
         .use_tool("thought-transfer", "peek")
-        .mark_in_progress("Send quick ack")
-        .mark_completed("Send quick ack")
         .instructions("Use Task tool to invoke the quick_ack subagent.")
         .build()
     )
@@ -175,7 +186,7 @@ def main() -> None:
         .use_tool("thought-transfer", "read")
         .evaluate(
             "routing_recommendation",
-            "What did quick_ack recommend for ROUTING_RECOMMENDATION?",
+            "What did quick_ack recommend?",
             "workflow",
             "quick_chat",
             "full_flow",
@@ -189,9 +200,7 @@ def main() -> None:
         .route("routing_recommendation", "workflow", goto="2.2")
         .route("routing_recommendation", "quick_chat", goto="5.5")
         .route("routing_recommendation", "full_flow", goto="2.5")
-        .mark_in_progress("Read routing decision")
-        .mark_completed("Read routing decision")
-        .mark_in_progress("Route to handler")
+        .mark_done("Read routing decision")
         .instructions("Read the quick_ack output and parse routing fields.")
         .build()
     )
@@ -200,10 +209,12 @@ def main() -> None:
         WorkflowStepBuilder()
         .id("2.2")
         .name("Workflow Delegation")
-        .todo("Route to handler", "Execute appropriate handler based on route")
+        .todo(
+            "Route to handler",
+            "Execute appropriate handler based on route",
+        )
         .gate("routing_recommendation", "workflow")
         .use_tool("thought-transfer", "read")
-        .mark_completed("Route to handler")
         .instructions("Invoke the appropriate workflow agent.")
         .build()
     )
@@ -225,9 +236,12 @@ def main() -> None:
         .description("Primary orchestrator for Twily persona")
         .mode("primary")
         .config(config)
-        .tool(context_resolver)
-        .tool(thought_transfer)
         .tool(timestamp)
+        .skill(
+            context_skill,
+            instruction="Use when resolving context or transferring "
+            "data between agents",
+        )
         .subagent(quick_ack)
         .preamble("# Fren Orchestrator\n\nYou orchestrate Twily's persona.")
         .workflow_step(step_1)
