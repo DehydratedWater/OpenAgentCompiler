@@ -7,8 +7,10 @@ from open_agent_compiler._types import (
     AgentDefinition,
     AgentPermissions,
     SkillDefinition,
+    SubagentDefinition,
     ToolDefinition,
     ToolPermissions,
+    WorkflowStepDefinition,
 )
 from open_agent_compiler.builders._base import Builder
 
@@ -37,6 +39,10 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._color: str = ""
         self._steps: int = 0
         self._options: list[tuple[str, str | int | float | bool]] = []
+        self._workflow: list[WorkflowStepDefinition] = []
+        self._subagents: list[SubagentDefinition] = []
+        self._preamble: str = ""
+        self._postamble: str = ""
         return self
 
     def name(self, name: str) -> AgentBuilder:
@@ -109,6 +115,22 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._options.append((key, value))
         return self
 
+    def workflow_step(self, step: WorkflowStepDefinition) -> AgentBuilder:
+        self._workflow.append(step)
+        return self
+
+    def subagent(self, subagent: SubagentDefinition) -> AgentBuilder:
+        self._subagents.append(subagent)
+        return self
+
+    def preamble(self, text: str) -> AgentBuilder:
+        self._preamble = text
+        return self
+
+    def postamble(self, text: str) -> AgentBuilder:
+        self._postamble = text
+        return self
+
     def build(self) -> AgentDefinition:
         if not self._name:
             raise ValueError("AgentDefinition requires a name")
@@ -132,4 +154,8 @@ class AgentBuilder(Builder[AgentDefinition]):
             color=self._color,
             steps=self._steps,
             options=tuple(self._options),
+            workflow=tuple(self._workflow),
+            subagents=tuple(self._subagents),
+            preamble=self._preamble,
+            postamble=self._postamble,
         )

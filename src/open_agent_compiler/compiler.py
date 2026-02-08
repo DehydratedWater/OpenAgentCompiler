@@ -9,6 +9,7 @@ from open_agent_compiler._types import (
     AgentPermissions,
     ToolDefinition,
     ToolPermissions,
+    WorkflowStepDefinition,
 )
 
 
@@ -97,6 +98,15 @@ def _auto_tool_permissions(
         "todoread": False,
         "todowrite": False,
     }
+
+    # Workflow needs todoread/todowrite
+    if defn.workflow:
+        result["todoread"] = True
+        result["todowrite"] = True
+
+    # Subagents need task
+    if defn.subagents:
+        result["task"] = True
 
     # Skill permissions from agent's skills — deny first
     if defn.skills:
@@ -213,6 +223,191 @@ def _build_enriched_skill_instructions(
     return result
 
 
+def _build_tool_lookup(defn: AgentDefinition) -> dict[str, ToolDefinition]:
+    """Build name -> ToolDefinition lookup from agent tools + skill tools."""
+    lookup: dict[str, ToolDefinition] = {}
+    for t in defn.tools:
+        lookup[t.name] = t
+    for skill in defn.skills:
+        for t in skill.tools:
+            if t.name not in lookup:
+                lookup[t.name] = t
+    return lookup
+
+
+def _render_tool_use_docs(
+    step: WorkflowStepDefinition,
+    tool_lookup: dict[str, ToolDefinition],
+) -> str:
+    """Render tool documentation for a step's tool_uses."""
+    if not step.tool_uses:
+        return ""
+
+    lines: list[str] = ["**Tools for this step:**", ""]
+    for tu in step.tool_uses:
+        tool = tool_lookup.get(tu.tool_name)
+        if tool is None:
+            continue
+
+        lines.append(f"**{tool.name}** — {tool.description}")
+        lines.append("")
+
+        # Filter examples
+        examples = tool.examples
+        if tu.example_names:
+            examples = tuple(e for e in examples if e.name in tu.example_names)
+
+        for ex in examples:
+            lines.append(f"{ex.description}:")
+            lines.append("```bash")
+            lines.append(ex.command)
+            lines.append("```")
+            lines.append("")
+
+    return "\n".join(lines)
+
+
+def _compile_workflow_prompt(defn: AgentDefinition) -> str:
+    """Generate the full system prompt for a workflow agent."""
+    tool_lookup = _build_tool_lookup(defn)
+    parts: list[str] = []
+
+    # Preamble
+    if defn.preamble:
+        parts.append(defn.preamble)
+        parts.append("")
+
+    # Subagents section
+    if defn.subagents:
+        parts.append("## Your Subagents")
+        parts.append("")
+        for i, sa in enumerate(defn.subagents):
+            parts.append(f"### {i}. `{sa.name}` ({sa.description})")
+            if sa.notes:
+                parts.append(sa.notes)
+            parts.append("")
+
+    # Mandatory Workflow header
+    parts.append("## MANDATORY WORKFLOW")
+    parts.append("")
+    parts.append("Follow these steps for EVERY incoming message.")
+    parts.append("**Use todowrite and todoread tools to track your progress!**")
+    parts.append("")
+
+    # Collect unique todo items (preserving first-seen order)
+    todo_items: list[tuple[str, str]] = []
+    seen_todos: set[str] = set()
+    for step in defn.workflow:
+        resolved_name = step.todo_name or step.name
+        if resolved_name not in seen_todos:
+            seen_todos.add(resolved_name)
+            todo_items.append((resolved_name, step.todo_description))
+
+    # STEP 0: Create Task List
+    parts.append("### STEP 0: Create Task List (FIRST!)")
+    parts.append("")
+    parts.append("**Before doing anything else, create tasks using todowrite:**")
+    parts.append("")
+    parts.append("Use todowrite to create these tasks:")
+    for i, (name, desc) in enumerate(todo_items, 1):
+        if desc:
+            parts.append(f'{i}. "{name}" - {desc}')
+        else:
+            parts.append(f'{i}. "{name}"')
+    parts.append("")
+    parts.append("CRITICAL: YOU MUST EXECUTE ALL POINTS WITHOUT ANY USER INPUT,")
+    parts.append("DO NOT STOP UNTIL YOU FINISHED ALL POINTS FROM YOUR TODO LIST")
+    parts.append("")
+    parts.append("---")
+    parts.append("")
+
+    # Each workflow step
+    for step in defn.workflow:
+        parts.append(f"### STEP {step.id}: {step.name}")
+        parts.append("")
+
+        # Gate block
+        if step.gate:
+            checks = step.gate.checks
+            if len(checks) == 1:
+                var, val = checks[0]
+                parts.append(f"**Condition:** Only execute if `{var}` = `{val}`")
+            elif step.gate.logic == "all":
+                parts.append("**Condition (ALL must be true):**")
+                for var, val in checks:
+                    parts.append(f"- `{var}` = `{val}`")
+            else:  # any
+                parts.append("**Condition (ANY must be true):**")
+                for var, val in checks:
+                    parts.append(f"- `{var}` = `{val}`")
+            parts.append("If condition is not met, skip this step.")
+            parts.append("")
+
+        # Tool use docs
+        tool_docs = _render_tool_use_docs(step, tool_lookup)
+        if tool_docs:
+            parts.append(tool_docs)
+
+        # Evaluation criteria
+        if step.evaluates:
+            parts.append("**Evaluate the following criteria:**")
+            for crit in step.evaluates:
+                if crit.possible_values:
+                    vals = " | ".join(f"`{v}`" for v in crit.possible_values)
+                    parts.append(f"- **{crit.name}**: {crit.question}")
+                    parts.append(f"  Possible values: {vals}")
+                else:
+                    parts.append(f"- **{crit.name}**: {crit.question}")
+            parts.append("")
+
+        # Marks in_progress
+        for name in step.marks_in_progress:
+            parts.append(f'**todowrite: Mark "{name}" as in_progress**')
+        if step.marks_in_progress:
+            parts.append("")
+
+        # Instructions
+        if step.instructions:
+            parts.append(step.instructions)
+            parts.append("")
+
+        # Marks completed
+        for name in step.marks_completed:
+            parts.append(f'**todowrite: Mark "{name}" as completed**')
+        if step.marks_completed:
+            parts.append("")
+
+        # Routes
+        if step.routes:
+            parts.append("**Based on evaluation, route to:**")
+            for route in step.routes:
+                parts.append(
+                    f"- If `{route.criteria_name}` = `{route.value}` "
+                    f"\u2192 Go to **STEP {route.goto_step}**"
+                )
+            parts.append("")
+
+        parts.append("---")
+        parts.append("")
+
+    # Final checklist
+    parts.append("## FINAL CHECKLIST - Before You Finish")
+    parts.append("")
+    parts.append("**Use todoread to verify all tasks are completed!**")
+    parts.append("")
+    parts.append("**ASK YOURSELF:**")
+    for name, _desc in todo_items:
+        parts.append(f'- \u2705 Did I complete "{name}"?')
+    parts.append("")
+
+    # Postamble
+    if defn.postamble:
+        parts.append(defn.postamble)
+        parts.append("")
+
+    return "\n".join(parts)
+
+
 def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     all_tools = _collect_all_tools(defn)
 
@@ -253,11 +448,16 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
             }
         )
 
+    # System prompt: use workflow prompt if workflow is defined
+    system_prompt = defn.system_prompt
+    if defn.workflow:
+        system_prompt = _compile_workflow_prompt(defn)
+
     # Build agent section (drives .md frontmatter)
     agent_section: dict[str, Any] = {
         "name": defn.name,
         "description": defn.description,
-        "system_prompt": defn.system_prompt,
+        "system_prompt": system_prompt,
     }
     if defn.mode:
         agent_section["mode"] = defn.mode
@@ -292,7 +492,16 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     if defn.skill_instructions:
         result["skill_instructions"] = _build_enriched_skill_instructions(defn)
 
+    # Agent permissions
     if defn.permissions is not None:
         result["permission"] = _agent_permissions_to_dict(defn.permissions)
+    elif defn.subagents:
+        # Auto-generate subagent permissions
+        task_perms = (
+            ("*", "deny"),
+            *((sa.name, "allow") for sa in defn.subagents),
+        )
+        auto_perms = AgentPermissions(doom_loop="deny", task=task_perms)
+        result["permission"] = _agent_permissions_to_dict(auto_perms)
 
     return result

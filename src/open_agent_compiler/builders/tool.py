@@ -13,6 +13,7 @@ from open_agent_compiler._types import (
     ParameterDefinition,
     StreamFormat,
     ToolDefinition,
+    UsageExample,
 )
 from open_agent_compiler.builders._base import Builder
 
@@ -50,6 +51,7 @@ class ToolBuilder(Builder[ToolDefinition]):
         self._description: str | None = None
         self._actions: list[ActionDefinition] = []
         self._script_files: list[str] = []
+        self._examples: list[UsageExample] = []
         return self
 
     def name(self, name: str) -> ToolBuilder:
@@ -66,6 +68,11 @@ class ToolBuilder(Builder[ToolDefinition]):
 
     def script_file(self, path: str) -> ToolBuilder:
         self._script_files.append(path)
+        return self
+
+    def example(self, name: str, description: str, command: str) -> ToolBuilder:
+        """Add a named usage example to the tool."""
+        self._examples.append(UsageExample(name, description, command))
         return self
 
     def from_command(self, command: str) -> ToolBuilder:
@@ -207,4 +214,5 @@ class ToolBuilder(Builder[ToolDefinition]):
             description=self._description,
             actions=tuple(self._actions),
             script_files=tuple(self._script_files),
+            examples=tuple(self._examples),
         )

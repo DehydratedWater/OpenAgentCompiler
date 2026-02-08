@@ -58,6 +58,76 @@ class AgentPermissions:
 
 
 @dataclass(frozen=True, slots=True)
+class UsageExample:
+    """A named usage example showing how to invoke a tool."""
+
+    name: str  # "resolve_refs" — unique within tool
+    description: str  # "Resolve context references from conversation"
+    command: str  # 'uv run scripts/context_resolver.py resolve "{user_message}"'
+
+
+@dataclass(frozen=True, slots=True)
+class ToolUse:
+    """Reference to a tool used in a step, optionally with specific examples."""
+
+    tool_name: str  # "context-resolver"
+    example_names: tuple[str, ...] = ()  # ("resolve_refs",) — empty = all examples
+
+
+@dataclass(frozen=True, slots=True)
+class Criterion:
+    """A named evaluation criterion that produces a result variable."""
+
+    name: str  # "routing_recommendation" — variable name
+    question: str  # "What did quick_ack recommend?"
+    possible_values: tuple[str, ...] = ()  # ("workflow", "quick_chat", "full_flow")
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionGate:
+    """Precondition: step only executes if evaluated criteria match."""
+
+    checks: tuple[tuple[str, str], ...]  # (("routing_recommendation", "workflow"),)
+    logic: str = "all"  # "all" (AND) or "any" (OR)
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionRoute:
+    """Route to a different step based on an evaluated criterion's value."""
+
+    criteria_name: str  # "routing_recommendation"
+    value: str  # "workflow"
+    goto_step: str  # "2.2" — step ID to jump to
+
+
+@dataclass(frozen=True, slots=True)
+class SubagentDefinition:
+    """Reference to a subagent this agent can trigger via Task tool."""
+
+    name: str  # "persona/twily_quick_ack-glm-45-air"
+    description: str  # "Instant Natural Response + Routing"
+    notes: str = ""  # Detailed usage notes
+
+
+@dataclass(frozen=True, slots=True)
+class WorkflowStepDefinition:
+    """A single step in an agent's mandatory workflow."""
+
+    id: str  # "1", "1.5", "2.1"
+    name: str  # "Record Start Time"
+    instructions: str  # Full markdown body
+    todo_name: str = ""  # Todo item name (defaults to step name)
+    todo_description: str = ""  # Short description for todo item
+    subagents: tuple[str, ...] = ()  # Subagent names invoked
+    tool_uses: tuple[ToolUse, ...] = ()  # Tools used in this step
+    marks_in_progress: tuple[str, ...] = ()  # Todo names to mark in_progress at START
+    marks_completed: tuple[str, ...] = ()  # Todo names to mark completed at END
+    evaluates: tuple[Criterion, ...] = ()  # Criteria evaluated IN this step
+    gate: ConditionGate | None = None  # Precondition to execute this step
+    routes: tuple[ConditionRoute, ...] = ()  # Where to go after this step
+
+
+@dataclass(frozen=True, slots=True)
 class ToolDefinition:
     """Immutable description of a tool an agent can invoke."""
 
@@ -65,6 +135,7 @@ class ToolDefinition:
     description: str
     actions: tuple[ActionDefinition, ...] = ()
     script_files: tuple[str, ...] = ()
+    examples: tuple[UsageExample, ...] = ()  # Named usage examples
 
 
 # -- Rich provider/model hierarchy for opencode.json --
@@ -169,3 +240,7 @@ class AgentDefinition:
     color: str = ""  # hex "#FF5733" or theme "primary"
     steps: int = 0  # 0 = not set
     options: tuple[tuple[str, str | int | float | bool], ...] = ()
+    workflow: tuple[WorkflowStepDefinition, ...] = ()  # Sequential workflow steps
+    subagents: tuple[SubagentDefinition, ...] = ()  # Triggerable subagents
+    preamble: str = ""  # Content before workflow section
+    postamble: str = ""  # Content after workflow section
