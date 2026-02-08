@@ -1,6 +1,11 @@
 """Tests for the testing scenario data model and assertion logic."""
 
-from open_agent_compiler.testing.runner import _check_assertion, _resolve_field
+from open_agent_compiler.testing.runner import (
+    AgentRunResult,
+    ScenarioResult,
+    _check_assertion,
+    _resolve_field,
+)
 from open_agent_compiler.testing.scenario import (
     Assertion,
     LLMCriterion,
@@ -149,3 +154,85 @@ class TestCheckAssertion:
         result = _check_assertion({"x": 1}, Assertion("x", "bogus", 1))
         assert result.passed is False
         assert "Unknown operator" in result.message
+
+
+class TestAgentRunResult:
+    def test_default_duration(self):
+        r = AgentRunResult(return_code=0, stdout="", stderr="", flow_log="")
+        assert r.duration_seconds == 0.0
+
+    def test_custom_duration(self):
+        r = AgentRunResult(
+            return_code=0, stdout="", stderr="", flow_log="", duration_seconds=12.5
+        )
+        assert r.duration_seconds == 12.5
+
+
+class TestScenarioResult:
+    def _make_scenario(self):
+        return Scenario(
+            name="Test",
+            agent="x/y",
+            description="d",
+            seed_commands=[],
+            agent_prompt="p",
+            verify_steps=[],
+        )
+
+    def test_default_duration(self):
+        r = ScenarioResult(
+            scenario=self._make_scenario(),
+            seed_outputs=[],
+            agent_result=AgentRunResult(
+                return_code=0, stdout="", stderr="", flow_log=""
+            ),
+            verify_results=[],
+        )
+        assert r.duration_seconds == 0.0
+
+    def test_custom_duration(self):
+        r = ScenarioResult(
+            scenario=self._make_scenario(),
+            seed_outputs=[],
+            agent_result=AgentRunResult(
+                return_code=0, stdout="", stderr="", flow_log=""
+            ),
+            verify_results=[],
+            duration_seconds=45.2,
+        )
+        assert r.duration_seconds == 45.2
+
+    def test_summary_includes_duration(self):
+        r = ScenarioResult(
+            scenario=self._make_scenario(),
+            seed_outputs=[{"success": True}],
+            agent_result=AgentRunResult(
+                return_code=0,
+                stdout="",
+                stderr="",
+                flow_log="",
+                duration_seconds=5.3,
+            ),
+            verify_results=[],
+            duration_seconds=10.7,
+        )
+        text = r.summary()
+        assert "10.7s" in text
+        assert "5.3s" in text
+        assert "1 ok, 0 failed" in text
+
+    def test_summary_shows_flow_log_on_failure(self):
+        r = ScenarioResult(
+            scenario=self._make_scenario(),
+            seed_outputs=[],
+            agent_result=AgentRunResult(
+                return_code=1,
+                stdout="",
+                stderr="some error",
+                flow_log="debug output here",
+            ),
+            verify_results=[],
+        )
+        text = r.summary()
+        assert "Flow log excerpt" in text
+        assert "debug output here" in text

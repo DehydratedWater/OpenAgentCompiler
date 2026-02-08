@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import operator
 import subprocess
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -31,6 +32,7 @@ class AgentRunResult:
     stdout: str
     stderr: str
     flow_log: str
+    duration_seconds: float = 0.0
 
 
 @dataclass
@@ -68,6 +70,7 @@ class ScenarioResult:
     flow_judge_results: list[JudgeResult] = field(
         default_factory=list,
     )
+    duration_seconds: float = 0.0
 
     @property
     def all_passed(self) -> bool:
@@ -78,9 +81,18 @@ class ScenarioResult:
 
     def summary(self) -> str:
         lines = [f"Scenario: {self.scenario.name}"]
+        lines.append(f"  Total duration: {self.duration_seconds:.1f}s")
 
         if self.agent_result:
-            lines.append(f"  Agent exit code: {self.agent_result.return_code}")
+            lines.append(
+                f"  Agent exit code: {self.agent_result.return_code}"
+                f" ({self.agent_result.duration_seconds:.1f}s)"
+            )
+
+        # Seed summary
+        seed_ok = sum(1 for s in self.seed_outputs if s.get("success"))
+        seed_fail = len(self.seed_outputs) - seed_ok
+        lines.append(f"  Seeds: {seed_ok} ok, {seed_fail} failed")
 
         for i, vr in enumerate(self.verify_results):
             status = "PASS" if vr.passed else "FAIL"
@@ -109,6 +121,15 @@ class ScenarioResult:
                 f"(confidence={jr.confidence:.2f})"
                 f": {jr.reasoning}"
             )
+
+        # On failure, append flow log excerpt
+        if not self.all_passed and self.agent_result:
+            log = self.agent_result.flow_log
+            excerpt = log[-3000:] if len(log) > 3000 else log
+            if len(log) > 3000:
+                excerpt = "...(truncated)\n" + excerpt
+            lines.append("  --- Flow log excerpt ---")
+            lines.append(excerpt)
 
         return "\n".join(lines)
 
@@ -185,6 +206,8 @@ class ScenarioRunner:
 
     async def run_scenario(self, scenario: Scenario) -> ScenarioResult:
         """Execute a complete scenario."""
+        t0 = time.monotonic()
+
         # 1. Run seed commands
         seed_outputs = self.tool_runner.run_sequence(
             scenario.seed_commands,
@@ -207,12 +230,14 @@ class ScenarioRunner:
                 scenario.flow_llm_criteria,
             )
 
+        elapsed = time.monotonic() - t0
         return ScenarioResult(
             scenario=scenario,
             seed_outputs=seed_outputs,
             agent_result=agent_result,
             verify_results=verify_results,
             flow_judge_results=flow_judge_results,
+            duration_seconds=elapsed,
         )
 
     def _run_agent(self, scenario: Scenario) -> AgentRunResult:
@@ -224,6 +249,7 @@ class ScenarioRunner:
             scenario.agent,
             scenario.agent_prompt,
         ]
+        t0 = time.monotonic()
         try:
             result = subprocess.run(
                 cmd,
@@ -234,18 +260,22 @@ class ScenarioRunner:
                 timeout=scenario.timeout,
             )
         except subprocess.TimeoutExpired:
+            elapsed = time.monotonic() - t0
             return AgentRunResult(
                 return_code=124,
                 stdout="",
                 stderr=(f"Agent timed out after {scenario.timeout}s"),
                 flow_log=(f"Agent timed out after {scenario.timeout}s"),
+                duration_seconds=elapsed,
             )
 
+        elapsed = time.monotonic() - t0
         return AgentRunResult(
             return_code=result.returncode,
             stdout=result.stdout,
             stderr=result.stderr,
             flow_log=result.stdout + "\n" + result.stderr,
+            duration_seconds=elapsed,
         )
 
     async def _run_verify_step(
