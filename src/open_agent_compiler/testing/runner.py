@@ -1,0 +1,283 @@
+"""Scenario runner — executes complete agent test scenarios."""
+
+from __future__ import annotations
+
+import operator
+import subprocess
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from open_agent_compiler.testing.llm_judge import (
+        JudgeResult,
+        LLMJudge,
+    )
+    from open_agent_compiler.testing.scenario import (
+        Assertion,
+        Scenario,
+        VerifyStep,
+    )
+    from open_agent_compiler.testing.tool_runner import (
+        ToolRunner,
+    )
+
+
+@dataclass
+class AgentRunResult:
+    return_code: int
+    stdout: str
+    stderr: str
+    flow_log: str
+
+
+@dataclass
+class AssertionResult:
+    assertion: Assertion
+    actual_value: Any
+    passed: bool
+    message: str
+
+
+@dataclass
+class VerifyStepResult:
+    step: VerifyStep
+    tool_output: dict[str, Any]
+    assertion_results: list[AssertionResult] = field(
+        default_factory=list,
+    )
+    judge_results: list[JudgeResult] = field(
+        default_factory=list,
+    )
+
+    @property
+    def passed(self) -> bool:
+        assertions_ok = all(r.passed for r in self.assertion_results)
+        judges_ok = all(r.passed for r in self.judge_results)
+        return assertions_ok and judges_ok
+
+
+@dataclass
+class ScenarioResult:
+    scenario: Scenario
+    seed_outputs: list[dict[str, Any]]
+    agent_result: AgentRunResult | None
+    verify_results: list[VerifyStepResult]
+    flow_judge_results: list[JudgeResult] = field(
+        default_factory=list,
+    )
+
+    @property
+    def all_passed(self) -> bool:
+        verify_ok = all(v.passed for v in self.verify_results)
+        flow_ok = all(r.passed for r in self.flow_judge_results)
+        agent_ok = self.agent_result is not None and self.agent_result.return_code == 0
+        return verify_ok and flow_ok and agent_ok
+
+    def summary(self) -> str:
+        lines = [f"Scenario: {self.scenario.name}"]
+
+        if self.agent_result:
+            lines.append(f"  Agent exit code: {self.agent_result.return_code}")
+
+        for i, vr in enumerate(self.verify_results):
+            status = "PASS" if vr.passed else "FAIL"
+            lines.append(f"  Verify step {i + 1}: {status}")
+            for ar in vr.assertion_results:
+                s = "PASS" if ar.passed else "FAIL"
+                lines.append(
+                    f"    [{s}] "
+                    f"{ar.assertion.field} "
+                    f"{ar.assertion.operator} "
+                    f"{ar.assertion.expected}: "
+                    f"{ar.message}"
+                )
+            for jr in vr.judge_results:
+                s = "PASS" if jr.passed else "FAIL"
+                lines.append(
+                    f"    [{s}] LLM: {jr.criterion} "
+                    f"(confidence={jr.confidence:.2f})"
+                    f": {jr.reasoning}"
+                )
+
+        for jr in self.flow_judge_results:
+            s = "PASS" if jr.passed else "FAIL"
+            lines.append(
+                f"  [{s}] Flow LLM: {jr.criterion} "
+                f"(confidence={jr.confidence:.2f})"
+                f": {jr.reasoning}"
+            )
+
+        return "\n".join(lines)
+
+
+def _resolve_field(data: dict[str, Any], path: str) -> Any:
+    """Resolve a dotted/bracketed path into a value."""
+    current: Any = data
+    for part in path.replace("[", ".[").split("."):
+        if not part:
+            continue
+        if part.startswith("[") and part.endswith("]"):
+            idx = int(part[1:-1])
+            current = current[idx]
+        else:
+            current = current[part]
+    return current
+
+
+def _check_assertion(data: dict[str, Any], assertion: Assertion) -> AssertionResult:
+    """Evaluate a single assertion against tool output."""
+    try:
+        actual = _resolve_field(data, assertion.field)
+    except (KeyError, IndexError, TypeError) as e:
+        return AssertionResult(
+            assertion=assertion,
+            actual_value=None,
+            passed=False,
+            message=(f"Field '{assertion.field}' not found: {e}"),
+        )
+
+    ops: dict[str, Callable[[Any, Any], bool]] = {
+        "eq": operator.eq,
+        "gt": operator.gt,
+        "lt": operator.lt,
+        "contains": lambda a, b: b in a,
+        "truthy": lambda a, _: bool(a),
+        "length_gte": lambda a, b: len(a) >= b,
+    }
+
+    op_fn = ops.get(assertion.operator)
+    if op_fn is None:
+        return AssertionResult(
+            assertion=assertion,
+            actual_value=actual,
+            passed=False,
+            message=(f"Unknown operator: {assertion.operator}"),
+        )
+
+    passed = op_fn(actual, assertion.expected)
+    return AssertionResult(
+        assertion=assertion,
+        actual_value=actual,
+        passed=passed,
+        message=(
+            f"got {actual!r}"
+            if passed
+            else (
+                f"expected {assertion.operator} {assertion.expected!r}, got {actual!r}"
+            )
+        ),
+    )
+
+
+class ScenarioRunner:
+    def __init__(
+        self,
+        tool_runner: ToolRunner,
+        judge: LLMJudge,
+        project_root: Path,
+    ) -> None:
+        self.tool_runner = tool_runner
+        self.judge = judge
+        self.project_root = project_root
+
+    async def run_scenario(self, scenario: Scenario) -> ScenarioResult:
+        """Execute a complete scenario."""
+        # 1. Run seed commands
+        seed_outputs = self.tool_runner.run_sequence(
+            scenario.seed_commands,
+        )
+
+        # 2. Run the agent
+        agent_result = self._run_agent(scenario)
+
+        # 3. Run verify steps
+        verify_results = []
+        for step in scenario.verify_steps:
+            vr = await self._run_verify_step(step, agent_result)
+            verify_results.append(vr)
+
+        # 4. Flow-level LLM evaluation
+        flow_judge_results: list[JudgeResult] = []
+        if scenario.flow_llm_criteria and agent_result:
+            flow_judge_results = await self.judge.evaluate_flow(
+                agent_result.flow_log,
+                scenario.flow_llm_criteria,
+            )
+
+        return ScenarioResult(
+            scenario=scenario,
+            seed_outputs=seed_outputs,
+            agent_result=agent_result,
+            verify_results=verify_results,
+            flow_judge_results=flow_judge_results,
+        )
+
+    def _run_agent(self, scenario: Scenario) -> AgentRunResult:
+        """Run agent via opencode CLI."""
+        cmd = [
+            "opencode",
+            "run",
+            "--agent",
+            scenario.agent,
+            scenario.agent_prompt,
+        ]
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=self.project_root,
+                env=self.tool_runner.env,
+                timeout=scenario.timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return AgentRunResult(
+                return_code=124,
+                stdout="",
+                stderr=(f"Agent timed out after {scenario.timeout}s"),
+                flow_log=(f"Agent timed out after {scenario.timeout}s"),
+            )
+
+        return AgentRunResult(
+            return_code=result.returncode,
+            stdout=result.stdout,
+            stderr=result.stderr,
+            flow_log=result.stdout + "\n" + result.stderr,
+        )
+
+    async def _run_verify_step(
+        self,
+        step: VerifyStep,
+        agent_result: AgentRunResult | None,
+    ) -> VerifyStepResult:
+        """Run a single verification step."""
+        # Run the tool command
+        tool_output = self.tool_runner.run(step.command)
+
+        # Check programmatic assertions
+        assertion_results = [_check_assertion(tool_output, a) for a in step.assertions]
+
+        # Run LLM judge if criteria specified
+        judge_results: list[JudgeResult] = []
+        if step.llm_criteria:
+            import json
+
+            context_parts = [
+                "Tool output:\n" + json.dumps(tool_output, indent=2, default=str),
+            ]
+            if agent_result:
+                context_parts.append(
+                    "Agent flow log (excerpt):\n" + agent_result.flow_log[:5000]
+                )
+            context = "\n\n".join(context_parts)
+            judge_results = await self.judge.evaluate(context, step.llm_criteria)
+
+        return VerifyStepResult(
+            step=step,
+            tool_output=tool_output,
+            assertion_results=assertion_results,
+            judge_results=judge_results,
+        )
