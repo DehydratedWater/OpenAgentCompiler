@@ -88,6 +88,12 @@ class OpenCodeWriter:
             lines.append(f"temperature: {agent['temperature']}")
         if "top_p" in agent:
             lines.append(f"top_p: {agent['top_p']}")
+        if "min_p" in agent:
+            lines.append(f"min_p: {agent['min_p']}")
+        if "top_k" in agent:
+            lines.append(f"top_k: {agent['top_k']}")
+        if "presence_penalty" in agent:
+            lines.append(f"presence_penalty: {agent['presence_penalty']}")
         if "mode" in agent:
             lines.append(f"mode: {agent['mode']}")
         if agent.get("hidden"):
@@ -96,6 +102,10 @@ class OpenCodeWriter:
             lines.append(f'color: "{agent["color"]}"')
         if "steps" in agent:
             lines.append(f"steps: {agent['steps']}")
+        if "trigger_command" in agent:
+            lines.append(f'trigger_command: "{agent["trigger_command"]}"')
+        if "input_placeholder" in agent:
+            lines.append(f'input_placeholder: "{agent["input_placeholder"]}"')
         if "options" in agent:
             lines.append("options:")
             for opt_key, opt_val in agent["options"].items():
@@ -109,26 +119,32 @@ class OpenCodeWriter:
         # Write tool: block
         lines.append("tool:")
         for key, value in tool.items():
+            # Quote pattern keys (contain glob chars like *)
+            qk = f'"{key}"' if "*" in key or "?" in key else key
             if isinstance(value, dict):
-                lines.append(f"  {key}:")
+                lines.append(f"  {qk}:")
                 for pattern, rule in value.items():
-                    lines.append(f'    "{pattern}": "{rule}"')
+                    if isinstance(rule, bool):
+                        lines.append(f'    "{pattern}": {str(rule).lower()}')
+                    else:
+                        lines.append(f'    "{pattern}": "{rule}"')
             elif isinstance(value, bool):
-                lines.append(f"  {key}: {str(value).lower()}")
+                lines.append(f"  {qk}: {str(value).lower()}")
             else:
-                lines.append(f"  {key}: {value}")
+                lines.append(f"  {qk}: {value}")
 
         # Write permission: block if present
         permission = compiled.get("permission")
         if permission is not None:
             lines.append("permission:")
             for key, value in permission.items():
+                qk = f'"{key}"' if "*" in key or "?" in key else key
                 if isinstance(value, dict):
-                    lines.append(f"  {key}:")
+                    lines.append(f"  {qk}:")
                     for pattern, rule in value.items():
                         lines.append(f'    "{pattern}": "{rule}"')
                 else:
-                    lines.append(f"  {key}: {value}")
+                    lines.append(f"  {qk}: {value}")
 
         lines.append("---")
         lines.append("")

@@ -35,6 +35,9 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._variant: str = ""
         self._temperature: float | None = None
         self._top_p: float | None = None
+        self._min_p: float | None = None
+        self._top_k: int | None = None
+        self._presence_penalty: float | None = None
         self._hidden: bool = False
         self._color: str = ""
         self._steps: int = 0
@@ -44,6 +47,9 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._preamble: str = ""
         self._postamble: str = ""
         self._agent_dir: str = ""
+        self._trigger_command: str = ""
+        self._input_placeholder: str = ""
+        self._auto_mcp_deny: bool = True
         return self
 
     def name(self, name: str) -> AgentBuilder:
@@ -100,6 +106,18 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._top_p = top_p
         return self
 
+    def min_p(self, min_p: float) -> AgentBuilder:
+        self._min_p = min_p
+        return self
+
+    def top_k(self, top_k: int) -> AgentBuilder:
+        self._top_k = top_k
+        return self
+
+    def presence_penalty(self, presence_penalty: float) -> AgentBuilder:
+        self._presence_penalty = presence_penalty
+        return self
+
     def hidden(self, hidden: bool = True) -> AgentBuilder:
         self._hidden = hidden
         return self
@@ -136,6 +154,18 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._agent_dir = dir_name
         return self
 
+    def trigger_command(self, command: str) -> AgentBuilder:
+        self._trigger_command = command
+        return self
+
+    def input_placeholder(self, placeholder: str) -> AgentBuilder:
+        self._input_placeholder = placeholder
+        return self
+
+    def auto_mcp_deny(self, enabled: bool = True) -> AgentBuilder:
+        self._auto_mcp_deny = enabled
+        return self
+
     def build(self) -> AgentDefinition:
         if not self._name:
             raise ValueError("AgentDefinition requires a name")
@@ -155,6 +185,9 @@ class AgentBuilder(Builder[AgentDefinition]):
             variant=self._variant,
             temperature=self._temperature,
             top_p=self._top_p,
+            min_p=self._min_p,
+            top_k=self._top_k,
+            presence_penalty=self._presence_penalty,
             hidden=self._hidden,
             color=self._color,
             steps=self._steps,
@@ -164,4 +197,7 @@ class AgentBuilder(Builder[AgentDefinition]):
             preamble=self._preamble,
             postamble=self._postamble,
             agent_dir=self._agent_dir,
+            trigger_command=self._trigger_command,
+            input_placeholder=self._input_placeholder,
+            auto_mcp_deny=self._auto_mcp_deny,
         )

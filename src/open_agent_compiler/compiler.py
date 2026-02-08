@@ -54,9 +54,20 @@ def _generate_action_docs(tool: ToolDefinition) -> str:
 
 
 def _tool_permissions_to_dict(perms: ToolPermissions) -> dict[str, Any]:
-    """Convert a ToolPermissions frozen dataclass to a dict."""
+    """Convert a ToolPermissions frozen dataclass to a dict.
+
+    Boolean ``False`` for bash/skill/mcp emits ``key: false`` (disable entirely).
+    MCP tuple patterns become top-level entries (e.g. ``"zai-mcp-*": false``).
+    """
     result: dict[str, Any] = {}
-    if perms.bash:
+    # MCP top-level pattern entries first (sequential evaluation)
+    if not isinstance(perms.mcp, bool) and perms.mcp:
+        for mcp_pattern, allowed in perms.mcp:
+            result[mcp_pattern] = allowed
+    # bash: False → disabled, tuple → pattern dict
+    if isinstance(perms.bash, bool):
+        result["bash"] = perms.bash
+    elif perms.bash:
         result["bash"] = {pattern: rule for pattern, rule in perms.bash}
     result["read"] = perms.read
     result["write"] = perms.write
@@ -64,18 +75,37 @@ def _tool_permissions_to_dict(perms: ToolPermissions) -> dict[str, Any]:
     result["task"] = perms.task
     result["todoread"] = perms.todoread
     result["todowrite"] = perms.todowrite
-    if perms.skill:
+    # skill: False → disabled, tuple → pattern dict
+    if isinstance(perms.skill, bool):
+        result["skill"] = perms.skill
+    elif perms.skill:
         result["skill"] = {name: rule for name, rule in perms.skill}
-    for mcp_pattern, allowed in perms.mcp:
-        result[mcp_pattern] = allowed
+    # mcp: False → disabled entirely
+    if isinstance(perms.mcp, bool):
+        result["mcp"] = perms.mcp
     return result
 
 
 def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
-    """Convert an AgentPermissions frozen dataclass to a dict."""
-    result: dict[str, Any] = {"doom_loop": perms.doom_loop}
+    """Convert an AgentPermissions frozen dataclass to a dict.
+
+    Fields are emitted in order: extra (top-level patterns) → tool → mcp →
+    bash → task → doom_loop, matching v2 convention.
+    """
+    result: dict[str, Any] = {}
+    # Top-level extras first (e.g. "zai-mcp-*": "deny")
+    for pattern, rule in perms.extra:
+        result[pattern] = rule
+    # Nested subsections
+    if perms.tool:
+        result["tool"] = {p: r for p, r in perms.tool}
+    if perms.mcp:
+        result["mcp"] = {p: r for p, r in perms.mcp}
+    if perms.bash:
+        result["bash"] = {p: r for p, r in perms.bash}
     if perms.task:
-        result["task"] = {pattern: rule for pattern, rule in perms.task}
+        result["task"] = {p: r for p, r in perms.task}
+    result["doom_loop"] = perms.doom_loop
     return result
 
 
@@ -83,22 +113,30 @@ def _auto_tool_permissions(
     all_tools: list[ToolDefinition],
     defn: AgentDefinition,
 ) -> dict[str, Any]:
-    """Auto-generate tool permission dict from tools and skills."""
+    """Auto-generate tool permission dict from tools and skills.
+
+    When ``defn.auto_mcp_deny`` is True (default), ``"zai-mcp-*": false``
+    is emitted first for sequential evaluation.
+    """
     # Bash permissions from tool actions — deny first
     bash_perms: dict[str, str] = {"*": "deny"}
     for t in all_tools:
         for action in t.actions:
             bash_perms[action.command_pattern] = "allow"
 
-    result: dict[str, Any] = {
-        "bash": bash_perms,
-        "read": False,
-        "write": False,
-        "edit": False,
-        "task": False,
-        "todoread": False,
-        "todowrite": False,
-    }
+    result: dict[str, Any] = {}
+
+    # MCP deny first (sequentially evaluated, must precede other entries)
+    if defn.auto_mcp_deny:
+        result["zai-mcp-*"] = False
+
+    result["bash"] = bash_perms
+    result["read"] = False
+    result["write"] = False
+    result["edit"] = False
+    result["task"] = False
+    result["todoread"] = False
+    result["todowrite"] = False
 
     # Workflow needs progress tracking
     if defn.workflow:
@@ -581,6 +619,12 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
         agent_section["temperature"] = defn.temperature
     if defn.top_p is not None:
         agent_section["top_p"] = defn.top_p
+    if defn.min_p is not None:
+        agent_section["min_p"] = defn.min_p
+    if defn.top_k is not None:
+        agent_section["top_k"] = defn.top_k
+    if defn.presence_penalty is not None:
+        agent_section["presence_penalty"] = defn.presence_penalty
     if defn.hidden:
         agent_section["hidden"] = defn.hidden
     if defn.color:
@@ -591,6 +635,10 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
         agent_section["options"] = {k: v for k, v in defn.options}
     if defn.agent_dir:
         agent_section["agent_dir"] = defn.agent_dir
+    if defn.trigger_command:
+        agent_section["trigger_command"] = defn.trigger_command
+    if defn.input_placeholder:
+        agent_section["input_placeholder"] = defn.input_placeholder
 
     # Build config dict (full opencode.json content)
     config_dict = _build_config_dict(defn)

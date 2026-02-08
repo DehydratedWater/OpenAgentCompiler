@@ -36,25 +36,39 @@ class ActionDefinition:
 
 @dataclass(frozen=True, slots=True)
 class ToolPermissions:
-    """Full tool: permission block for an agent."""
+    """Full tool: permission block for an agent.
 
-    bash: tuple[tuple[str, str], ...] = ()  # (pattern, "allow"|"deny"|"ask")
+    ``bash``, ``skill``, and ``mcp`` accept either a boolean (``False`` to
+    disable entirely) or a tuple of pattern rules.  ``mcp`` patterns are
+    emitted as top-level entries (e.g. ``"zai-mcp-*": false``).
+    """
+
+    bash: bool | tuple[tuple[str, str], ...] = ()  # False or (pattern, rule)
     read: bool = False
     write: bool = False
     edit: bool = False
     task: bool = False
     todoread: bool = False
     todowrite: bool = False
-    skill: tuple[tuple[str, str], ...] = ()  # (name, "allow"|"deny")
-    mcp: tuple[tuple[str, bool], ...] = ()  # ("zai-mcp-*", False)
+    skill: bool | tuple[tuple[str, str], ...] = ()  # False or (name, rule)
+    mcp: bool | tuple[tuple[str, bool], ...] = ()  # False or (pattern, allowed)
 
 
 @dataclass(frozen=True, slots=True)
 class AgentPermissions:
-    """The permission: section in agent frontmatter."""
+    """The permission: section in agent frontmatter.
+
+    Fields are emitted in order: ``extra`` (top-level patterns), ``tool``,
+    ``mcp``, ``bash``, ``task``, then ``doom_loop``.  Within each tuple
+    field, ``("*", "deny")`` should be first for sequential evaluation.
+    """
 
     doom_loop: str = "deny"  # "allow" | "deny"
-    task: tuple[tuple[str, str], ...] = ()  # agent path patterns
+    task: tuple[tuple[str, str], ...] = ()  # ("*", "deny"), ("agent", "allow")
+    tool: tuple[tuple[str, str], ...] = ()  # ("zai-mcp-*", "deny")
+    mcp: tuple[tuple[str, str], ...] = ()  # ("*", "deny")
+    bash: tuple[tuple[str, str], ...] = ()  # ("*", "deny")
+    extra: tuple[tuple[str, str], ...] = ()  # top-level entries ("zai-mcp-*", "deny")
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,6 +249,9 @@ class AgentDefinition:
     variant: str = ""
     temperature: float | None = None
     top_p: float | None = None
+    min_p: float | None = None
+    top_k: int | None = None
+    presence_penalty: float | None = None
     hidden: bool = False
     color: str = ""  # hex "#FF5733" or theme "primary"
     steps: int = 0  # 0 = not set
@@ -244,3 +261,6 @@ class AgentDefinition:
     preamble: str = ""  # Content before workflow section
     postamble: str = ""  # Content after workflow section
     agent_dir: str = ""  # Subdirectory under .opencode/agents/
+    trigger_command: str = ""  # Slash command e.g. "/joke"
+    input_placeholder: str = ""  # Input box placeholder text
+    auto_mcp_deny: bool = True  # Auto-add "zai-mcp-*": false to tool perms
