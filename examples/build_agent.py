@@ -26,8 +26,36 @@ SCRIPTS_DIR = Path(__file__).resolve().parent / "scripts"
 
 def main() -> None:
     # -- Tools (from handler scripts) --
-    db_query = ToolBuilder().from_script(str(SCRIPTS_DIR / "db_query.py")).build()
-    file_search = ToolBuilder().from_script(str(SCRIPTS_DIR / "file_search.py")).build()
+    db_query = (
+        ToolBuilder()
+        .name("db_query")
+        .description("Execute READ-ONLY SQL queries")
+        .from_script(str(SCRIPTS_DIR / "db_query.py"))
+        .build()
+    )
+    file_search = (
+        ToolBuilder()
+        .name("file_search")
+        .description("Search files by glob pattern")
+        .from_script(str(SCRIPTS_DIR / "file_search.py"))
+        .build()
+    )
+
+    # -- Tools (from bash commands) --
+    gpu_info = (
+        ToolBuilder()
+        .name("gpu-info")
+        .description("Show GPU status and memory usage")
+        .from_command("nvidia-smi")
+        .build()
+    )
+    disk_usage = (
+        ToolBuilder()
+        .name("disk-usage")
+        .description("Show disk space usage for all mounted filesystems")
+        .from_command("df -h")
+        .build()
+    )
 
     # -- Skills --
     data_skill = (
@@ -40,6 +68,15 @@ def main() -> None:
         )
         .tool(db_query)
         .tool(file_search)
+        .build()
+    )
+    system_skill = (
+        SkillBuilder()
+        .name("system-check")
+        .description("Check system resource usage")
+        .instructions("Use when asked about system health or resource usage.")
+        .tool(gpu_info)
+        .tool(disk_usage)
         .build()
     )
 
@@ -72,9 +109,15 @@ def main() -> None:
         .config(config)
         .tool(db_query)
         .tool(file_search)
+        .tool(gpu_info)
+        .tool(disk_usage)
         .skill(
             data_skill,
             instruction="Use when you need to query databases or search files",
+        )
+        .skill(
+            system_skill,
+            instruction="Use when checking system health or resources",
         )
         .system_prompt(
             "You are a thorough code reviewer. Examine code for correctness, "

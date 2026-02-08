@@ -56,18 +56,78 @@ class TestToolBuilder:
         assert len(tool.actions) == 1
         assert tool.actions[0].command_pattern == "uv run scripts/grep.py *"
 
+    def test_from_command(self, tool_builder: ToolBuilder):
+        tool = (
+            tool_builder.name("nvidia-smi")
+            .description("Show GPU status")
+            .from_command("nvidia-smi")
+            .build()
+        )
+        assert tool.name == "nvidia-smi"
+        assert tool.description == "Show GPU status"
+        assert len(tool.actions) == 1
+        assert tool.actions[0].command_pattern == "nvidia-smi"
+        assert tool.actions[0].usage_example == "nvidia-smi"
+        assert tool.script_files == ()
+
+    def test_from_command_with_args(self, tool_builder: ToolBuilder):
+        tool = (
+            tool_builder.name("docker-ps")
+            .description("List all Docker containers")
+            .from_command("docker ps -a")
+            .build()
+        )
+        assert tool.name == "docker-ps"
+        assert tool.description == "List all Docker containers"
+        assert tool.actions[0].command_pattern == "docker ps -a"
+        assert tool.script_files == ()
+
+    def test_from_command_requires_name(self, tool_builder: ToolBuilder):
+        """from_command alone doesn't set name — build raises."""
+        with pytest.raises(ValueError, match="name"):
+            tool_builder.description("d").from_command("ls").build()
+
+    def test_from_command_requires_description(self, tool_builder: ToolBuilder):
+        """from_command alone doesn't set description — build raises."""
+        with pytest.raises(ValueError, match="description"):
+            tool_builder.name("ls").from_command("ls").build()
+
     def test_from_script(self, tool_builder: ToolBuilder, tmp_path):
         script_path = _write_handler_script(tmp_path, name="search")
-        tool = tool_builder.from_script(script_path).build()
+        tool = (
+            tool_builder.name("search")
+            .description("A test tool")
+            .from_script(script_path)
+            .build()
+        )
         assert tool.name == "search"
         assert tool.description == "A test tool"
         assert len(tool.actions) == 1
         assert tool.actions[0].command_pattern == "uv run scripts/search.py *"
         assert "search.py" in tool.script_files
 
+    def test_from_script_requires_name(self, tool_builder: ToolBuilder, tmp_path):
+        """from_script alone doesn't set name — build raises."""
+        script_path = _write_handler_script(tmp_path, name="no_name")
+        with pytest.raises(ValueError, match="name"):
+            tool_builder.description("d").from_script(script_path).build()
+
+    def test_from_script_requires_description(
+        self, tool_builder: ToolBuilder, tmp_path
+    ):
+        """from_script alone doesn't set description — build raises."""
+        script_path = _write_handler_script(tmp_path, name="no_desc")
+        with pytest.raises(ValueError, match="description"):
+            tool_builder.name("n").from_script(script_path).build()
+
     def test_from_script_stream_config(self, tool_builder: ToolBuilder, tmp_path):
         script_path = _write_handler_script(tmp_path, name="stream_tool", stream=True)
-        tool = tool_builder.from_script(script_path).build()
+        tool = (
+            tool_builder.name("stream_tool")
+            .description("Stream tool")
+            .from_script(script_path)
+            .build()
+        )
         assert "stdin streaming" in tool.actions[0].description
         assert "stdin as text" in tool.actions[0].description
 
@@ -89,24 +149,16 @@ class TestToolBuilder:
             def execute(self, input: HInput) -> HOutput:
                 return HOutput(length=len(input.text))
 
-        tool = tool_builder.from_handler(HandlerTool, "handler_tool.py").build()
+        tool = (
+            tool_builder.name("handler_tool")
+            .description("A handler tool")
+            .from_handler(HandlerTool, "handler_tool.py")
+            .build()
+        )
         assert tool.name == "handler_tool"
         assert len(tool.actions) == 1
         assert "handler_tool.py" in tool.script_files
         assert "--text" in tool.actions[0].usage_example
-
-    def test_manual_override_after_introspection(
-        self, tool_builder: ToolBuilder, tmp_path
-    ):
-        script_path = _write_handler_script(tmp_path, name="original")
-        tool = (
-            tool_builder.from_script(script_path)
-            .name("overridden")
-            .description("Custom description")
-            .build()
-        )
-        assert tool.name == "overridden"
-        assert tool.description == "Custom description"
 
     def test_script_file_method(self, tool_builder: ToolBuilder):
         action = ActionDefinition(

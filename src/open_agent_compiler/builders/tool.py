@@ -68,6 +68,27 @@ class ToolBuilder(Builder[ToolDefinition]):
         self._script_files.append(path)
         return self
 
+    def from_command(self, command: str) -> ToolBuilder:
+        """Set up an action from an arbitrary bash command (no script file).
+
+        Only creates the action.  Call ``.name()`` and ``.description()``
+        separately to set the tool identity.
+
+        Parameters
+        ----------
+        command:
+            The bash command, e.g. ``"nvidia-smi"`` or ``"docker ps -a"``.
+        """
+        self._actions = [
+            ActionDefinition(
+                command_pattern=command,
+                description=command,
+                usage_example=command,
+            ),
+        ]
+        self._script_files = []
+        return self
+
     def from_script(self, file_path: str) -> ToolBuilder:
         """Dynamically import *file_path* and extract ScriptTool metadata."""
         from open_agent_compiler.runtime import ScriptTool as _ScriptTool
@@ -107,10 +128,11 @@ class ToolBuilder(Builder[ToolDefinition]):
         handler_cls: type[ScriptTool],  # type: ignore[type-arg]
         file_path: str,
     ) -> None:
-        """Extract ToolDefinition fields from a ScriptTool subclass."""
-        self._name = getattr(handler_cls, "name", None)
-        self._description = getattr(handler_cls, "description", None)
+        """Extract actions and script files from a ScriptTool subclass.
 
+        Does NOT set name or description — use ``.name()`` and
+        ``.description()`` on the builder.
+        """
         basename = os.path.basename(file_path)
         self._script_files = [basename]
 
