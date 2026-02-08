@@ -55,4 +55,4 @@ class Scenario:
     flow_llm_criteria: list[LLMCriterion] = field(
         default_factory=list,
     )
-    timeout: int = 300  # Agent execution timeout (seconds)
+    timeout: int = 1800  # Agent execution timeout (seconds)

@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import operator
+import re
 import subprocess
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
+
+_SUBAGENT_FALLBACK_RE = re.compile(
+    r"is a subagent|falling back .* default|fallback.*default agent",
+    re.IGNORECASE,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,6 +39,11 @@ class AgentRunResult:
     stderr: str
     flow_log: str
     duration_seconds: float = 0.0
+
+    @property
+    def subagent_fallback(self) -> bool:
+        """Detect if agent fell back because a subagent was invoked."""
+        return bool(_SUBAGENT_FALLBACK_RE.search(self.flow_log))
 
 
 @dataclass
@@ -77,7 +88,10 @@ class ScenarioResult:
         verify_ok = all(v.passed for v in self.verify_results)
         flow_ok = all(r.passed for r in self.flow_judge_results)
         agent_ok = self.agent_result is not None and self.agent_result.return_code == 0
-        return verify_ok and flow_ok and agent_ok
+        no_fallback = (
+            self.agent_result is None or not self.agent_result.subagent_fallback
+        )
+        return verify_ok and flow_ok and agent_ok and no_fallback
 
     def summary(self) -> str:
         lines = [f"Scenario: {self.scenario.name}"]
@@ -88,15 +102,43 @@ class ScenarioResult:
                 f"  Agent exit code: {self.agent_result.return_code}"
                 f" ({self.agent_result.duration_seconds:.1f}s)"
             )
+            if self.agent_result.subagent_fallback:
+                lines.append(
+                    "  [FATAL] Subagent fallback detected — agent"
+                    f" '{self.scenario.agent}' is a subagent and cannot"
+                    " be invoked directly. Fell back to default agent."
+                )
 
         # Seed summary
         seed_ok = sum(1 for s in self.seed_outputs if s.get("success"))
         seed_fail = len(self.seed_outputs) - seed_ok
         lines.append(f"  Seeds: {seed_ok} ok, {seed_fail} failed")
+        for j, so in enumerate(self.seed_outputs):
+            ok = "ok" if so.get("success") else "FAIL"
+            if j < len(self.scenario.seed_commands):
+                cmd = self.scenario.seed_commands[j]
+                lines.append(f"    [{ok}] {cmd.script} {cmd.args}")
+            else:
+                lines.append(f"    [{ok}] (seed {j})")
 
         for i, vr in enumerate(self.verify_results):
+            import json
+
             status = "PASS" if vr.passed else "FAIL"
-            lines.append(f"  Verify step {i + 1}: {status}")
+            cmd = vr.step.command
+            lines.append(f"  Verify step {i + 1}: {status} ({cmd.script} {cmd.args})")
+            lines.append("    Tool output:")
+            try:
+                formatted = json.dumps(
+                    vr.tool_output,
+                    indent=2,
+                    default=str,
+                )
+                for line in formatted.splitlines():
+                    lines.append(f"      {line}")
+            except (TypeError, ValueError):
+                lines.append(f"      {vr.tool_output!r}")
+
             for ar in vr.assertion_results:
                 s = "PASS" if ar.passed else "FAIL"
                 lines.append(
@@ -199,10 +241,13 @@ class ScenarioRunner:
         tool_runner: ToolRunner,
         judge: LLMJudge,
         project_root: Path,
+        *,
+        attach_url: str | None = None,
     ) -> None:
         self.tool_runner = tool_runner
         self.judge = judge
         self.project_root = project_root
+        self.attach_url = attach_url
 
     async def run_scenario(self, scenario: Scenario) -> ScenarioResult:
         """Execute a complete scenario."""
@@ -247,8 +292,10 @@ class ScenarioRunner:
             "run",
             "--agent",
             scenario.agent,
-            scenario.agent_prompt,
         ]
+        if self.attach_url:
+            cmd.extend(["--attach", self.attach_url])
+        cmd.append(scenario.agent_prompt)
         t0 = time.monotonic()
         try:
             result = subprocess.run(

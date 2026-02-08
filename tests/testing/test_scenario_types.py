@@ -76,7 +76,7 @@ class TestScenario:
             ],
         )
         assert s.name == "Test scenario"
-        assert s.timeout == 300
+        assert s.timeout == 1800
         assert s.flow_llm_criteria == []
 
     def test_custom_timeout(self):
@@ -167,6 +167,30 @@ class TestAgentRunResult:
         )
         assert r.duration_seconds == 12.5
 
+    def test_subagent_fallback_not_detected(self):
+        r = AgentRunResult(
+            return_code=0, stdout="", stderr="", flow_log="Agent ran normally"
+        )
+        assert r.subagent_fallback is False
+
+    def test_subagent_fallback_detected(self):
+        r = AgentRunResult(
+            return_code=0,
+            stdout="",
+            stderr="",
+            flow_log="goals/twily_goal_interface is a subagent and cannot be invoked",
+        )
+        assert r.subagent_fallback is True
+
+    def test_subagent_fallback_falling_back(self):
+        r = AgentRunResult(
+            return_code=0,
+            stdout="",
+            stderr="",
+            flow_log="Warning: falling back to default agent",
+        )
+        assert r.subagent_fallback is True
+
 
 class TestScenarioResult:
     def _make_scenario(self):
@@ -220,6 +244,22 @@ class TestScenarioResult:
         assert "10.7s" in text
         assert "5.3s" in text
         assert "1 ok, 0 failed" in text
+
+    def test_subagent_fallback_fails_scenario(self):
+        r = ScenarioResult(
+            scenario=self._make_scenario(),
+            seed_outputs=[],
+            agent_result=AgentRunResult(
+                return_code=0,
+                stdout="",
+                stderr="",
+                flow_log="goals/twily_goal_interface is a subagent",
+            ),
+            verify_results=[],
+        )
+        assert r.all_passed is False
+        text = r.summary()
+        assert "[FATAL] Subagent fallback" in text
 
     def test_summary_shows_flow_log_on_failure(self):
         r = ScenarioResult(
