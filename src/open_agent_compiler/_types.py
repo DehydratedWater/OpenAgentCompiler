@@ -34,6 +34,16 @@ class AgentConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SkillDefinition:
+    """Immutable description of a skill an agent can invoke."""
+
+    name: str
+    description: str
+    instructions: str = ""
+    tools: tuple[ToolDefinition, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class AgentDefinition:
     """Immutable, fully-specified agent ready for compilation."""
 
@@ -41,4 +51,5 @@ class AgentDefinition:
     description: str
     config: AgentConfig = field(default_factory=AgentConfig)
     tools: tuple[ToolDefinition, ...] = ()
+    skills: tuple[SkillDefinition, ...] = ()
     system_prompt: str = ""

@@ -6,9 +6,15 @@ from open_agent_compiler._types import (
     AgentConfig,
     AgentDefinition,
     ModelProvider,
+    SkillDefinition,
     ToolDefinition,
 )
-from open_agent_compiler.builders import AgentBuilder, ConfigBuilder, ToolBuilder
+from open_agent_compiler.builders import (
+    AgentBuilder,
+    ConfigBuilder,
+    SkillBuilder,
+    ToolBuilder,
+)
 
 
 @pytest.fixture
@@ -54,5 +60,20 @@ def config_builder() -> ConfigBuilder:
 
 
 @pytest.fixture
+def sample_skill(sample_tool: ToolDefinition) -> SkillDefinition:
+    return SkillDefinition(
+        name="code-review",
+        description="Review code for issues",
+        instructions="Carefully review the code for bugs and style issues.",
+        tools=(sample_tool,),
+    )
+
+
+@pytest.fixture
 def tool_builder() -> ToolBuilder:
     return ToolBuilder()
+
+
+@pytest.fixture
+def skill_builder() -> SkillBuilder:
+    return SkillBuilder()

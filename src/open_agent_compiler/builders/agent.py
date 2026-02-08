@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from open_agent_compiler._types import AgentConfig, AgentDefinition, ToolDefinition
+from open_agent_compiler._types import (
+    AgentConfig,
+    AgentDefinition,
+    SkillDefinition,
+    ToolDefinition,
+)
 from open_agent_compiler.builders._base import Builder
 
 
@@ -17,6 +22,7 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._description: str | None = None
         self._config: AgentConfig = AgentConfig()
         self._tools: list[ToolDefinition] = []
+        self._skills: list[SkillDefinition] = []
         self._system_prompt: str = ""
         return self
 
@@ -36,6 +42,10 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._tools.append(tool)
         return self
 
+    def skill(self, skill: SkillDefinition) -> AgentBuilder:
+        self._skills.append(skill)
+        return self
+
     def system_prompt(self, prompt: str) -> AgentBuilder:
         self._system_prompt = prompt
         return self
@@ -50,5 +60,6 @@ class AgentBuilder(Builder[AgentDefinition]):
             description=self._description,
             config=self._config,
             tools=tuple(self._tools),
+            skills=tuple(self._skills),
             system_prompt=self._system_prompt,
         )

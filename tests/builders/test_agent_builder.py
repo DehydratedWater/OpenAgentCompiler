@@ -2,7 +2,7 @@
 
 import pytest
 
-from open_agent_compiler._types import AgentConfig, ToolDefinition
+from open_agent_compiler._types import AgentConfig, SkillDefinition, ToolDefinition
 from open_agent_compiler.builders import AgentBuilder
 
 
@@ -57,6 +57,12 @@ class TestAgentBuilder:
         assert len(agent.tools) == 2
         assert agent.tools[0].name == "a"
         assert agent.tools[1].name == "b"
+
+    def test_agent_with_skills(self, agent_builder: AgentBuilder):
+        skill = SkillDefinition(name="review", description="Review code")
+        agent = agent_builder.name("bot").description("A bot").skill(skill).build()
+        assert len(agent.skills) == 1
+        assert agent.skills[0].name == "review"
 
     def test_built_agent_is_frozen(self, agent_builder: AgentBuilder):
         agent = agent_builder.name("x").description("d").build()

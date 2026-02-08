@@ -15,7 +15,7 @@ Builder -> AgentDefinition -> Compiler -> backend dict -> Manager -> external pr
 ```
 
 - **Builders** (`open_agent_compiler.builders`): Fluent API classes that produce immutable data types via `.build()`
-- **Compiler** (`open_agent_compiler.compiler`): Transforms an `AgentDefinition` into a backend-specific dict (`claude_code` or `opencode`)
+- **Compiler** (`open_agent_compiler.compiler`): Transforms an `AgentDefinition` into a backend-specific dict (`opencode`)
 - **Managers** (`open_agent_compiler.managers`): Async lifecycle managers that deploy/invoke/teardown agents against external backends
 
 ## Code conventions
@@ -40,7 +40,6 @@ src/open_agent_compiler/       # package root (src-layout)
         tool.py                # ToolBuilder
     managers/
         _base.py               # Manager Protocol
-        claude_code.py         # ClaudeCodeManager (subprocess backend)
         opencode_server.py     # OpenCodeServerManager (HTTP backend)
 tests/
     conftest.py                # shared fixtures
