@@ -16,6 +16,7 @@ Usage:
 
 import argparse
 import asyncio
+import contextlib
 import os
 import signal
 import subprocess
@@ -188,10 +189,8 @@ class OpenCodeManager:
         pid = None
 
         if PID_FILE.exists():
-            try:
+            with contextlib.suppress(ValueError):
                 pid = int(PID_FILE.read_text().strip())
-            except ValueError:
-                pass
 
         return {
             "running": running,
@@ -473,11 +472,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         print("=" * 60)
 
     # Return just the output for piping (when --output-only is used)
-    if args.output_only:
+    if args.output_only and result.get("stdout"):
         # Print only the stdout, nothing else - suitable for capturing
-        if result.get("stdout"):
-            # Clear previous output and print just stdout
-            print(result["stdout"], end="")
+        print(result["stdout"], end="")
 
     return result["return_code"]
 
