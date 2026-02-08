@@ -1,5 +1,7 @@
 """Shared test fixtures."""
 
+from typing import Any
+
 import pytest
 
 from open_agent_compiler._types import (
@@ -17,6 +19,7 @@ from open_agent_compiler.builders import (
     SkillBuilder,
     ToolBuilder,
 )
+from open_agent_compiler.compiler import compile_agent
 
 
 @pytest.fixture
@@ -113,3 +116,20 @@ def tool_builder() -> ToolBuilder:
 @pytest.fixture
 def skill_builder() -> SkillBuilder:
     return SkillBuilder()
+
+
+@pytest.fixture
+def sample_compiled(
+    sample_agent: AgentDefinition,
+    sample_skill: SkillDefinition,
+) -> dict[str, Any]:
+    """Compile a full agent (with skills) for writer tests."""
+    agent_with_skill = AgentDefinition(
+        name=sample_agent.name,
+        description=sample_agent.description,
+        config=sample_agent.config,
+        tools=sample_agent.tools,
+        skills=(sample_skill,),
+        system_prompt=sample_agent.system_prompt,
+    )
+    return compile_agent(agent_with_skill, target="opencode")

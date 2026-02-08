@@ -11,11 +11,12 @@ Python-first agent framework that compiles agent definitions into backend-specif
 ## Architecture
 
 ```
-Builder -> AgentDefinition -> Compiler -> backend dict -> Manager -> external process
+Builder -> AgentDefinition -> Compiler -> backend dict -> Writer -> disk -> Manager -> external process
 ```
 
 - **Builders** (`open_agent_compiler.builders`): Fluent API classes that produce immutable data types via `.build()`
 - **Compiler** (`open_agent_compiler.compiler`): Transforms an `AgentDefinition` into a backend-specific dict (`opencode`)
+- **Writers** (`open_agent_compiler.writers`): Sync writers that persist compiled dicts to disk (project files, configs, scripts)
 - **Managers** (`open_agent_compiler.managers`): Async lifecycle managers that deploy/invoke/teardown agents against external backends
 
 ## Code conventions
@@ -39,12 +40,16 @@ src/open_agent_compiler/       # package root (src-layout)
         agent.py               # AgentBuilder
         config.py              # ConfigBuilder
         tool.py                # ToolBuilder (from_script, from_handler introspection)
+    writers/
+        _base.py               # Writer Protocol
+        opencode.py            # OpenCodeWriter (filesystem backend)
     managers/
         _base.py               # Manager Protocol
         opencode_server.py     # OpenCodeServerManager (HTTP backend)
 tests/
     conftest.py                # shared fixtures
     builders/                  # builder tests
+    writers/                   # writer tests
     managers/                  # manager tests
     test_compiler.py           # compiler tests
     test_runtime.py            # ScriptTool runtime tests
