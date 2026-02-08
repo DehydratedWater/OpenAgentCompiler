@@ -48,11 +48,17 @@ class OpenCodeWriter:
     # ------------------------------------------------------------------
 
     def _copy_bundled_scripts(self) -> None:
-        """Copy bundled infrastructure scripts to output scripts/ dir."""
+        """Copy bundled infrastructure scripts to output scripts/ dir.
+
+        Only copies files that don't already exist, so locally formatted
+        copies are not overwritten on subsequent builds.
+        """
         scripts_out = self._output_dir / "scripts"
         scripts_out.mkdir(parents=True, exist_ok=True)
         for src in bundled_script_paths():
-            shutil.copy2(src, scripts_out / src.name)
+            dst = scripts_out / src.name
+            if not dst.exists():
+                shutil.copy2(src, dst)
 
     def _write_opencode_json(self, compiled: dict[str, Any]) -> None:
         config = compiled["config"]
