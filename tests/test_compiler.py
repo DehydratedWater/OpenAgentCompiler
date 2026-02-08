@@ -196,10 +196,13 @@ class TestCompiler:
         assert result["permission"]["doom_loop"] == "allow"
         assert result["permission"]["task"][".opencode/agents/*.md"] == "allow"
 
-    def test_no_permission_key_when_none(self, sample_agent: AgentDefinition):
-        """No permission: key when AgentPermissions is None."""
+    def test_doom_loop_baseline_when_no_permissions(
+        self, sample_agent: AgentDefinition
+    ):
+        """Always generates doom_loop baseline even without explicit permissions."""
         result = compile_agent(sample_agent)
-        assert "permission" not in result
+        assert "permission" in result
+        assert result["permission"]["doom_loop"] == "deny"
 
     def test_mode_in_agent_section(self):
         agent = AgentDefinition(

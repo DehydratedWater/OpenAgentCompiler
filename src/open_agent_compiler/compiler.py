@@ -560,6 +560,56 @@ def _compile_subagent_md(sa: SubagentDefinition) -> dict[str, Any]:
     }
 
 
+def _merge_tool_permissions(
+    auto: dict[str, Any],
+    explicit: ToolPermissions,
+) -> dict[str, Any]:
+    """Merge explicit tool permission overrides into auto-generated permissions.
+
+    Only fields that differ from ``ToolPermissions()`` defaults are applied,
+    so ``ToolPermissions(read=True)`` overlays *only* ``read`` without
+    clobbering auto-generated bash/skill/task rules.
+    """
+    defaults = ToolPermissions()
+    result = dict(auto)
+
+    # Simple boolean fields
+    for field in ("read", "write", "edit", "task", "todoread", "todowrite"):
+        val = getattr(explicit, field)
+        if val != getattr(defaults, field):
+            result[field] = val
+
+    # bash: bool disables entirely, tuple adds patterns
+    if explicit.bash != defaults.bash:
+        if isinstance(explicit.bash, bool):
+            result["bash"] = explicit.bash
+        elif explicit.bash and isinstance(result.get("bash"), dict):
+            for pattern, rule in explicit.bash:
+                result["bash"][pattern] = rule
+
+    # skill: bool disables entirely, tuple adds patterns
+    if explicit.skill != defaults.skill:
+        if isinstance(explicit.skill, bool):
+            result["skill"] = explicit.skill
+        elif explicit.skill:
+            existing = result.get("skill")
+            if isinstance(existing, dict):
+                for name, rule in explicit.skill:
+                    existing[name] = rule
+            else:
+                result["skill"] = {n: r for n, r in explicit.skill}
+
+    # mcp: bool disables entirely, tuple adds top-level patterns
+    if explicit.mcp != defaults.mcp:
+        if isinstance(explicit.mcp, bool):
+            result["mcp"] = explicit.mcp
+        elif explicit.mcp:
+            for pattern, allowed in explicit.mcp:
+                result[pattern] = allowed
+
+    return result
+
+
 def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     all_tools = _collect_all_tools(defn)
 
@@ -575,11 +625,10 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     for t in all_tools:
         tool_docs[t.name] = _generate_action_docs(t)
 
-    # Build tool permissions
+    # Build tool permissions — always auto-generate, merge explicit overrides
+    tool_perms = _auto_tool_permissions(all_tools, defn)
     if defn.tool_permissions is not None:
-        tool_perms = _tool_permissions_to_dict(defn.tool_permissions)
-    else:
-        tool_perms = _auto_tool_permissions(all_tools, defn)
+        tool_perms = _merge_tool_permissions(tool_perms, defn.tool_permissions)
 
     # Build skills with auto-appended tool usage docs
     compiled_skills: list[dict[str, Any]] = []
@@ -662,7 +711,7 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
             _compile_subagent_md(sa) for sa in defn.subagents
         ]
 
-    # Agent permissions
+    # Agent permissions — always generate doom_loop baseline
     if defn.permissions is not None:
         result["permission"] = _agent_permissions_to_dict(defn.permissions)
     elif defn.subagents:
@@ -673,5 +722,7 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
         )
         auto_perms = AgentPermissions(doom_loop="deny", task=task_perms)
         result["permission"] = _agent_permissions_to_dict(auto_perms)
+    else:
+        result["permission"] = _agent_permissions_to_dict(AgentPermissions())
 
     return result
