@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from open_agent_compiler._types import AgentPermissions
+from open_agent_compiler._types import (
+    AgentPermissions,
+    ModelConfig,
+    ModelOptions,
+    ProviderConfig,
+    ProviderOptions,
+)
 from open_agent_compiler.builders import (
     AgentBuilder,
     ConfigBuilder,
@@ -37,13 +43,24 @@ def main() -> None:
         .build()
     )
 
-    # -- Config --
+    # -- Config (rich provider/model hierarchy) --
     config = (
         ConfigBuilder()
-        .model("claude-sonnet-4-5-20250929")
-        .provider("anthropic")
-        .temperature(0.0)
-        .max_tokens(8192)
+        .provider(
+            ProviderConfig(
+                name="anthropic",
+                options=ProviderOptions(api_key="env:ANTHROPIC_API_KEY"),
+                models=(
+                    ModelConfig(
+                        name="sonnet",
+                        id="claude-sonnet-4-5-20250929",
+                        options=ModelOptions(temperature=0.0),
+                    ),
+                ),
+            )
+        )
+        .default_model("anthropic/sonnet")
+        .compaction(auto=True, prune=True)
         .build()
     )
 
@@ -64,6 +81,9 @@ def main() -> None:
             "security, performance, and style. Be specific in your feedback."
         )
         .mode("primary")
+        .temperature(0.0)
+        .color("#4A90D9")
+        .steps(100)
         .permissions(AgentPermissions(doom_loop="deny"))
         .build()
     )

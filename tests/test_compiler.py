@@ -34,8 +34,30 @@ class TestCompiler:
         result = compile_agent(sample_agent, target="opencode")
         assert result["backend"] == "opencode"
         assert result["agent"]["name"] == "test-agent"
-        assert result["model"]["id"] == "claude-sonnet-4-5-20250929"
+        assert "config" in result
+        assert result["config"]["$schema"] == "https://opencode.ai/config.json"
+        assert result["config"]["model"] == "anthropic/sonnet"
         assert result["skills"] == []
+
+    def test_config_has_provider_hierarchy(self, sample_agent: AgentDefinition):
+        result = compile_agent(sample_agent)
+        config = result["config"]
+        assert "provider" in config
+        assert "anthropic" in config["provider"]
+        prov = config["provider"]["anthropic"]
+        assert "models" in prov
+        assert "sonnet" in prov["models"]
+        assert prov["models"]["sonnet"]["id"] == "claude-sonnet-4-5-20250929"
+
+    def test_config_has_no_agent_section(self, sample_agent: AgentDefinition):
+        """opencode.json (config) does not contain per-agent fields."""
+        result = compile_agent(sample_agent)
+        assert "agent" not in result["config"]
+
+    def test_config_has_compaction(self, sample_agent: AgentDefinition):
+        result = compile_agent(sample_agent)
+        config = result["config"]
+        assert config["compaction"] == {"auto": True, "prune": True}
 
     def test_tool_is_permission_dict(self, sample_agent: AgentDefinition):
         result = compile_agent(sample_agent)
@@ -216,8 +238,32 @@ class TestCompiler:
         skill_keys = list(result["tool"]["skill"].keys())
         assert skill_keys[0] == "*"
 
-    def test_skill_instructions_in_output(self):
-        """skill_instructions compile into the output."""
+    def test_enriched_skill_instructions(self):
+        """skill_instructions compile into enriched dicts with tool descriptions."""
+        tool = _make_tool("db_query")
+        skill = SkillDefinition(
+            name="data-query",
+            description="Query data",
+            tools=(tool,),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            skills=(skill,),
+            skill_instructions=(("data-query", "Use when querying data"),),
+        )
+        result = compile_agent(agent)
+        assert "skill_instructions" in result
+        si = result["skill_instructions"]
+        assert len(si) == 1
+        assert si[0]["name"] == "data-query"
+        assert si[0]["instruction"] == "Use when querying data"
+        assert len(si[0]["tools"]) == 1
+        assert si[0]["tools"][0]["name"] == "db_query"
+        assert si[0]["tools"][0]["description"] == "Tool db_query"
+
+    def test_skill_instructions_no_tools(self):
+        """Skill instructions with no tools have empty tools list."""
         skill = SkillDefinition(
             name="review",
             description="Review code",
@@ -229,7 +275,79 @@ class TestCompiler:
             skill_instructions=(("review", "Use when reviewing PRs"),),
         )
         result = compile_agent(agent)
-        assert "skill_instructions" in result
-        assert result["skill_instructions"] == [
-            ("review", "Use when reviewing PRs"),
-        ]
+        si = result["skill_instructions"]
+        assert si[0]["tools"] == []
+
+    def test_no_skill_instructions_key_when_empty(self, sample_agent: AgentDefinition):
+        """No skill_instructions key when none defined."""
+        result = compile_agent(sample_agent)
+        assert "skill_instructions" not in result
+
+    def test_config_no_provider_when_empty(self):
+        """No provider key in config when no providers configured."""
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        assert "provider" not in result["config"]
+
+    def test_config_no_model_when_empty(self):
+        """No model key in config when no default_model set."""
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        assert "model" not in result["config"]
+
+    def test_agent_section_variant(self):
+        agent = AgentDefinition(name="test", description="test", variant="fast")
+        result = compile_agent(agent)
+        assert result["agent"]["variant"] == "fast"
+
+    def test_agent_section_temperature(self):
+        agent = AgentDefinition(name="test", description="test", temperature=0.7)
+        result = compile_agent(agent)
+        assert result["agent"]["temperature"] == 0.7
+
+    def test_agent_section_top_p(self):
+        agent = AgentDefinition(name="test", description="test", top_p=0.9)
+        result = compile_agent(agent)
+        assert result["agent"]["top_p"] == 0.9
+
+    def test_agent_section_hidden(self):
+        agent = AgentDefinition(name="test", description="test", hidden=True)
+        result = compile_agent(agent)
+        assert result["agent"]["hidden"] is True
+
+    def test_agent_section_hidden_default_omitted(self):
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        assert "hidden" not in result["agent"]
+
+    def test_agent_section_color(self):
+        agent = AgentDefinition(name="test", description="test", color="#FF5733")
+        result = compile_agent(agent)
+        assert result["agent"]["color"] == "#FF5733"
+
+    def test_agent_section_steps(self):
+        agent = AgentDefinition(name="test", description="test", steps=50)
+        result = compile_agent(agent)
+        assert result["agent"]["steps"] == 50
+
+    def test_agent_section_steps_zero_omitted(self):
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        assert "steps" not in result["agent"]
+
+    def test_agent_section_options(self):
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            options=(("reasoning_effort", "high"), ("cache", True)),
+        )
+        result = compile_agent(agent)
+        opts = result["agent"]["options"]
+        assert opts["reasoning_effort"] == "high"
+        assert opts["cache"] is True
+
+    def test_agent_section_temperature_none_omitted(self):
+        """temperature=None (default) is not emitted."""
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        assert "temperature" not in result["agent"]

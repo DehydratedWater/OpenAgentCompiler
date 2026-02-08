@@ -24,27 +24,46 @@ class TestOpenCodeJson:
         path = tmp_path / "opencode.json"
         assert path.exists()
         data = json.loads(path.read_text())
-        assert data["provider"] == sample_compiled["model"]["provider"]
-        assert data["model"] == sample_compiled["model"]["id"]
-        assert data["tool"] == sample_compiled["tool"]
+        assert data["$schema"] == "https://opencode.ai/config.json"
+        assert data["model"] == sample_compiled["config"]["model"]
 
-    def test_default_theme(
+    def test_config_written_directly(
         self, tmp_path: Path, sample_compiled: dict[str, Any]
     ) -> None:
         writer = OpenCodeWriter(output_dir=tmp_path)
         writer.write(sample_compiled)
 
         data = json.loads((tmp_path / "opencode.json").read_text())
-        assert data["theme"] == "dark"
+        assert data == sample_compiled["config"]
 
-    def test_custom_theme(
+    def test_has_provider_hierarchy(
         self, tmp_path: Path, sample_compiled: dict[str, Any]
     ) -> None:
-        writer = OpenCodeWriter(output_dir=tmp_path, theme="catppuccin")
+        writer = OpenCodeWriter(output_dir=tmp_path)
         writer.write(sample_compiled)
 
         data = json.loads((tmp_path / "opencode.json").read_text())
-        assert data["theme"] == "catppuccin"
+        assert "provider" in data
+        assert "anthropic" in data["provider"]
+
+    def test_has_compaction(
+        self, tmp_path: Path, sample_compiled: dict[str, Any]
+    ) -> None:
+        writer = OpenCodeWriter(output_dir=tmp_path)
+        writer.write(sample_compiled)
+
+        data = json.loads((tmp_path / "opencode.json").read_text())
+        assert data["compaction"] == {"auto": True, "prune": True}
+
+    def test_no_agent_section_in_json(
+        self, tmp_path: Path, sample_compiled: dict[str, Any]
+    ) -> None:
+        """opencode.json should not contain per-agent config."""
+        writer = OpenCodeWriter(output_dir=tmp_path)
+        writer.write(sample_compiled)
+
+        data = json.loads((tmp_path / "opencode.json").read_text())
+        assert "agent" not in data
 
 
 class TestAgentMd:
@@ -84,7 +103,7 @@ class TestAgentMd:
         agent_name = sample_compiled["agent"]["name"]
         path = tmp_path / ".opencode" / "agents" / f"{agent_name}.md"
         content = path.read_text()
-        assert f"model: {sample_compiled['model']['id']}" in content
+        assert f"model: {sample_compiled['config']['model']}" in content
 
     def test_agent_md_permission_block(self, tmp_path: Path) -> None:
         """Permission block renders in frontmatter when set."""
@@ -120,6 +139,20 @@ class TestAgentMd:
         assert "**/code-review**" in content
         assert "Use when reviewing code" in content
 
+    def test_agent_md_skill_instructions_with_tools(
+        self, tmp_path: Path, sample_compiled: dict[str, Any]
+    ) -> None:
+        """Skill instructions include tool sub-items."""
+        writer = OpenCodeWriter(output_dir=tmp_path)
+        writer.write(sample_compiled)
+
+        agent_name = sample_compiled["agent"]["name"]
+        path = tmp_path / ".opencode" / "agents" / f"{agent_name}.md"
+        content = path.read_text()
+        # The sample_skill has a read_file tool
+        assert "**read_file**" in content
+        assert "Read a file from disk" in content
+
     def test_agent_md_deny_first_in_bash(
         self, tmp_path: Path, sample_compiled: dict[str, Any]
     ) -> None:
@@ -134,6 +167,67 @@ class TestAgentMd:
         deny_pos = content.find('"*": "deny"')
         allow_pos = content.find('"uv run scripts/')
         assert deny_pos < allow_pos
+
+    def test_agent_md_no_model_when_empty(self, tmp_path: Path) -> None:
+        """No model line when default_model is empty."""
+        agent = AgentDefinition(name="no-model", description="Test", system_prompt="Hi")
+        compiled = compile_agent(agent)
+        writer = OpenCodeWriter(output_dir=tmp_path)
+        writer.write(compiled)
+
+        path = tmp_path / ".opencode" / "agents" / "no-model.md"
+        content = path.read_text()
+        assert "model:" not in content
+
+    def test_agent_md_per_agent_fields(self, tmp_path: Path) -> None:
+        """Per-agent config fields render in .md frontmatter."""
+        agent = AgentDefinition(
+            name="rich-agent",
+            description="Agent with all fields",
+            system_prompt="Hi",
+            mode="primary",
+            variant="fast",
+            temperature=0.5,
+            top_p=0.9,
+            hidden=True,
+            color="#FF5733",
+            steps=50,
+            options=(("reasoning_effort", "high"),),
+        )
+        compiled = compile_agent(agent)
+        writer = OpenCodeWriter(output_dir=tmp_path)
+        writer.write(compiled)
+
+        path = tmp_path / ".opencode" / "agents" / "rich-agent.md"
+        content = path.read_text()
+        assert "variant: fast" in content
+        assert "temperature: 0.5" in content
+        assert "top_p: 0.9" in content
+        assert "mode: primary" in content
+        assert "hidden: true" in content
+        assert 'color: "#FF5733"' in content
+        assert "steps: 50" in content
+        assert "options:" in content
+        assert 'reasoning_effort: "high"' in content
+
+    def test_agent_md_omits_defaults(self, tmp_path: Path) -> None:
+        """Default per-agent values are not emitted."""
+        agent = AgentDefinition(
+            name="minimal", description="Minimal", system_prompt="Hi"
+        )
+        compiled = compile_agent(agent)
+        writer = OpenCodeWriter(output_dir=tmp_path)
+        writer.write(compiled)
+
+        path = tmp_path / ".opencode" / "agents" / "minimal.md"
+        content = path.read_text()
+        assert "variant:" not in content
+        assert "temperature:" not in content
+        assert "top_p:" not in content
+        assert "hidden:" not in content
+        assert "color:" not in content
+        assert "steps:" not in content
+        assert "options:" not in content
 
 
 class TestSkillMds:

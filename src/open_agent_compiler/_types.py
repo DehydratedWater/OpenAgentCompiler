@@ -6,14 +6,6 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 
-class ModelProvider(StrEnum):
-    """Supported LLM providers."""
-
-    ANTHROPIC = "anthropic"
-    OPENAI = "openai"
-    LOCAL = "local"
-
-
 class StreamFormat(StrEnum):
     """Format for stdin streaming."""
 
@@ -75,14 +67,75 @@ class ToolDefinition:
     script_files: tuple[str, ...] = ()
 
 
+# -- Rich provider/model hierarchy for opencode.json --
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderOptions:
+    """Connection options for a provider."""
+
+    api_key: str = ""
+    base_url: str = ""
+    timeout: int = 600000
+    max_retries: int = 2
+
+
+@dataclass(frozen=True, slots=True)
+class ModelLimits:
+    """Token limits for a model."""
+
+    context: int = 131072
+    output: int = 32768
+
+
+@dataclass(frozen=True, slots=True)
+class ModelOptions:
+    """Sampling options for a model."""
+
+    temperature: float = 1.0
+    top_p: float = 1.0
+    top_k: int = 0
+    min_p: float = 0.0
+    presence_penalty: float = 0.0
+    extra_body: tuple[tuple[str, str | int | float | bool], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ModelConfig:
+    """A single model within a provider."""
+
+    name: str  # local name "gpt-oss-120b"
+    id: str  # actual model ID
+    limits: ModelLimits = field(default_factory=ModelLimits)
+    options: ModelOptions = field(default_factory=ModelOptions)
+    input_modalities: tuple[str, ...] | None = None
+    output_modalities: tuple[str, ...] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderConfig:
+    """A provider with its connection options and models."""
+
+    name: str
+    options: ProviderOptions = field(default_factory=ProviderOptions)
+    models: tuple[ModelConfig, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CompactionConfig:
+    """Compaction settings for opencode."""
+
+    auto: bool = True
+    prune: bool = True
+
+
 @dataclass(frozen=True, slots=True)
 class AgentConfig:
     """Immutable runtime configuration for an agent."""
 
-    model: str = "claude-sonnet-4-5-20250929"
-    provider: ModelProvider = ModelProvider.ANTHROPIC
-    temperature: float = 0.0
-    max_tokens: int = 4096
+    providers: tuple[ProviderConfig, ...] = ()
+    default_model: str = ""  # "provider/model"
+    compaction: CompactionConfig = field(default_factory=CompactionConfig)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,4 +161,11 @@ class AgentDefinition:
     system_prompt: str = ""
     tool_permissions: ToolPermissions | None = None
     permissions: AgentPermissions | None = None
-    mode: str = ""
+    mode: str = ""  # "subagent" | "primary" | "all"
+    variant: str = ""
+    temperature: float | None = None
+    top_p: float | None = None
+    hidden: bool = False
+    color: str = ""  # hex "#FF5733" or theme "primary"
+    steps: int = 0  # 0 = not set
+    options: tuple[tuple[str, str | int | float | bool], ...] = ()

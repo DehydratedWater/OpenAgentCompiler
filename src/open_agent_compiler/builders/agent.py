@@ -30,6 +30,13 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._tool_permissions: ToolPermissions | None = None
         self._permissions: AgentPermissions | None = None
         self._mode: str = ""
+        self._variant: str = ""
+        self._temperature: float | None = None
+        self._top_p: float | None = None
+        self._hidden: bool = False
+        self._color: str = ""
+        self._steps: int = 0
+        self._options: list[tuple[str, str | int | float | bool]] = []
         return self
 
     def name(self, name: str) -> AgentBuilder:
@@ -74,6 +81,34 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._mode = mode
         return self
 
+    def variant(self, variant: str) -> AgentBuilder:
+        self._variant = variant
+        return self
+
+    def temperature(self, temperature: float) -> AgentBuilder:
+        self._temperature = temperature
+        return self
+
+    def top_p(self, top_p: float) -> AgentBuilder:
+        self._top_p = top_p
+        return self
+
+    def hidden(self, hidden: bool = True) -> AgentBuilder:
+        self._hidden = hidden
+        return self
+
+    def color(self, color: str) -> AgentBuilder:
+        self._color = color
+        return self
+
+    def steps(self, steps: int) -> AgentBuilder:
+        self._steps = steps
+        return self
+
+    def option(self, key: str, value: str | int | float | bool) -> AgentBuilder:
+        self._options.append((key, value))
+        return self
+
     def build(self) -> AgentDefinition:
         if not self._name:
             raise ValueError("AgentDefinition requires a name")
@@ -90,4 +125,11 @@ class AgentBuilder(Builder[AgentDefinition]):
             tool_permissions=self._tool_permissions,
             permissions=self._permissions,
             mode=self._mode,
+            variant=self._variant,
+            temperature=self._temperature,
+            top_p=self._top_p,
+            hidden=self._hidden,
+            color=self._color,
+            steps=self._steps,
+            options=tuple(self._options),
         )

@@ -8,7 +8,10 @@ from open_agent_compiler._types import (
     ActionDefinition,
     AgentConfig,
     AgentDefinition,
-    ModelProvider,
+    ModelConfig,
+    ModelOptions,
+    ProviderConfig,
+    ProviderOptions,
     SkillDefinition,
     ToolDefinition,
 )
@@ -62,10 +65,20 @@ def sample_tool_with_stream() -> ToolDefinition:
 @pytest.fixture
 def sample_config() -> AgentConfig:
     return AgentConfig(
-        model="claude-sonnet-4-5-20250929",
-        provider=ModelProvider.ANTHROPIC,
-        temperature=0.0,
-        max_tokens=4096,
+        providers=(
+            ProviderConfig(
+                name="anthropic",
+                options=ProviderOptions(api_key="env:ANTHROPIC_API_KEY"),
+                models=(
+                    ModelConfig(
+                        name="sonnet",
+                        id="claude-sonnet-4-5-20250929",
+                        options=ModelOptions(temperature=0.0),
+                    ),
+                ),
+            ),
+        ),
+        default_model="anthropic/sonnet",
     )
 
 

@@ -2,43 +2,53 @@
 
 import pytest
 
-from open_agent_compiler._types import ModelProvider
+from open_agent_compiler._types import CompactionConfig, ProviderConfig, ProviderOptions
 from open_agent_compiler.builders import ConfigBuilder
 
 
 class TestConfigBuilder:
     def test_build_defaults(self, config_builder: ConfigBuilder):
         config = config_builder.build()
-        assert config.model == "claude-sonnet-4-5-20250929"
-        assert config.provider == ModelProvider.ANTHROPIC
-        assert config.temperature == 0.0
-        assert config.max_tokens == 4096
+        assert config.providers == ()
+        assert config.default_model == ""
+        assert config.compaction == CompactionConfig()
 
-    def test_build_custom(self, config_builder: ConfigBuilder):
-        config = (
-            config_builder.model("gpt-4o")
-            .provider(ModelProvider.OPENAI)
-            .temperature(0.7)
-            .max_tokens(2048)
-            .build()
+    def test_build_with_provider(self, config_builder: ConfigBuilder):
+        prov = ProviderConfig(
+            name="anthropic",
+            options=ProviderOptions(api_key="sk-test"),
         )
-        assert config.model == "gpt-4o"
-        assert config.provider == ModelProvider.OPENAI
-        assert config.temperature == 0.7
-        assert config.max_tokens == 2048
+        config = config_builder.provider(prov).default_model("anthropic/sonnet").build()
+        assert len(config.providers) == 1
+        assert config.providers[0].name == "anthropic"
+        assert config.default_model == "anthropic/sonnet"
+
+    def test_build_with_compaction(self, config_builder: ConfigBuilder):
+        config = config_builder.compaction(auto=False, prune=True).build()
+        assert config.compaction.auto is False
+        assert config.compaction.prune is True
+
+    def test_multiple_providers(self, config_builder: ConfigBuilder):
+        p1 = ProviderConfig(name="anthropic")
+        p2 = ProviderConfig(name="openai")
+        config = config_builder.provider(p1).provider(p2).build()
+        assert len(config.providers) == 2
+        assert config.providers[0].name == "anthropic"
+        assert config.providers[1].name == "openai"
 
     def test_fluent_returns_self(self, config_builder: ConfigBuilder):
-        ret = config_builder.model("x")
+        ret = config_builder.default_model("x")
         assert ret is config_builder
 
     def test_reset_restores_defaults(self, config_builder: ConfigBuilder):
-        config_builder.model("custom").temperature(1.0)
+        prov = ProviderConfig(name="test")
+        config_builder.provider(prov).default_model("test/m")
         config_builder.reset()
         config = config_builder.build()
-        assert config.model == "claude-sonnet-4-5-20250929"
-        assert config.temperature == 0.0
+        assert config.providers == ()
+        assert config.default_model == ""
 
     def test_built_config_is_frozen(self, config_builder: ConfigBuilder):
         config = config_builder.build()
         with pytest.raises(AttributeError):
-            config.model = "y"  # type: ignore[misc]
+            config.default_model = "y"  # type: ignore[misc]

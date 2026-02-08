@@ -108,6 +108,111 @@ def _auto_tool_permissions(
     return result
 
 
+def _build_provider_dict(defn: AgentDefinition) -> dict[str, Any]:
+    """Build the rich provider hierarchy for opencode.json."""
+    providers: dict[str, Any] = {}
+    for prov in defn.config.providers:
+        prov_dict: dict[str, Any] = {}
+
+        # Options — only include non-default values
+        opts = prov.options
+        if opts.api_key:
+            prov_dict.setdefault("options", {})["apiKey"] = opts.api_key
+        if opts.base_url:
+            prov_dict.setdefault("options", {})["baseURL"] = opts.base_url
+        if opts.timeout != 600000:
+            prov_dict.setdefault("options", {})["timeout"] = opts.timeout
+        if opts.max_retries != 2:
+            prov_dict.setdefault("options", {})["maxRetries"] = opts.max_retries
+
+        # Models
+        if prov.models:
+            models_dict: dict[str, Any] = {}
+            for model in prov.models:
+                m: dict[str, Any] = {"id": model.id}
+
+                # Limits — only if non-default
+                if model.limits.context != 131072 or model.limits.output != 32768:
+                    m["limits"] = {
+                        "context": model.limits.context,
+                        "output": model.limits.output,
+                    }
+
+                # Options — only if non-default
+                mopts = model.options
+                mopts_dict: dict[str, Any] = {}
+                if mopts.temperature != 1.0:
+                    mopts_dict["temperature"] = mopts.temperature
+                if mopts.top_p != 1.0:
+                    mopts_dict["topP"] = mopts.top_p
+                if mopts.top_k != 0:
+                    mopts_dict["topK"] = mopts.top_k
+                if mopts.min_p != 0.0:
+                    mopts_dict["minP"] = mopts.min_p
+                if mopts.presence_penalty != 0.0:
+                    mopts_dict["presencePenalty"] = mopts.presence_penalty
+                if mopts.extra_body:
+                    mopts_dict["extraBody"] = {k: v for k, v in mopts.extra_body}
+                if mopts_dict:
+                    m["options"] = mopts_dict
+
+                if model.input_modalities is not None:
+                    m["inputModalities"] = list(model.input_modalities)
+                if model.output_modalities is not None:
+                    m["outputModalities"] = list(model.output_modalities)
+
+                models_dict[model.name] = m
+            prov_dict["models"] = models_dict
+
+        providers[prov.name] = prov_dict
+
+    return providers
+
+
+def _build_config_dict(defn: AgentDefinition) -> dict[str, Any]:
+    """Build the full opencode.json config dict (no per-agent fields)."""
+    config: dict[str, Any] = {
+        "$schema": "https://opencode.ai/config.json",
+    }
+
+    provider_dict = _build_provider_dict(defn)
+    if provider_dict:
+        config["provider"] = provider_dict
+
+    if defn.config.default_model:
+        config["model"] = defn.config.default_model
+
+    # Compaction
+    comp = defn.config.compaction
+    config["compaction"] = {"auto": comp.auto, "prune": comp.prune}
+
+    return config
+
+
+def _build_enriched_skill_instructions(
+    defn: AgentDefinition,
+) -> list[dict[str, Any]]:
+    """Build skill_instructions enriched with tool descriptions."""
+    # Map skill name -> skill definition for quick lookup
+    skill_map = {s.name: s for s in defn.skills}
+
+    result: list[dict[str, Any]] = []
+    for skill_name, instruction in defn.skill_instructions:
+        entry: dict[str, Any] = {
+            "name": skill_name,
+            "instruction": instruction,
+        }
+        skill_def = skill_map.get(skill_name)
+        if skill_def and skill_def.tools:
+            entry["tools"] = [
+                {"name": t.name, "description": t.description} for t in skill_def.tools
+            ]
+        else:
+            entry["tools"] = []
+        result.append(entry)
+    return result
+
+
 def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     all_tools = _collect_all_tools(defn)
 
@@ -148,7 +253,7 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
             }
         )
 
-    # Build agent section
+    # Build agent section (drives .md frontmatter)
     agent_section: dict[str, Any] = {
         "name": defn.name,
         "description": defn.description,
@@ -156,26 +261,38 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     }
     if defn.mode:
         agent_section["mode"] = defn.mode
+    if defn.variant:
+        agent_section["variant"] = defn.variant
+    if defn.temperature is not None:
+        agent_section["temperature"] = defn.temperature
+    if defn.top_p is not None:
+        agent_section["top_p"] = defn.top_p
+    if defn.hidden:
+        agent_section["hidden"] = defn.hidden
+    if defn.color:
+        agent_section["color"] = defn.color
+    if defn.steps > 0:
+        agent_section["steps"] = defn.steps
+    if defn.options:
+        agent_section["options"] = {k: v for k, v in defn.options}
+
+    # Build config dict (full opencode.json content)
+    config_dict = _build_config_dict(defn)
 
     result: dict[str, Any] = {
         "backend": "opencode",
         "agent": agent_section,
-        "model": {
-            "id": defn.config.model,
-            "provider": str(defn.config.provider),
-            "temperature": defn.config.temperature,
-            "max_tokens": defn.config.max_tokens,
-        },
+        "config": config_dict,
         "tool": tool_perms,
         "scripts": scripts,
         "skills": compiled_skills,
     }
 
+    # Enriched skill instructions
+    if defn.skill_instructions:
+        result["skill_instructions"] = _build_enriched_skill_instructions(defn)
+
     if defn.permissions is not None:
         result["permission"] = _agent_permissions_to_dict(defn.permissions)
-
-    # Skill instructions for the agent body
-    if defn.skill_instructions:
-        result["skill_instructions"] = list(defn.skill_instructions)
 
     return result

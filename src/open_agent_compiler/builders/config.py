@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from open_agent_compiler._types import AgentConfig, ModelProvider
+from open_agent_compiler._types import AgentConfig, CompactionConfig, ProviderConfig
 from open_agent_compiler.builders._base import Builder
 
 
@@ -13,32 +13,26 @@ class ConfigBuilder(Builder[AgentConfig]):
         self.reset()
 
     def reset(self) -> ConfigBuilder:
-        self._model: str = "claude-sonnet-4-5-20250929"
-        self._provider: ModelProvider = ModelProvider.ANTHROPIC
-        self._temperature: float = 0.0
-        self._max_tokens: int = 4096
+        self._providers: list[ProviderConfig] = []
+        self._default_model: str = ""
+        self._compaction: CompactionConfig = CompactionConfig()
         return self
 
-    def model(self, model: str) -> ConfigBuilder:
-        self._model = model
+    def provider(self, provider: ProviderConfig) -> ConfigBuilder:
+        self._providers.append(provider)
         return self
 
-    def provider(self, provider: ModelProvider) -> ConfigBuilder:
-        self._provider = provider
+    def default_model(self, model: str) -> ConfigBuilder:
+        self._default_model = model
         return self
 
-    def temperature(self, temperature: float) -> ConfigBuilder:
-        self._temperature = temperature
-        return self
-
-    def max_tokens(self, max_tokens: int) -> ConfigBuilder:
-        self._max_tokens = max_tokens
+    def compaction(self, *, auto: bool = True, prune: bool = True) -> ConfigBuilder:
+        self._compaction = CompactionConfig(auto=auto, prune=prune)
         return self
 
     def build(self) -> AgentConfig:
         return AgentConfig(
-            model=self._model,
-            provider=self._provider,
-            temperature=self._temperature,
-            max_tokens=self._max_tokens,
+            providers=tuple(self._providers),
+            default_model=self._default_model,
+            compaction=self._compaction,
         )

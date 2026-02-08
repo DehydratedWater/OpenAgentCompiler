@@ -18,22 +18,17 @@ class OpenCodeWriter:
     scripts_dir:
         Source directory containing handler scripts to copy.
         If ``None``, script copying is skipped.
-    theme:
-        OpenCode UI theme written into ``opencode.json``.
     """
 
-    __slots__ = ("_output_dir", "_scripts_dir", "_theme")
+    __slots__ = ("_output_dir", "_scripts_dir")
 
     def __init__(
         self,
         output_dir: Path,
         scripts_dir: Path | None = None,
-        *,
-        theme: str = "dark",
     ) -> None:
         self._output_dir = output_dir
         self._scripts_dir = scripts_dir
-        self._theme = theme
 
     def write(self, compiled: dict[str, Any]) -> None:
         """Write all OpenCode project files to *output_dir*."""
@@ -49,14 +44,7 @@ class OpenCodeWriter:
     # ------------------------------------------------------------------
 
     def _write_opencode_json(self, compiled: dict[str, Any]) -> None:
-        model = compiled["model"]
-        tool = compiled["tool"]
-        config = {
-            "provider": model["provider"],
-            "model": model["id"],
-            "theme": self._theme,
-            "tool": tool,
-        }
+        config = compiled["config"]
         path = self._output_dir / "opencode.json"
         path.write_text(json.dumps(config, indent=2) + "\n")
 
@@ -65,7 +53,8 @@ class OpenCodeWriter:
         name: str = agent["name"]
         description: str = agent["description"]
         system_prompt: str = agent["system_prompt"]
-        model: str = compiled["model"]["id"]
+        config: dict[str, Any] = compiled["config"]
+        model: str = config.get("model", "")
         tool: dict[str, Any] = compiled["tool"]
 
         agents_dir = self._output_dir / ".opencode" / "agents"
@@ -74,8 +63,35 @@ class OpenCodeWriter:
         lines: list[str] = [
             "---",
             f"description: {description}",
-            f"model: {model}",
         ]
+
+        if model:
+            lines.append(f"model: {model}")
+
+        # Per-agent config fields
+        if "variant" in agent:
+            lines.append(f"variant: {agent['variant']}")
+        if "temperature" in agent:
+            lines.append(f"temperature: {agent['temperature']}")
+        if "top_p" in agent:
+            lines.append(f"top_p: {agent['top_p']}")
+        if "mode" in agent:
+            lines.append(f"mode: {agent['mode']}")
+        if agent.get("hidden"):
+            lines.append("hidden: true")
+        if "color" in agent:
+            lines.append(f'color: "{agent["color"]}"')
+        if "steps" in agent:
+            lines.append(f"steps: {agent['steps']}")
+        if "options" in agent:
+            lines.append("options:")
+            for opt_key, opt_val in agent["options"].items():
+                if isinstance(opt_val, bool):
+                    lines.append(f"  {opt_key}: {str(opt_val).lower()}")
+                elif isinstance(opt_val, str):
+                    lines.append(f'  {opt_key}: "{opt_val}"')
+                else:
+                    lines.append(f"  {opt_key}: {opt_val}")
 
         # Write tool: block
         lines.append("tool:")
@@ -106,15 +122,19 @@ class OpenCodeWriter:
         lines.append(system_prompt)
 
         # Append skill instructions section if present
-        skill_instructions: list[tuple[str, str]] = compiled.get(
+        skill_instructions: list[dict[str, Any]] = compiled.get(
             "skill_instructions", []
         )
         if skill_instructions:
             lines.append("")
             lines.append("## Available Skills")
             lines.append("")
-            for skill_name, instruction in skill_instructions:
-                lines.append(f"- **/{skill_name}**: {instruction}")
+            for entry in skill_instructions:
+                lines.append(f"- **/{entry['name']}**: {entry['instruction']}")
+                for tool_info in entry.get("tools", []):
+                    lines.append(
+                        f"  - **{tool_info['name']}**: {tool_info['description']}"
+                    )
 
         lines.append("")
 
