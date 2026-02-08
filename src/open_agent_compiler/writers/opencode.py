@@ -50,12 +50,12 @@ class OpenCodeWriter:
 
     def _write_opencode_json(self, compiled: dict[str, Any]) -> None:
         model = compiled["model"]
-        tools = compiled["tools"]
+        tool = compiled["tool"]
         config = {
             "provider": model["provider"],
             "model": model["id"],
             "theme": self._theme,
-            "tool": tools,
+            "tool": tool,
         }
         path = self._output_dir / "opencode.json"
         path.write_text(json.dumps(config, indent=2) + "\n")
@@ -65,19 +65,59 @@ class OpenCodeWriter:
         name: str = agent["name"]
         description: str = agent["description"]
         system_prompt: str = agent["system_prompt"]
+        model: str = compiled["model"]["id"]
+        tool: dict[str, Any] = compiled["tool"]
 
         agents_dir = self._output_dir / ".opencode" / "agents"
         agents_dir.mkdir(parents=True, exist_ok=True)
 
-        lines = [
+        lines: list[str] = [
             "---",
-            f"name: {name}",
             f"description: {description}",
-            "---",
-            "",
-            system_prompt,
-            "",
+            f"model: {model}",
         ]
+
+        # Write tool: block
+        lines.append("tool:")
+        for key, value in tool.items():
+            if isinstance(value, dict):
+                lines.append(f"  {key}:")
+                for pattern, rule in value.items():
+                    lines.append(f'    "{pattern}": "{rule}"')
+            elif isinstance(value, bool):
+                lines.append(f"  {key}: {str(value).lower()}")
+            else:
+                lines.append(f"  {key}: {value}")
+
+        # Write permission: block if present
+        permission = compiled.get("permission")
+        if permission is not None:
+            lines.append("permission:")
+            for key, value in permission.items():
+                if isinstance(value, dict):
+                    lines.append(f"  {key}:")
+                    for pattern, rule in value.items():
+                        lines.append(f'    "{pattern}": "{rule}"')
+                else:
+                    lines.append(f"  {key}: {value}")
+
+        lines.append("---")
+        lines.append("")
+        lines.append(system_prompt)
+
+        # Append skill instructions section if present
+        skill_instructions: list[tuple[str, str]] = compiled.get(
+            "skill_instructions", []
+        )
+        if skill_instructions:
+            lines.append("")
+            lines.append("## Available Skills")
+            lines.append("")
+            for skill_name, instruction in skill_instructions:
+                lines.append(f"- **/{skill_name}**: {instruction}")
+
+        lines.append("")
+
         path = agents_dir / f"{name}.md"
         path.write_text("\n".join(lines))
 
@@ -87,14 +127,10 @@ class OpenCodeWriter:
             skill_dir = self._output_dir / ".opencode" / "skills" / skill_name
             skill_dir.mkdir(parents=True, exist_ok=True)
 
-            tool_names: list[str] = skill["tools"]
-            tools_yaml = ", ".join(tool_names) if tool_names else ""
-
             lines = [
                 "---",
                 f"name: {skill_name}",
                 f"description: {skill['description']}",
-                f"tools: [{tools_yaml}]",
                 "---",
                 "",
                 skill["instructions"],

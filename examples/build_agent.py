@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from open_agent_compiler._types import AgentPermissions
 from open_agent_compiler.builders import (
     AgentBuilder,
     ConfigBuilder,
@@ -19,18 +20,8 @@ SCRIPTS_DIR = Path(__file__).resolve().parent / "scripts"
 
 def main() -> None:
     # -- Tools (from handler scripts) --
-    db_query = (
-        ToolBuilder()
-        .from_script(str(SCRIPTS_DIR / "db_query.py"))
-        .file_path("db_query.py")  # override to relative for build output
-        .build()
-    )
-    file_search = (
-        ToolBuilder()
-        .from_script(str(SCRIPTS_DIR / "file_search.py"))
-        .file_path("file_search.py")
-        .build()
-    )
+    db_query = ToolBuilder().from_script(str(SCRIPTS_DIR / "db_query.py")).build()
+    file_search = ToolBuilder().from_script(str(SCRIPTS_DIR / "file_search.py")).build()
 
     # -- Skills --
     data_skill = (
@@ -64,11 +55,16 @@ def main() -> None:
         .config(config)
         .tool(db_query)
         .tool(file_search)
-        .skill(data_skill)
+        .skill(
+            data_skill,
+            instruction="Use when you need to query databases or search files",
+        )
         .system_prompt(
             "You are a thorough code reviewer. Examine code for correctness, "
             "security, performance, and style. Be specific in your feedback."
         )
+        .mode("primary")
+        .permissions(AgentPermissions(doom_loop="deny"))
         .build()
     )
 

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import importlib.util
 import inspect
+import os
 import sys
 from typing import TYPE_CHECKING
 
 from open_agent_compiler._types import (
+    ActionDefinition,
     ParameterDefinition,
     StreamFormat,
     ToolDefinition,
@@ -46,10 +48,8 @@ class ToolBuilder(Builder[ToolDefinition]):
     def reset(self) -> ToolBuilder:
         self._name: str | None = None
         self._description: str | None = None
-        self._file_path: str | None = None
-        self._parameters: list[ParameterDefinition] = []
-        self._stream_format: StreamFormat | None = None
-        self._stream_field: str | None = None
+        self._actions: list[ActionDefinition] = []
+        self._script_files: list[str] = []
         return self
 
     def name(self, name: str) -> ToolBuilder:
@@ -60,20 +60,12 @@ class ToolBuilder(Builder[ToolDefinition]):
         self._description = description
         return self
 
-    def file_path(self, file_path: str) -> ToolBuilder:
-        self._file_path = file_path
+    def action(self, action: ActionDefinition) -> ToolBuilder:
+        self._actions.append(action)
         return self
 
-    def parameter(self, param: ParameterDefinition) -> ToolBuilder:
-        self._parameters.append(param)
-        return self
-
-    def stream_format(self, fmt: StreamFormat) -> ToolBuilder:
-        self._stream_format = fmt
-        return self
-
-    def stream_field(self, field: str) -> ToolBuilder:
-        self._stream_field = field
+    def script_file(self, path: str) -> ToolBuilder:
+        self._script_files.append(path)
         return self
 
     def from_script(self, file_path: str) -> ToolBuilder:
@@ -118,23 +110,16 @@ class ToolBuilder(Builder[ToolDefinition]):
         """Extract ToolDefinition fields from a ScriptTool subclass."""
         self._name = getattr(handler_cls, "name", None)
         self._description = getattr(handler_cls, "description", None)
-        self._file_path = file_path
 
-        # Stream config
-        stream_fmt = getattr(handler_cls, "stream_format", None)
-        if stream_fmt is not None:
-            self._stream_format = StreamFormat(stream_fmt)
-        stream_fld = getattr(handler_cls, "stream_field", None)
-        if stream_fld is not None:
-            self._stream_field = stream_fld
+        basename = os.path.basename(file_path)
+        self._script_files = [basename]
 
         # Extract parameters from Pydantic Input model
         input_type = handler_cls._get_input_type()
-        self._parameters = []
+        params: list[ParameterDefinition] = []
         for field_name, field_info in input_type.model_fields.items():
             annotation = field_info.annotation
             param_type = _ANNOTATION_MAP.get(annotation, "str")  # type: ignore[arg-type]
-            # Also try the __name__ attribute for type objects
             if annotation not in _ANNOTATION_MAP and hasattr(annotation, "__name__"):
                 param_type = _ANNOTATION_MAP.get(annotation.__name__, "str")  # type: ignore[union-attr]
 
@@ -142,7 +127,7 @@ class ToolBuilder(Builder[ToolDefinition]):
             if not field_info.is_required() and field_info.default is not None:
                 default_val = str(field_info.default)
 
-            self._parameters.append(
+            params.append(
                 ParameterDefinition(
                     name=field_name,
                     description=field_info.description or "",
@@ -152,26 +137,52 @@ class ToolBuilder(Builder[ToolDefinition]):
                 )
             )
 
+        # Build description parts
+        desc = getattr(handler_cls, "description", "") or ""
+
+        # Stream config info
+        stream_fmt = getattr(handler_cls, "stream_format", None)
+        stream_fld = getattr(handler_cls, "stream_field", None)
+        stream_info = ""
+        if stream_fmt is not None and stream_fld is not None:
+            fmt_val = StreamFormat(stream_fmt).value
+            stream_info = (
+                f" Supports stdin streaming (`{stream_fld}` via stdin as {fmt_val})."
+            )
+
+        action_desc = desc + stream_info
+
+        # Build usage example from parameters
+        args_parts: list[str] = []
+        for p in params:
+            if p.required:
+                args_parts.append(f'--{p.name} "<{p.param_type}>"')
+            else:
+                args_parts.append(f"--{p.name} <{p.param_type}>")
+        args_str = " ".join(args_parts)
+
+        command_pattern = f"uv run scripts/{basename} *"
+        usage_example = f"uv run scripts/{basename} {args_str}"
+
+        self._actions = [
+            ActionDefinition(
+                command_pattern=command_pattern,
+                description=action_desc,
+                usage_example=usage_example,
+            ),
+        ]
+
     def build(self) -> ToolDefinition:
         if not self._name:
             raise ValueError("ToolDefinition requires a name")
         if not self._description:
             raise ValueError("ToolDefinition requires a description")
-        if not self._file_path:
-            raise ValueError("ToolDefinition requires a file_path")
-
-        param_names = {p.name for p in self._parameters}
-        if self._stream_field and self._stream_field not in param_names:
-            raise ValueError(
-                f"stream_field {self._stream_field!r} does not match "
-                f"any parameter name: {param_names}"
-            )
+        if not self._actions:
+            raise ValueError("ToolDefinition requires at least one action")
 
         return ToolDefinition(
             name=self._name,
             description=self._description,
-            file_path=self._file_path,
-            parameters=tuple(self._parameters),
-            stream_format=self._stream_format,
-            stream_field=self._stream_field,
+            actions=tuple(self._actions),
+            script_files=tuple(self._script_files),
         )

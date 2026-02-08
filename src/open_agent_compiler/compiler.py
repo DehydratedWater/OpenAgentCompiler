@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from open_agent_compiler._types import AgentDefinition, ToolDefinition
+from open_agent_compiler._types import (
+    AgentDefinition,
+    AgentPermissions,
+    ToolDefinition,
+    ToolPermissions,
+)
 
 
 def compile_agent(
@@ -33,85 +38,101 @@ def _collect_all_tools(defn: AgentDefinition) -> list[ToolDefinition]:
     return tools
 
 
-def _build_bash_permissions(tools: list[ToolDefinition]) -> dict[str, str]:
-    """Build bash permission dict: deny all, then allow each tool script."""
-    perms: dict[str, str] = {"*": "deny"}
-    for t in tools:
-        perms[f"uv run scripts/{t.file_path} *"] = "allow"
-    return perms
-
-
-def _generate_tool_docs(tool: ToolDefinition) -> str:
-    """Generate CLI usage documentation for a single tool."""
-    lines: list[str] = []
-    lines.append(f"### {tool.name}")
-    lines.append(f"{tool.description}")
-    lines.append("")
-
-    # CLI usage
-    args_parts: list[str] = []
-    for p in tool.parameters:
-        if p.required:
-            args_parts.append(f"--{p.name} <{p.param_type}>")
-        else:
-            default_str = f" (default: {p.default})" if p.default else ""
-            args_parts.append(f"[--{p.name} <{p.param_type}>{default_str}]")
-    args_str = " ".join(args_parts)
-    lines.append("```bash")
-    lines.append(f"uv run scripts/{tool.file_path} {args_str}")
-    lines.append("```")
-
-    # Stdin streaming example
-    if tool.stream_format and tool.stream_field:
+def _generate_action_docs(tool: ToolDefinition) -> str:
+    """Generate markdown documentation from a tool's actions."""
+    lines: list[str] = [f"### {tool.name}", tool.description, ""]
+    for action in tool.actions:
+        lines.append(action.description)
         lines.append("")
-        fmt_val = tool.stream_format.value
-        lines.append(f"Stdin streaming (`{tool.stream_field}` via stdin as {fmt_val}):")
-        other_args = " ".join(
-            f"--{p.name} <{p.param_type}>"
-            for p in tool.parameters
-            if p.name != tool.stream_field and p.required
-        )
-        other_str = f" {other_args}" if other_args else ""
         lines.append("```bash")
-        lines.append(f'echo "data" | uv run scripts/{tool.file_path}{other_str}')
+        lines.append(action.usage_example)
         lines.append("```")
-
-    # JSON mode
-    lines.append("")
-    lines.append("JSON stdin mode:")
-    lines.append("```bash")
-    lines.append(f"echo '{{...}}' | uv run scripts/{tool.file_path} --json")
-    lines.append("```")
-
-    # Parameters table
-    if tool.parameters:
         lines.append("")
-        lines.append("Parameters:")
-        for p in tool.parameters:
-            req = "required" if p.required else "optional"
-            default_str = f", default: {p.default}" if p.default else ""
-            lines.append(
-                f"- `{p.name}` ({p.param_type}, {req}{default_str}): {p.description}"
-            )
-
     return "\n".join(lines)
+
+
+def _tool_permissions_to_dict(perms: ToolPermissions) -> dict[str, Any]:
+    """Convert a ToolPermissions frozen dataclass to a dict."""
+    result: dict[str, Any] = {}
+    if perms.bash:
+        result["bash"] = {pattern: rule for pattern, rule in perms.bash}
+    result["read"] = perms.read
+    result["write"] = perms.write
+    result["edit"] = perms.edit
+    result["task"] = perms.task
+    result["todoread"] = perms.todoread
+    result["todowrite"] = perms.todowrite
+    if perms.skill:
+        result["skill"] = {name: rule for name, rule in perms.skill}
+    for mcp_pattern, allowed in perms.mcp:
+        result[mcp_pattern] = allowed
+    return result
+
+
+def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
+    """Convert an AgentPermissions frozen dataclass to a dict."""
+    result: dict[str, Any] = {"doom_loop": perms.doom_loop}
+    if perms.task:
+        result["task"] = {pattern: rule for pattern, rule in perms.task}
+    return result
+
+
+def _auto_tool_permissions(
+    all_tools: list[ToolDefinition],
+    defn: AgentDefinition,
+) -> dict[str, Any]:
+    """Auto-generate tool permission dict from tools and skills."""
+    # Bash permissions from tool actions — deny first
+    bash_perms: dict[str, str] = {"*": "deny"}
+    for t in all_tools:
+        for action in t.actions:
+            bash_perms[action.command_pattern] = "allow"
+
+    result: dict[str, Any] = {
+        "bash": bash_perms,
+        "read": False,
+        "write": False,
+        "edit": False,
+        "task": False,
+        "todoread": False,
+        "todowrite": False,
+    }
+
+    # Skill permissions from agent's skills — deny first
+    if defn.skills:
+        skill_perms: dict[str, str] = {"*": "deny"}
+        for s in defn.skills:
+            skill_perms[s.name] = "allow"
+        result["skill"] = skill_perms
+
+    return result
 
 
 def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     all_tools = _collect_all_tools(defn)
-    bash_perms = _build_bash_permissions(all_tools)
-    scripts = [t.file_path for t in all_tools]
+
+    # Collect all script files
+    scripts: list[str] = []
+    for t in all_tools:
+        for sf in t.script_files:
+            if sf not in scripts:
+                scripts.append(sf)
 
     # Build tool docs lookup
     tool_docs: dict[str, str] = {}
     for t in all_tools:
-        tool_docs[t.name] = _generate_tool_docs(t)
+        tool_docs[t.name] = _generate_action_docs(t)
+
+    # Build tool permissions
+    if defn.tool_permissions is not None:
+        tool_perms = _tool_permissions_to_dict(defn.tool_permissions)
+    else:
+        tool_perms = _auto_tool_permissions(all_tools, defn)
 
     # Build skills with auto-appended tool usage docs
     compiled_skills: list[dict[str, Any]] = []
     for s in defn.skills:
         skill_tool_names = [t.name for t in s.tools]
-        # Auto-append tool usage docs
         instructions = s.instructions
         relevant_docs = [
             tool_docs[name] for name in skill_tool_names if name in tool_docs
@@ -127,22 +148,34 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
             }
         )
 
-    return {
+    # Build agent section
+    agent_section: dict[str, Any] = {
+        "name": defn.name,
+        "description": defn.description,
+        "system_prompt": defn.system_prompt,
+    }
+    if defn.mode:
+        agent_section["mode"] = defn.mode
+
+    result: dict[str, Any] = {
         "backend": "opencode",
-        "agent": {
-            "name": defn.name,
-            "description": defn.description,
-            "system_prompt": defn.system_prompt,
-        },
+        "agent": agent_section,
         "model": {
             "id": defn.config.model,
             "provider": str(defn.config.provider),
             "temperature": defn.config.temperature,
             "max_tokens": defn.config.max_tokens,
         },
-        "tools": {
-            "bash": bash_perms,
-        },
+        "tool": tool_perms,
         "scripts": scripts,
         "skills": compiled_skills,
     }
+
+    if defn.permissions is not None:
+        result["permission"] = _agent_permissions_to_dict(defn.permissions)
+
+    # Skill instructions for the agent body
+    if defn.skill_instructions:
+        result["skill_instructions"] = list(defn.skill_instructions)
+
+    return result

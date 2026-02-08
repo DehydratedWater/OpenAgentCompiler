@@ -34,15 +34,45 @@ class ParameterDefinition:
 
 
 @dataclass(frozen=True, slots=True)
+class ActionDefinition:
+    """A single invocable bash command action within a tool."""
+
+    command_pattern: str  # "uv run scripts/send_message.py *"
+    description: str  # "Send a text message to Telegram"
+    usage_example: str  # 'uv run scripts/send_message.py "Hello!"'
+
+
+@dataclass(frozen=True, slots=True)
+class ToolPermissions:
+    """Full tool: permission block for an agent."""
+
+    bash: tuple[tuple[str, str], ...] = ()  # (pattern, "allow"|"deny"|"ask")
+    read: bool = False
+    write: bool = False
+    edit: bool = False
+    task: bool = False
+    todoread: bool = False
+    todowrite: bool = False
+    skill: tuple[tuple[str, str], ...] = ()  # (name, "allow"|"deny")
+    mcp: tuple[tuple[str, bool], ...] = ()  # ("zai-mcp-*", False)
+
+
+@dataclass(frozen=True, slots=True)
+class AgentPermissions:
+    """The permission: section in agent frontmatter."""
+
+    doom_loop: str = "deny"  # "allow" | "deny"
+    task: tuple[tuple[str, str], ...] = ()  # agent path patterns
+
+
+@dataclass(frozen=True, slots=True)
 class ToolDefinition:
-    """Immutable description of a script-based tool an agent can invoke."""
+    """Immutable description of a tool an agent can invoke."""
 
     name: str
     description: str
-    file_path: str
-    parameters: tuple[ParameterDefinition, ...] = ()
-    stream_format: StreamFormat | None = None
-    stream_field: str | None = None
+    actions: tuple[ActionDefinition, ...] = ()
+    script_files: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,4 +104,8 @@ class AgentDefinition:
     config: AgentConfig = field(default_factory=AgentConfig)
     tools: tuple[ToolDefinition, ...] = ()
     skills: tuple[SkillDefinition, ...] = ()
+    skill_instructions: tuple[tuple[str, str], ...] = ()  # (name, when)
     system_prompt: str = ""
+    tool_permissions: ToolPermissions | None = None
+    permissions: AgentPermissions | None = None
+    mode: str = ""

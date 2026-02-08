@@ -2,8 +2,23 @@
 
 import pytest
 
-from open_agent_compiler._types import ToolDefinition
+from open_agent_compiler._types import ActionDefinition, ToolDefinition
 from open_agent_compiler.builders import SkillBuilder
+
+
+def _make_tool(name: str) -> ToolDefinition:
+    return ToolDefinition(
+        name=name,
+        description=f"Tool {name}",
+        actions=(
+            ActionDefinition(
+                command_pattern=f"uv run scripts/{name}.py *",
+                description=f"Run {name}",
+                usage_example=f"uv run scripts/{name}.py",
+            ),
+        ),
+        script_files=(f"{name}.py",),
+    )
 
 
 class TestSkillBuilder:
@@ -15,12 +30,8 @@ class TestSkillBuilder:
         assert skill.tools == ()
 
     def test_build_with_tools(self, skill_builder: SkillBuilder):
-        t1 = ToolDefinition(
-            name="grep", description="Search files", file_path="grep.py"
-        )
-        t2 = ToolDefinition(
-            name="read_file", description="Read a file", file_path="read_file.py"
-        )
+        t1 = _make_tool("grep")
+        t2 = _make_tool("read_file")
         skill = (
             skill_builder.name("review")
             .description("Review code")

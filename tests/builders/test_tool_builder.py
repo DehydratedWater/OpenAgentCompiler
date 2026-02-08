@@ -2,10 +2,7 @@
 
 import pytest
 
-from open_agent_compiler._types import (
-    ParameterDefinition,
-    StreamFormat,
-)
+from open_agent_compiler._types import ActionDefinition
 from open_agent_compiler.builders import ToolBuilder
 
 
@@ -46,40 +43,33 @@ def _write_handler_script(tmp_path, *, name="my_tool", stream=False):
 
 class TestToolBuilder:
     def test_build_manual(self, tool_builder: ToolBuilder):
+        action = ActionDefinition(
+            command_pattern="uv run scripts/grep.py *",
+            description="Search files for patterns",
+            usage_example='uv run scripts/grep.py --pattern "<str>"',
+        )
         tool = (
-            tool_builder.name("grep")
-            .description("Search files")
-            .file_path("grep.py")
-            .parameter(
-                ParameterDefinition(
-                    name="pattern",
-                    description="Regex pattern",
-                    param_type="str",
-                )
-            )
-            .build()
+            tool_builder.name("grep").description("Search files").action(action).build()
         )
         assert tool.name == "grep"
         assert tool.description == "Search files"
-        assert tool.file_path == "grep.py"
-        assert len(tool.parameters) == 1
-        assert tool.parameters[0].name == "pattern"
+        assert len(tool.actions) == 1
+        assert tool.actions[0].command_pattern == "uv run scripts/grep.py *"
 
     def test_from_script(self, tool_builder: ToolBuilder, tmp_path):
         script_path = _write_handler_script(tmp_path, name="search")
         tool = tool_builder.from_script(script_path).build()
         assert tool.name == "search"
         assert tool.description == "A test tool"
-        assert tool.file_path == script_path
-        assert len(tool.parameters) == 2
-        names = {p.name for p in tool.parameters}
-        assert names == {"query", "limit"}
+        assert len(tool.actions) == 1
+        assert tool.actions[0].command_pattern == "uv run scripts/search.py *"
+        assert "search.py" in tool.script_files
 
     def test_from_script_stream_config(self, tool_builder: ToolBuilder, tmp_path):
         script_path = _write_handler_script(tmp_path, name="stream_tool", stream=True)
         tool = tool_builder.from_script(script_path).build()
-        assert tool.stream_format == StreamFormat.TEXT
-        assert tool.stream_field == "query"
+        assert "stdin streaming" in tool.actions[0].description
+        assert "stdin as text" in tool.actions[0].description
 
     def test_from_handler(self, tool_builder: ToolBuilder):
         from pydantic import BaseModel, Field
@@ -101,10 +91,9 @@ class TestToolBuilder:
 
         tool = tool_builder.from_handler(HandlerTool, "handler_tool.py").build()
         assert tool.name == "handler_tool"
-        assert tool.file_path == "handler_tool.py"
-        assert len(tool.parameters) == 1
-        assert tool.parameters[0].name == "text"
-        assert tool.parameters[0].param_type == "str"
+        assert len(tool.actions) == 1
+        assert "handler_tool.py" in tool.script_files
+        assert "--text" in tool.actions[0].usage_example
 
     def test_manual_override_after_introspection(
         self, tool_builder: ToolBuilder, tmp_path
@@ -119,51 +108,47 @@ class TestToolBuilder:
         assert tool.name == "overridden"
         assert tool.description == "Custom description"
 
-    def test_parameter_extraction_types(self, tool_builder: ToolBuilder, tmp_path):
-        script_path = _write_handler_script(tmp_path, name="typed_tool")
-        tool = tool_builder.from_script(script_path).build()
-        param_map = {p.name: p for p in tool.parameters}
-        assert param_map["query"].param_type == "str"
-        assert param_map["query"].required is True
-        assert param_map["limit"].param_type == "int"
-        assert param_map["limit"].required is False
-        assert param_map["limit"].default == "10"
+    def test_script_file_method(self, tool_builder: ToolBuilder):
+        action = ActionDefinition(
+            command_pattern="uv run scripts/x.py *",
+            description="Do X",
+            usage_example="uv run scripts/x.py",
+        )
+        tool = (
+            tool_builder.name("x")
+            .description("d")
+            .action(action)
+            .script_file("x.py")
+            .build()
+        )
+        assert "x.py" in tool.script_files
 
     def test_fluent_returns_self(self, tool_builder: ToolBuilder):
         assert tool_builder.name("x") is tool_builder
         assert tool_builder.description("d") is tool_builder
-        assert tool_builder.file_path("f.py") is tool_builder
-        assert (
-            tool_builder.parameter(
-                ParameterDefinition(name="p", description="d", param_type="str")
-            )
-            is tool_builder
+        action = ActionDefinition(
+            command_pattern="*", description="d", usage_example="x"
         )
+        assert tool_builder.action(action) is tool_builder
+        assert tool_builder.script_file("f.py") is tool_builder
 
     def test_missing_name_raises(self, tool_builder: ToolBuilder):
+        action = ActionDefinition(
+            command_pattern="*", description="d", usage_example="x"
+        )
         with pytest.raises(ValueError, match="name"):
-            tool_builder.description("d").file_path("f.py").build()
+            tool_builder.description("d").action(action).build()
 
     def test_missing_description_raises(self, tool_builder: ToolBuilder):
+        action = ActionDefinition(
+            command_pattern="*", description="d", usage_example="x"
+        )
         with pytest.raises(ValueError, match="description"):
-            tool_builder.name("n").file_path("f.py").build()
+            tool_builder.name("n").action(action).build()
 
-    def test_missing_file_path_raises(self, tool_builder: ToolBuilder):
-        with pytest.raises(ValueError, match="file_path"):
+    def test_missing_action_raises(self, tool_builder: ToolBuilder):
+        with pytest.raises(ValueError, match="action"):
             tool_builder.name("n").description("d").build()
-
-    def test_invalid_stream_field_raises(self, tool_builder: ToolBuilder):
-        with pytest.raises(ValueError, match="stream_field"):
-            (
-                tool_builder.name("n")
-                .description("d")
-                .file_path("f.py")
-                .parameter(
-                    ParameterDefinition(name="x", description="d", param_type="str")
-                )
-                .stream_field("nonexistent")
-                .build()
-            )
 
     def test_no_script_tool_subclass_raises(self, tool_builder: ToolBuilder, tmp_path):
         script = "x = 1\n"
@@ -173,12 +158,18 @@ class TestToolBuilder:
             tool_builder.from_script(str(path))
 
     def test_reset_clears_state(self, tool_builder: ToolBuilder):
-        tool_builder.name("grep").description("Search").file_path("f.py")
+        action = ActionDefinition(
+            command_pattern="*", description="d", usage_example="x"
+        )
+        tool_builder.name("grep").description("Search").action(action)
         tool_builder.reset()
         with pytest.raises(ValueError, match="name"):
             tool_builder.build()
 
     def test_built_tool_is_frozen(self, tool_builder: ToolBuilder):
-        tool = tool_builder.name("x").description("d").file_path("f.py").build()
+        action = ActionDefinition(
+            command_pattern="*", description="d", usage_example="x"
+        )
+        tool = tool_builder.name("x").description("d").action(action).build()
         with pytest.raises(AttributeError):
             tool.name = "y"  # type: ignore[misc]

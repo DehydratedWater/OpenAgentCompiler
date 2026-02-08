@@ -5,12 +5,11 @@ from typing import Any
 import pytest
 
 from open_agent_compiler._types import (
+    ActionDefinition,
     AgentConfig,
     AgentDefinition,
     ModelProvider,
-    ParameterDefinition,
     SkillDefinition,
-    StreamFormat,
     ToolDefinition,
 )
 from open_agent_compiler.builders import (
@@ -27,15 +26,14 @@ def sample_tool() -> ToolDefinition:
     return ToolDefinition(
         name="read_file",
         description="Read a file from disk",
-        file_path="read_file.py",
-        parameters=(
-            ParameterDefinition(
-                name="path",
-                description="Path to file",
-                param_type="str",
-                required=True,
+        actions=(
+            ActionDefinition(
+                command_pattern="uv run scripts/read_file.py *",
+                description="Read a file from disk",
+                usage_example='uv run scripts/read_file.py --path "<str>"',
             ),
         ),
+        script_files=("read_file.py",),
     )
 
 
@@ -44,24 +42,20 @@ def sample_tool_with_stream() -> ToolDefinition:
     return ToolDefinition(
         name="db_query",
         description="Execute SQL queries",
-        file_path="db_query.py",
-        parameters=(
-            ParameterDefinition(
-                name="sql",
-                description="SQL query to execute",
-                param_type="str",
-                required=True,
-            ),
-            ParameterDefinition(
-                name="timeout",
-                description="Timeout in seconds",
-                param_type="int",
-                required=False,
-                default="60",
+        actions=(
+            ActionDefinition(
+                command_pattern="uv run scripts/db_query.py *",
+                description=(
+                    "Execute SQL queries."
+                    " Supports stdin streaming"
+                    " (`sql` via stdin as text)."
+                ),
+                usage_example=(
+                    'uv run scripts/db_query.py --sql "<str>" --timeout <int>'
+                ),
             ),
         ),
-        stream_format=StreamFormat.TEXT,
-        stream_field="sql",
+        script_files=("db_query.py",),
     )
 
 
@@ -130,6 +124,7 @@ def sample_compiled(
         config=sample_agent.config,
         tools=sample_agent.tools,
         skills=(sample_skill,),
+        skill_instructions=((sample_skill.name, "Use when reviewing code"),),
         system_prompt=sample_agent.system_prompt,
     )
     return compile_agent(agent_with_skill, target="opencode")

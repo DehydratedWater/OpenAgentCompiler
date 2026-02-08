@@ -32,7 +32,7 @@ Builder -> AgentDefinition -> Compiler -> backend dict -> Writer -> disk -> Mana
 
 ```
 src/open_agent_compiler/       # package root (src-layout)
-    _types.py                  # AgentDefinition, AgentConfig, ToolDefinition, ModelProvider, StreamFormat, ParameterDefinition
+    _types.py                  # AgentDefinition, AgentConfig, ToolDefinition, ActionDefinition, ToolPermissions, AgentPermissions, ModelProvider, StreamFormat, ParameterDefinition
     compiler.py                # compile_agent()
     runtime.py                 # ScriptTool base class (CLI entry point for handler scripts)
     builders/
