@@ -7,6 +7,7 @@ from open_agent_compiler._types import (
     AgentDefinition,
     AgentPermissions,
     SkillDefinition,
+    SubagentDefinition,
     ToolDefinition,
     ToolPermissions,
 )
@@ -354,3 +355,40 @@ class TestCompiler:
         agent = AgentDefinition(name="test", description="test")
         result = compile_agent(agent)
         assert "temperature" not in result["agent"]
+
+    def test_subagent_section_appears_when_subagents_exist(self):
+        """Auto-generated subagent section is appended to system prompt."""
+        subs = (
+            SubagentDefinition(
+                name="persona/quick_ack",
+                description="Quick acknowledgment",
+                notes="Sends immediate response and routing decision.",
+            ),
+            SubagentDefinition(
+                name="persona/thinking",
+                description="Mental processes",
+            ),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            system_prompt="You are a test agent.",
+            subagents=subs,
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "## Available Subagents" in prompt
+        assert "### persona/quick_ack — Quick acknowledgment" in prompt
+        assert "Sends immediate response and routing decision." in prompt
+        assert "### persona/thinking — Mental processes" in prompt
+
+    def test_subagent_section_absent_when_no_subagents(self):
+        """No subagent section when no subagents defined."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            system_prompt="You are a test agent.",
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "## Available Subagents" not in prompt

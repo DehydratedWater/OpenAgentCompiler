@@ -344,16 +344,6 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
         parts.append(defn.preamble)
         parts.append("")
 
-    # Subagents section
-    if defn.subagents:
-        parts.append("## Your Subagents")
-        parts.append("")
-        for i, sa in enumerate(defn.subagents):
-            parts.append(f"### {i}. `{sa.name}` ({sa.description})")
-            if sa.notes:
-                parts.append(sa.notes)
-            parts.append("")
-
     # Skills section
     if defn.skills:
         parts.append("## Your Skills")
@@ -610,6 +600,19 @@ def _merge_tool_permissions(
     return result
 
 
+def _compile_subagent_section(defn: AgentDefinition) -> str:
+    """Generate a markdown section documenting available subagents."""
+    if not defn.subagents:
+        return ""
+    lines: list[str] = ["## Available Subagents", ""]
+    for sa in defn.subagents:
+        lines.append(f"### {sa.name} — {sa.description}")
+        if sa.notes:
+            lines.append(sa.notes)
+        lines.append("")
+    return "\n".join(lines)
+
+
 def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     all_tools = _collect_all_tools(defn)
 
@@ -653,6 +656,11 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     system_prompt = defn.system_prompt
     if defn.workflow:
         system_prompt = _compile_workflow_prompt(defn)
+
+    # Append auto-generated subagent documentation
+    subagent_section = _compile_subagent_section(defn)
+    if subagent_section:
+        system_prompt = system_prompt.rstrip("\n") + "\n\n" + subagent_section
 
     # Build agent section (drives .md frontmatter)
     agent_section: dict[str, Any] = {
