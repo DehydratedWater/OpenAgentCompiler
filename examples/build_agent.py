@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 from open_agent_compiler.builders import (
@@ -14,6 +15,7 @@ from open_agent_compiler.builders import (
 from open_agent_compiler.compiler import compile_agent
 
 BUILD_DIR = Path(__file__).resolve().parent.parent / "build"
+SCRIPTS_DIR = Path(__file__).resolve().parent / "scripts"
 
 
 def _write_opencode_json(compiled: dict[str, object]) -> None:
@@ -24,7 +26,7 @@ def _write_opencode_json(compiled: dict[str, object]) -> None:
         "provider": model["provider"],  # type: ignore[index]
         "model": model["id"],  # type: ignore[index]
         "theme": "dark",
-        "tools": {t["name"]: {"allow": True} for t in tools},  # type: ignore[union-attr]
+        "tool": tools,  # bash permission dict
     }
     path = BUILD_DIR / "opencode.json"
     path.write_text(json.dumps(config, indent=2) + "\n")
@@ -80,56 +82,46 @@ def _write_skill_mds(compiled: dict[str, object]) -> None:
         print(f"  {path}")
 
 
+def _copy_scripts(compiled: dict[str, object]) -> None:
+    """Copy handler scripts to build/scripts/."""
+    scripts_out = BUILD_DIR / "scripts"
+    scripts_out.mkdir(parents=True, exist_ok=True)
+    for script_file in compiled["scripts"]:  # type: ignore[union-attr]
+        src = SCRIPTS_DIR / script_file  # type: ignore[arg-type]
+        dst = scripts_out / script_file  # type: ignore[arg-type]
+        if src.exists():
+            shutil.copy2(src, dst)
+            print(f"  {dst}")
+        else:
+            print(f"  WARNING: {src} not found, skipping")
+
+
 def main() -> None:
-    # -- Tools --
-    read_file = (
+    # -- Tools (from handler scripts) --
+    db_query = (
         ToolBuilder()
-        .name("read_file")
-        .description("Read file contents from disk")
-        .parameter("path", {"type": "string"})
+        .from_script(str(SCRIPTS_DIR / "db_query.py"))
+        .file_path("db_query.py")  # override to relative for build output
         .build()
     )
-    grep = (
+    file_search = (
         ToolBuilder()
-        .name("grep")
-        .description("Search file contents with regex")
-        .parameter("pattern", {"type": "string"})
-        .parameter("path", {"type": "string"})
-        .build()
-    )
-    bash = (
-        ToolBuilder()
-        .name("bash")
-        .description("Execute a shell command")
-        .parameter("command", {"type": "string"})
+        .from_script(str(SCRIPTS_DIR / "file_search.py"))
+        .file_path("file_search.py")
         .build()
     )
 
     # -- Skills --
-    security_review = (
+    data_skill = (
         SkillBuilder()
-        .name("security-review")
-        .description("Review code for security vulnerabilities")
+        .name("data-query")
+        .description("Query databases and search files")
         .instructions(
-            "Scan the code for OWASP top-10 vulnerabilities.\n"
-            "Pay special attention to injection flaws, broken auth, and XSS.\n"
-            "Report findings with severity and remediation steps."
+            "Use the available tools to query databases and search files.\n"
+            "Always validate SQL before execution."
         )
-        .tool(read_file)
-        .tool(grep)
-        .build()
-    )
-    test_review = (
-        SkillBuilder()
-        .name("test-review")
-        .description("Verify test coverage and quality")
-        .instructions(
-            "Check that tests exist for all public functions.\n"
-            "Verify edge cases and error paths are covered.\n"
-            "Run the test suite and report failures."
-        )
-        .tool(read_file)
-        .tool(bash)
+        .tool(db_query)
+        .tool(file_search)
         .build()
     )
 
@@ -149,11 +141,9 @@ def main() -> None:
         .name("code-reviewer")
         .description("Automated code review agent")
         .config(config)
-        .tool(read_file)
-        .tool(grep)
-        .tool(bash)
-        .skill(security_review)
-        .skill(test_review)
+        .tool(db_query)
+        .tool(file_search)
+        .skill(data_skill)
         .system_prompt(
             "You are a thorough code reviewer. Examine code for correctness, "
             "security, performance, and style. Be specific in your feedback."
@@ -170,6 +160,7 @@ def main() -> None:
     _write_opencode_json(compiled)
     _write_agent_md(compiled)
     _write_skill_mds(compiled)
+    _copy_scripts(compiled)
     print("Done.")
 
 

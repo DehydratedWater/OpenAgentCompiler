@@ -6,7 +6,9 @@ from open_agent_compiler._types import (
     AgentConfig,
     AgentDefinition,
     ModelProvider,
+    ParameterDefinition,
     SkillDefinition,
+    StreamFormat,
     ToolDefinition,
 )
 from open_agent_compiler.builders import (
@@ -22,7 +24,41 @@ def sample_tool() -> ToolDefinition:
     return ToolDefinition(
         name="read_file",
         description="Read a file from disk",
-        parameters={"path": {"type": "string"}},
+        file_path="read_file.py",
+        parameters=(
+            ParameterDefinition(
+                name="path",
+                description="Path to file",
+                param_type="str",
+                required=True,
+            ),
+        ),
+    )
+
+
+@pytest.fixture
+def sample_tool_with_stream() -> ToolDefinition:
+    return ToolDefinition(
+        name="db_query",
+        description="Execute SQL queries",
+        file_path="db_query.py",
+        parameters=(
+            ParameterDefinition(
+                name="sql",
+                description="SQL query to execute",
+                param_type="str",
+                required=True,
+            ),
+            ParameterDefinition(
+                name="timeout",
+                description="Timeout in seconds",
+                param_type="int",
+                required=False,
+                default="60",
+            ),
+        ),
+        stream_format=StreamFormat.TEXT,
+        stream_field="sql",
     )
 
 

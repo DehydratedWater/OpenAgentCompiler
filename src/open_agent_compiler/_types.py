@@ -14,13 +14,35 @@ class ModelProvider(StrEnum):
     LOCAL = "local"
 
 
+class StreamFormat(StrEnum):
+    """Format for stdin streaming."""
+
+    JSON = "json"
+    XML = "xml"
+    TEXT = "text"
+
+
 @dataclass(frozen=True, slots=True)
-class ToolDefinition:
-    """Immutable description of a tool an agent can invoke."""
+class ParameterDefinition:
+    """Immutable description of a single tool parameter."""
 
     name: str
     description: str
-    parameters: dict[str, object] = field(default_factory=dict)
+    param_type: str  # "str", "int", "float", "bool"
+    required: bool = True
+    default: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ToolDefinition:
+    """Immutable description of a script-based tool an agent can invoke."""
+
+    name: str
+    description: str
+    file_path: str
+    parameters: tuple[ParameterDefinition, ...] = ()
+    stream_format: StreamFormat | None = None
+    stream_field: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

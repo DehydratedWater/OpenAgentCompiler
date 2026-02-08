@@ -15,8 +15,12 @@ class TestSkillBuilder:
         assert skill.tools == ()
 
     def test_build_with_tools(self, skill_builder: SkillBuilder):
-        t1 = ToolDefinition(name="grep", description="Search files")
-        t2 = ToolDefinition(name="read_file", description="Read a file")
+        t1 = ToolDefinition(
+            name="grep", description="Search files", file_path="grep.py"
+        )
+        t2 = ToolDefinition(
+            name="read_file", description="Read a file", file_path="read_file.py"
+        )
         skill = (
             skill_builder.name("review")
             .description("Review code")

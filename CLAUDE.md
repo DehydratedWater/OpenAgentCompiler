@@ -31,13 +31,14 @@ Builder -> AgentDefinition -> Compiler -> backend dict -> Manager -> external pr
 
 ```
 src/open_agent_compiler/       # package root (src-layout)
-    _types.py                  # AgentDefinition, AgentConfig, ToolDefinition, ModelProvider
+    _types.py                  # AgentDefinition, AgentConfig, ToolDefinition, ModelProvider, StreamFormat, ParameterDefinition
     compiler.py                # compile_agent()
+    runtime.py                 # ScriptTool base class (CLI entry point for handler scripts)
     builders/
         _base.py               # Builder[T] Protocol
         agent.py               # AgentBuilder
         config.py              # ConfigBuilder
-        tool.py                # ToolBuilder
+        tool.py                # ToolBuilder (from_script, from_handler introspection)
     managers/
         _base.py               # Manager Protocol
         opencode_server.py     # OpenCodeServerManager (HTTP backend)
@@ -46,6 +47,7 @@ tests/
     builders/                  # builder tests
     managers/                  # manager tests
     test_compiler.py           # compiler tests
+    test_runtime.py            # ScriptTool runtime tests
 ```
 
 ## Build & test

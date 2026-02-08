@@ -51,8 +51,8 @@ class TestAgentBuilder:
             agent_builder.build()
 
     def test_multiple_tools(self, agent_builder: AgentBuilder):
-        t1 = ToolDefinition(name="a", description="A")
-        t2 = ToolDefinition(name="b", description="B")
+        t1 = ToolDefinition(name="a", description="A", file_path="a.py")
+        t2 = ToolDefinition(name="b", description="B", file_path="b.py")
         agent = agent_builder.name("bot").description("d").tool(t1).tool(t2).build()
         assert len(agent.tools) == 2
         assert agent.tools[0].name == "a"
