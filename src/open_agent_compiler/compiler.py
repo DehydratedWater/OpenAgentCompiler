@@ -7,6 +7,7 @@ from typing import Any
 from open_agent_compiler._types import (
     AgentDefinition,
     AgentPermissions,
+    SubagentDefinition,
     ToolDefinition,
     ToolPermissions,
     WorkflowStepDefinition,
@@ -435,6 +436,26 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
     return "\n".join(parts)
 
 
+def _compile_subagent_md(sa: SubagentDefinition) -> dict[str, Any]:
+    """Compile a SubagentDefinition into a standalone agent dict for writing."""
+    # Extract directory and filename from name like "persona/twily_quick_ack-glm-45-air"
+    if "/" in sa.name:
+        parts = sa.name.rsplit("/", 1)
+        agent_dir = parts[0]
+        filename = parts[1]
+    else:
+        agent_dir = ""
+        filename = sa.name
+
+    return {
+        "name": filename,
+        "agent_dir": agent_dir,
+        "description": sa.description,
+        "mode": "subagent",
+        "notes": sa.notes,
+    }
+
+
 def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     all_tools = _collect_all_tools(defn)
 
@@ -502,6 +523,8 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
         agent_section["steps"] = defn.steps
     if defn.options:
         agent_section["options"] = {k: v for k, v in defn.options}
+    if defn.agent_dir:
+        agent_section["agent_dir"] = defn.agent_dir
 
     # Build config dict (full opencode.json content)
     config_dict = _build_config_dict(defn)
@@ -518,6 +541,12 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     # Enriched skill instructions
     if defn.skill_instructions:
         result["skill_instructions"] = _build_enriched_skill_instructions(defn)
+
+    # Compiled subagent dicts for standalone .md files
+    if defn.subagents:
+        result["subagents_compiled"] = [
+            _compile_subagent_md(sa) for sa in defn.subagents
+        ]
 
     # Agent permissions
     if defn.permissions is not None:

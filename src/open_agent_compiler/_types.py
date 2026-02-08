@@ -243,3 +243,4 @@ class AgentDefinition:
     subagents: tuple[SubagentDefinition, ...] = ()  # Triggerable subagents
     preamble: str = ""  # Content before workflow section
     postamble: str = ""  # Content after workflow section
+    agent_dir: str = ""  # Subdirectory under .opencode/agents/

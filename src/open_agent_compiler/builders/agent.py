@@ -43,6 +43,7 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._subagents: list[SubagentDefinition] = []
         self._preamble: str = ""
         self._postamble: str = ""
+        self._agent_dir: str = ""
         return self
 
     def name(self, name: str) -> AgentBuilder:
@@ -131,6 +132,10 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._postamble = text
         return self
 
+    def agent_dir(self, dir_name: str) -> AgentBuilder:
+        self._agent_dir = dir_name
+        return self
+
     def build(self) -> AgentDefinition:
         if not self._name:
             raise ValueError("AgentDefinition requires a name")
@@ -158,4 +163,5 @@ class AgentBuilder(Builder[AgentDefinition]):
             subagents=tuple(self._subagents),
             preamble=self._preamble,
             postamble=self._postamble,
+            agent_dir=self._agent_dir,
         )

@@ -35,6 +35,7 @@ class OpenCodeWriter:
         self._output_dir.mkdir(parents=True, exist_ok=True)
         self._write_opencode_json(compiled)
         self._write_agent_md(compiled)
+        self._write_subagent_mds(compiled)
         self._write_skill_mds(compiled)
         if self._scripts_dir is not None:
             self._copy_scripts(compiled)
@@ -58,6 +59,8 @@ class OpenCodeWriter:
         tool: dict[str, Any] = compiled["tool"]
 
         agents_dir = self._output_dir / ".opencode" / "agents"
+        if agent.get("agent_dir"):
+            agents_dir = agents_dir / agent["agent_dir"]
         agents_dir.mkdir(parents=True, exist_ok=True)
 
         lines: list[str] = [
@@ -140,6 +143,27 @@ class OpenCodeWriter:
 
         path = agents_dir / f"{name}.md"
         path.write_text("\n".join(lines))
+
+    def _write_subagent_mds(self, compiled: dict[str, Any]) -> None:
+        for sa in compiled.get("subagents_compiled", []):
+            agents_dir = self._output_dir / ".opencode" / "agents"
+            if sa.get("agent_dir"):
+                agents_dir = agents_dir / sa["agent_dir"]
+            agents_dir.mkdir(parents=True, exist_ok=True)
+
+            lines: list[str] = [
+                "---",
+                f"description: {sa['description']}",
+                "mode: subagent",
+                "---",
+                "",
+            ]
+            if sa.get("notes"):
+                lines.append(sa["notes"])
+                lines.append("")
+
+            path = agents_dir / f"{sa['name']}.md"
+            path.write_text("\n".join(lines))
 
     def _write_skill_mds(self, compiled: dict[str, Any]) -> None:
         for skill in compiled["skills"]:

@@ -235,6 +235,7 @@ def main() -> None:
         .name("twily-orchestrator")
         .description("Primary orchestrator for Twily persona")
         .mode("primary")
+        .agent_dir("persona")
         .config(config)
         .tool(timestamp)
         .skill(
