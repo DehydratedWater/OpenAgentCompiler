@@ -129,3 +129,12 @@ class TestAgentBuilder:
     def test_mode(self, agent_builder: AgentBuilder):
         agent = agent_builder.name("bot").description("d").mode("primary").build()
         assert agent.mode == "primary"
+
+    def test_workspace_setter(self, agent_builder: AgentBuilder):
+        agent = (
+            agent_builder.name("bot")
+            .description("d")
+            .workspace(".agent_workspace/{name}")
+            .build()
+        )
+        assert agent.workspace == ".agent_workspace/{name}"

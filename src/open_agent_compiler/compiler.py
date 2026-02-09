@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 from open_agent_compiler._types import (
@@ -137,6 +138,13 @@ def _auto_tool_permissions(
     result["task"] = False
     result["todoread"] = False
     result["todowrite"] = False
+
+    # Workspace — add workspace_io.py bash pattern, keep write/edit false
+    if defn.workspace:
+        resolved_ws = defn.workspace.replace("{name}", defn.name)
+        bash_perms[f"uv run scripts/workspace_io.py --workspace {resolved_ws} *"] = (
+            "allow"
+        )
 
     # Workflow needs progress tracking
     if defn.workflow:
@@ -613,7 +621,73 @@ def _compile_subagent_section(defn: AgentDefinition) -> str:
     return "\n".join(lines)
 
 
+def _compile_security_policy(defn: AgentDefinition) -> str:
+    """Generate an explicit SECURITY POLICY section for the agent's prompt."""
+    lines: list[str] = ["## SECURITY POLICY", ""]
+
+    # ALLOWED actions
+    lines.append("### ALLOWED actions")
+    lines.append("- Bash commands listed in your tool documentation above ONLY")
+    read_allowed = defn.tool_permissions and defn.tool_permissions.read
+    lines.append(f"- Read files: {'yes' if read_allowed else 'no'}")
+
+    if defn.workspace:
+        resolved_ws = defn.workspace.replace("{name}", defn.name)
+        lines.append(f"- Write files: only via workspace_io.py to `{resolved_ws}/`")
+    elif defn.tool_permissions and defn.tool_permissions.write:
+        lines.append("- Write files: yes (unrestricted)")
+    else:
+        lines.append("- Write files: no")
+
+    # Subagents
+    if defn.subagents:
+        sa_names = ", ".join(f"`{sa.name}`" for sa in defn.subagents)
+        lines.append(f"- Invoke subagents: {sa_names}")
+    else:
+        lines.append("- Invoke subagents: none")
+
+    # Skills
+    if defn.skills:
+        sk_names = ", ".join(f"`{s.name}`" for s in defn.skills)
+        lines.append(f"- Use skills: {sk_names}")
+    else:
+        lines.append("- Use skills: none")
+
+    lines.append("")
+
+    # FORBIDDEN section
+    lines.append("### FORBIDDEN — You MUST NOT:")
+    if defn.workspace:
+        lines.append(
+            "- Write or create files using the write/edit tools (they are disabled)"
+        )
+    lines.append("- Run bash commands not listed in your tool documentation")
+    lines.append(
+        "- Create files in the project root or any directory outside your workspace"
+    )
+    lines.append("- Modify system files or configuration")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
 def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
+    # Validation: workspace and write=True are mutually exclusive
+    has_explicit_write = (
+        defn.tool_permissions is not None and defn.tool_permissions.write
+    )
+    if defn.workspace and has_explicit_write:
+        raise ValueError(
+            "workspace and write=True are mutually exclusive — "
+            "workspace provides controlled writes via workspace_io.py"
+        )
+    if has_explicit_write and not defn.workspace:
+        warnings.warn(
+            f"Agent {defn.name!r} uses write=True without a workspace — "
+            "consider using .workspace() for sandboxed file I/O",
+            stacklevel=2,
+        )
+
     all_tools = _collect_all_tools(defn)
 
     # Collect all script files
@@ -622,6 +696,9 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
         for sf in t.script_files:
             if sf not in scripts:
                 scripts.append(sf)
+    # Add workspace_io.py when workspace is configured
+    if defn.workspace and "workspace_io.py" not in scripts:
+        scripts.append("workspace_io.py")
 
     # Build tool docs lookup
     tool_docs: dict[str, str] = {}
@@ -661,6 +738,10 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     subagent_section = _compile_subagent_section(defn)
     if subagent_section:
         system_prompt = system_prompt.rstrip("\n") + "\n\n" + subagent_section
+
+    # Append security policy
+    security_policy = _compile_security_policy(defn)
+    system_prompt = system_prompt.rstrip("\n") + "\n\n" + security_policy
 
     # Build agent section (drives .md frontmatter)
     agent_section: dict[str, Any] = {

@@ -1,5 +1,7 @@
 """Tests for the compiler module."""
 
+import warnings
+
 import pytest
 
 from open_agent_compiler._types import (
@@ -392,3 +394,128 @@ class TestCompiler:
         result = compile_agent(agent)
         prompt = result["agent"]["system_prompt"]
         assert "## Available Subagents" not in prompt
+
+
+class TestWorkspace:
+    def test_workspace_adds_bash_pattern(self):
+        """Workspace adds workspace_io.py pattern to bash permissions."""
+        agent = AgentDefinition(
+            name="my-agent",
+            description="test",
+            workspace=".agent_workspace/{name}",
+        )
+        result = compile_agent(agent)
+        bash = result["tool"]["bash"]
+        pattern = (
+            "uv run scripts/workspace_io.py --workspace .agent_workspace/my-agent *"
+        )
+        assert pattern in bash
+        assert bash[pattern] == "allow"
+
+    def test_workspace_keeps_write_false(self):
+        """Workspace does NOT enable write: true."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            workspace=".agent_workspace/test",
+        )
+        result = compile_agent(agent)
+        assert result["tool"]["write"] is False
+        assert result["tool"]["edit"] is False
+
+    def test_workspace_write_mutual_exclusion(self):
+        """write=True + workspace raises ValueError."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            workspace=".agent_workspace/test",
+            tool_permissions=ToolPermissions(write=True),
+        )
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            compile_agent(agent)
+
+    def test_security_policy_in_prompt(self):
+        """Compiled prompt contains SECURITY POLICY section."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            system_prompt="You are a test agent.",
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "## SECURITY POLICY" in prompt
+        assert "### ALLOWED actions" in prompt
+        assert "### FORBIDDEN" in prompt
+
+    def test_security_policy_lists_workspace(self):
+        """Security policy mentions workspace path when set."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            workspace=".agent_workspace/test",
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "workspace_io.py" in prompt
+        assert ".agent_workspace/test" in prompt
+
+    def test_security_policy_lists_allowed_tools(self):
+        """Policy section lists the agent's actual skills and subagents."""
+        tool = _make_tool("x")
+        skill = SkillDefinition(
+            name="data-query",
+            description="Query data",
+            tools=(tool,),
+        )
+        sub = SubagentDefinition(
+            name="helper/sub1",
+            description="A helper",
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            skills=(skill,),
+            skill_instructions=(("data-query", "Use for data"),),
+            subagents=(sub,),
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "`data-query`" in prompt
+        assert "`helper/sub1`" in prompt
+
+    def test_write_true_without_workspace_warns(self):
+        """write=True without workspace emits a warning."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            tool_permissions=ToolPermissions(write=True),
+        )
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            compile_agent(agent)
+            assert len(w) == 1
+            assert "write=True without a workspace" in str(w[0].message)
+
+    def test_workspace_adds_script_to_list(self):
+        """Workspace adds workspace_io.py to the scripts list."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            workspace=".agent_workspace/test",
+        )
+        result = compile_agent(agent)
+        assert "workspace_io.py" in result["scripts"]
+
+    def test_workspace_resolves_name_placeholder(self):
+        """The {name} placeholder in workspace is resolved to agent name."""
+        agent = AgentDefinition(
+            name="my-agent",
+            description="test",
+            workspace=".agent_workspace/{name}",
+        )
+        result = compile_agent(agent)
+        bash = result["tool"]["bash"]
+        pattern = (
+            "uv run scripts/workspace_io.py --workspace .agent_workspace/my-agent *"
+        )
+        assert pattern in bash

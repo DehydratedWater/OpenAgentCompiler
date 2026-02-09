@@ -264,3 +264,4 @@ class AgentDefinition:
     trigger_command: str = ""  # Slash command e.g. "/joke"
     input_placeholder: str = ""  # Input box placeholder text
     auto_mcp_deny: bool = True  # Auto-add "zai-mcp-*": false to tool perms
+    workspace: str = ""  # Sandboxed write directory, e.g. ".agent_workspace/{name}"
