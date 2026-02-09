@@ -18,11 +18,36 @@ from open_agent_compiler._types import (
 def compile_agent(
     definition: AgentDefinition,
     target: str = "opencode",
+    *,
+    postfix: str = "",
+    inline_skills: bool = False,
 ) -> dict[str, Any]:
-    """Compile an AgentDefinition into a backend-specific configuration dict."""
+    """Compile an AgentDefinition into a backend-specific configuration dict.
+
+    Parameters
+    ----------
+    postfix:
+        Appended to agent name and subagent references (e.g. ``"-test-glm45air"``).
+        Skill names are **not** postfixed.
+    inline_skills:
+        When ``True``, skill instructions and tool docs are inlined into the
+        system prompt and no standalone SKILL.md files are emitted.
+    """
     if target == "opencode":
-        return _compile_opencode(definition)
+        return _compile_opencode(
+            definition, postfix=postfix, inline_skills=inline_skills
+        )
     raise ValueError(f"Unknown target: {target!r}")
+
+
+def _postfix_sa_name(sa_name: str, postfix: str) -> str:
+    """Apply *postfix* to a subagent name, preserving directory prefix."""
+    if not postfix:
+        return sa_name
+    if "/" in sa_name:
+        d, base = sa_name.rsplit("/", 1)
+        return f"{d}/{base}{postfix}"
+    return sa_name + postfix
 
 
 def _collect_all_tools(defn: AgentDefinition) -> list[ToolDefinition]:
@@ -113,12 +138,19 @@ def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
 def _auto_tool_permissions(
     all_tools: list[ToolDefinition],
     defn: AgentDefinition,
+    agent_name: str = "",
+    inline_skills: bool = False,
 ) -> dict[str, Any]:
     """Auto-generate tool permission dict from tools and skills.
 
     When ``defn.auto_mcp_deny`` is True (default), ``"zai-mcp-*": false``
     is emitted first for sequential evaluation.
+
+    *agent_name* is the (possibly postfixed) agent name, used for workspace
+    path resolution.  Falls back to ``defn.name`` when empty.
     """
+    agent_name = agent_name or defn.name
+
     # Bash permissions from tool actions — deny first
     bash_perms: dict[str, str] = {"*": "deny"}
     for t in all_tools:
@@ -141,7 +173,7 @@ def _auto_tool_permissions(
 
     # Workspace — add workspace_io.py bash pattern, keep write/edit false
     if defn.workspace:
-        resolved_ws = defn.workspace.replace("{name}", defn.name)
+        resolved_ws = defn.workspace.replace("{name}", agent_name)
         bash_perms[f"uv run scripts/workspace_io.py --workspace {resolved_ws} *"] = (
             "allow"
         )
@@ -161,8 +193,10 @@ def _auto_tool_permissions(
     if defn.subagents:
         result["task"] = True
 
-    # Skill permissions — deny-all unless specific skills are allowed
-    if defn.skills:
+    # Skill permissions — disable when inlined, else deny-all unless specific
+    if inline_skills:
+        result["skill"] = False
+    elif defn.skills:
         skill_perms: dict[str, str] = {"*": "deny"}
         for s in defn.skills:
             skill_perms[s.name] = "allow"
@@ -344,12 +378,21 @@ def _render_tool_use_docs(
     return "\n".join(lines)
 
 
-def _compile_workflow_prompt(defn: AgentDefinition) -> str:
-    """Generate the full system prompt for a workflow agent."""
+def _compile_workflow_prompt(
+    defn: AgentDefinition,
+    agent_name: str = "",
+    postfix: str = "",
+    inline_skills: bool = False,
+) -> str:
+    """Generate the full system prompt for a workflow agent.
+
+    *agent_name* is the (possibly postfixed) agent name used in
+    subagent_todo.py calls and workspace resolution.
+    """
+    agent_name = agent_name or defn.name
     tool_lookup = _build_tool_lookup(defn)
     tool_skill_lookup = _build_tool_skill_lookup(defn)
     is_subagent = defn.mode == "subagent"
-    agent_name = defn.name
     parts: list[str] = []
 
     # Preamble
@@ -357,8 +400,20 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
         parts.append(defn.preamble)
         parts.append("")
 
-    # Skills section
-    if defn.skills:
+    # Skills section — inline or reference
+    if defn.skills and inline_skills:
+        parts.append("## Inlined Skill Reference")
+        parts.append("")
+        for skill in defn.skills:
+            parts.append(f"### `{skill.name}` — {skill.description}")
+            if skill.instructions:
+                parts.append(skill.instructions)
+            parts.append("")
+            # Inline full tool action docs for each skill tool
+            for t in skill.tools:
+                parts.append(_generate_action_docs(t))
+                parts.append("")
+    elif defn.skills:
         parts.append("## Your Skills")
         parts.append("")
         for skill in defn.skills:
@@ -391,7 +446,7 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
 
     # Workspace init (before STEP 0 task list)
     if defn.workspace:
-        resolved_ws = defn.workspace.replace("{name}", defn.name)
+        resolved_ws = defn.workspace.replace("{name}", agent_name)
         parts.append("### STEP 0a: Initialize Workspace Session (FIRST!)")
         parts.append("")
         parts.append("**Create an isolated session directory for this run:**")
@@ -564,16 +619,17 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
     return "\n".join(parts)
 
 
-def _compile_subagent_md(sa: SubagentDefinition) -> dict[str, Any]:
+def _compile_subagent_md(sa: SubagentDefinition, postfix: str = "") -> dict[str, Any]:
     """Compile a SubagentDefinition into a standalone agent dict for writing."""
-    # Extract directory and filename from name like "persona/twily_quick_ack-glm-45-air"
-    if "/" in sa.name:
-        parts = sa.name.rsplit("/", 1)
+    postfixed = _postfix_sa_name(sa.name, postfix)
+    # Extract directory and filename from name like "persona/twily_quick_ack-test-abc"
+    if "/" in postfixed:
+        parts = postfixed.rsplit("/", 1)
         agent_dir = parts[0]
         filename = parts[1]
     else:
         agent_dir = ""
-        filename = sa.name
+        filename = postfixed
 
     return {
         "name": filename,
@@ -634,21 +690,28 @@ def _merge_tool_permissions(
     return result
 
 
-def _compile_subagent_section(defn: AgentDefinition) -> str:
+def _compile_subagent_section(defn: AgentDefinition, postfix: str = "") -> str:
     """Generate a markdown section documenting available subagents."""
     if not defn.subagents:
         return ""
     lines: list[str] = ["## Available Subagents", ""]
     for sa in defn.subagents:
-        lines.append(f"### {sa.name} — {sa.description}")
+        sa_name = _postfix_sa_name(sa.name, postfix)
+        lines.append(f"### {sa_name} — {sa.description}")
         if sa.notes:
             lines.append(sa.notes)
         lines.append("")
     return "\n".join(lines)
 
 
-def _compile_security_policy(defn: AgentDefinition) -> str:
+def _compile_security_policy(
+    defn: AgentDefinition,
+    agent_name: str = "",
+    postfix: str = "",
+    inline_skills: bool = False,
+) -> str:
     """Generate an explicit SECURITY POLICY section for the agent's prompt."""
+    agent_name = agent_name or defn.name
     lines: list[str] = ["## SECURITY POLICY", ""]
 
     # ALLOWED actions
@@ -658,7 +721,7 @@ def _compile_security_policy(defn: AgentDefinition) -> str:
     lines.append(f"- Read files: {'yes' if read_allowed else 'no'}")
 
     if defn.workspace:
-        resolved_ws = defn.workspace.replace("{name}", defn.name)
+        resolved_ws = defn.workspace.replace("{name}", agent_name)
         lines.append(f"- Write files: only via workspace_io.py to `{resolved_ws}/`")
         lines.append(
             "- Session isolation: use `--command init` first, then"
@@ -671,13 +734,17 @@ def _compile_security_policy(defn: AgentDefinition) -> str:
 
     # Subagents
     if defn.subagents:
-        sa_names = ", ".join(f"`{sa.name}`" for sa in defn.subagents)
+        sa_names = ", ".join(
+            f"`{_postfix_sa_name(sa.name, postfix)}`" for sa in defn.subagents
+        )
         lines.append(f"- Invoke subagents: {sa_names}")
     else:
         lines.append("- Invoke subagents: none")
 
     # Skills
-    if defn.skills:
+    if inline_skills:
+        lines.append("- Use skills: none (tools are inlined into prompt)")
+    elif defn.skills:
         sk_names = ", ".join(f"`{s.name}`" for s in defn.skills)
         lines.append(f"- Use skills: {sk_names}")
     else:
@@ -692,7 +759,7 @@ def _compile_security_policy(defn: AgentDefinition) -> str:
             "- Write or create files using the write/edit tools (they are disabled)"
         )
     lines.append("- Run bash commands not listed in your tool documentation")
-    if not defn.skills:
+    if inline_skills or not defn.skills:
         lines.append("- Use any skills (all skills are disabled)")
     else:
         lines.append("- Use skills other than the ones listed above")
@@ -710,7 +777,14 @@ def _compile_security_policy(defn: AgentDefinition) -> str:
     return "\n".join(lines)
 
 
-def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
+def _compile_opencode(
+    defn: AgentDefinition,
+    *,
+    postfix: str = "",
+    inline_skills: bool = False,
+) -> dict[str, Any]:
+    agent_name = defn.name + postfix
+
     # Validation: workspace and write=True are mutually exclusive
     has_explicit_write = (
         defn.tool_permissions is not None and defn.tool_permissions.write
@@ -745,46 +819,76 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
         tool_docs[t.name] = _generate_action_docs(t)
 
     # Build tool permissions — always auto-generate, merge explicit overrides
-    tool_perms = _auto_tool_permissions(all_tools, defn)
+    tool_perms = _auto_tool_permissions(
+        all_tools,
+        defn,
+        agent_name=agent_name,
+        inline_skills=inline_skills,
+    )
     if defn.tool_permissions is not None:
         tool_perms = _merge_tool_permissions(tool_perms, defn.tool_permissions)
 
     # Build skills with auto-appended tool usage docs
     compiled_skills: list[dict[str, Any]] = []
-    for s in defn.skills:
-        skill_tool_names = [t.name for t in s.tools]
-        instructions = s.instructions
-        relevant_docs = [
-            tool_docs[name] for name in skill_tool_names if name in tool_docs
-        ]
-        if relevant_docs:
-            instructions += "\n\n## Available Tools\n\n" + "\n\n".join(relevant_docs)
-        compiled_skills.append(
-            {
-                "name": s.name,
-                "description": s.description,
-                "instructions": instructions,
-                "tools": skill_tool_names,
-            }
-        )
+    if not inline_skills:
+        for s in defn.skills:
+            skill_tool_names = [t.name for t in s.tools]
+            instructions = s.instructions
+            relevant_docs = [
+                tool_docs[name] for name in skill_tool_names if name in tool_docs
+            ]
+            if relevant_docs:
+                instructions += "\n\n## Available Tools\n\n" + "\n\n".join(
+                    relevant_docs
+                )
+            compiled_skills.append(
+                {
+                    "name": s.name,
+                    "description": s.description,
+                    "instructions": instructions,
+                    "tools": skill_tool_names,
+                }
+            )
 
     # System prompt: use workflow prompt if workflow is defined
     system_prompt = defn.system_prompt
     if defn.workflow:
-        system_prompt = _compile_workflow_prompt(defn)
+        system_prompt = _compile_workflow_prompt(
+            defn,
+            agent_name=agent_name,
+            postfix=postfix,
+            inline_skills=inline_skills,
+        )
+    elif defn.skills and inline_skills:
+        # Non-workflow agents: append inlined skill reference to system prompt
+        skill_parts: list[str] = ["## Inlined Skill Reference", ""]
+        for skill in defn.skills:
+            skill_parts.append(f"### `{skill.name}` — {skill.description}")
+            if skill.instructions:
+                skill_parts.append(skill.instructions)
+            skill_parts.append("")
+            for t in skill.tools:
+                skill_parts.append(_generate_action_docs(t))
+                skill_parts.append("")
+        system_prompt = system_prompt.rstrip("\n") + "\n\n" + "\n".join(skill_parts)
 
     # Append auto-generated subagent documentation
-    subagent_section = _compile_subagent_section(defn)
+    subagent_section = _compile_subagent_section(defn, postfix=postfix)
     if subagent_section:
         system_prompt = system_prompt.rstrip("\n") + "\n\n" + subagent_section
 
     # Append security policy
-    security_policy = _compile_security_policy(defn)
+    security_policy = _compile_security_policy(
+        defn,
+        agent_name=agent_name,
+        postfix=postfix,
+        inline_skills=inline_skills,
+    )
     system_prompt = system_prompt.rstrip("\n") + "\n\n" + security_policy
 
     # Build agent section (drives .md frontmatter)
     agent_section: dict[str, Any] = {
-        "name": defn.name,
+        "name": agent_name,
         "description": defn.description,
         "system_prompt": system_prompt,
     }
@@ -836,17 +940,17 @@ def _compile_opencode(defn: AgentDefinition) -> dict[str, Any]:
     # Compiled subagent dicts for standalone .md files
     if defn.subagents:
         result["subagents_compiled"] = [
-            _compile_subagent_md(sa) for sa in defn.subagents
+            _compile_subagent_md(sa, postfix=postfix) for sa in defn.subagents
         ]
 
     # Agent permissions — always generate doom_loop baseline
     if defn.permissions is not None:
         result["permission"] = _agent_permissions_to_dict(defn.permissions)
     elif defn.subagents:
-        # Auto-generate subagent permissions
+        # Auto-generate subagent permissions (with postfixed names)
         task_perms = (
             ("*", "deny"),
-            *((sa.name, "allow") for sa in defn.subagents),
+            *((_postfix_sa_name(sa.name, postfix), "allow") for sa in defn.subagents),
         )
         auto_perms = AgentPermissions(doom_loop="deny", task=task_perms)
         result["permission"] = _agent_permissions_to_dict(auto_perms)

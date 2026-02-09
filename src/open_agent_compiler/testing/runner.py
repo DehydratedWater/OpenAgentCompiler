@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import operator
 import re
 import subprocess
@@ -252,14 +253,21 @@ class ScenarioRunner:
     async def run_scenario(self, scenario: Scenario) -> ScenarioResult:
         """Execute a complete scenario."""
         t0 = time.monotonic()
+        loop = asyncio.get_event_loop()
 
-        # 1. Run seed commands
-        seed_outputs = self.tool_runner.run_sequence(
+        # 1. Run seed commands (blocking I/O → executor)
+        seed_outputs = await loop.run_in_executor(
+            None,
+            self.tool_runner.run_sequence,
             scenario.seed_commands,
         )
 
-        # 2. Run the agent
-        agent_result = self._run_agent(scenario)
+        # 2. Run the agent (blocking I/O → executor)
+        agent_result = await loop.run_in_executor(
+            None,
+            self._run_agent,
+            scenario,
+        )
 
         # 3. Run verify steps
         verify_results = []
@@ -284,6 +292,25 @@ class ScenarioRunner:
             flow_judge_results=flow_judge_results,
             duration_seconds=elapsed,
         )
+
+    async def run_scenarios(
+        self,
+        scenarios: list[Scenario],
+        *,
+        concurrent: bool = False,
+    ) -> list[ScenarioResult]:
+        """Run multiple scenarios, optionally concurrently.
+
+        When *concurrent* is ``True``, all scenarios are run in parallel
+        via ``asyncio.gather`` (each agent subprocess runs in its own
+        executor thread).  When ``False`` (the default), scenarios run
+        sequentially.
+        """
+        if concurrent:
+            return list(
+                await asyncio.gather(*(self.run_scenario(s) for s in scenarios))
+            )
+        return [await self.run_scenario(s) for s in scenarios]
 
     def _run_agent(self, scenario: Scenario) -> AgentRunResult:
         """Run agent via opencode CLI."""
