@@ -306,13 +306,28 @@ class ScenarioRunner:
                 env=self.tool_runner.env,
                 timeout=scenario.timeout,
             )
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
             elapsed = time.monotonic() - t0
+            raw_out = exc.stdout or b""
+            raw_err = exc.stderr or b""
+            stdout = (
+                raw_out.decode("utf-8", errors="replace")
+                if isinstance(raw_out, bytes)
+                else raw_out
+            )
+            stderr = (
+                raw_err.decode("utf-8", errors="replace")
+                if isinstance(raw_err, bytes)
+                else raw_err
+            )
+            timeout_msg = f"Agent timed out after {scenario.timeout}s"
+            flow = stdout + "\n" + stderr
+            flow = timeout_msg if not flow.strip() else flow + "\n" + timeout_msg
             return AgentRunResult(
                 return_code=124,
-                stdout="",
-                stderr=(f"Agent timed out after {scenario.timeout}s"),
-                flow_log=(f"Agent timed out after {scenario.timeout}s"),
+                stdout=stdout,
+                stderr=stderr,
+                flow_log=flow,
                 duration_seconds=elapsed,
             )
 

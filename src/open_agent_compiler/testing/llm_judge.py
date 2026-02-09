@@ -126,6 +126,32 @@ class LLMJudge:
             content: str = data["choices"][0]["message"]["content"]
             return content
 
+    @staticmethod
+    def _try_repair_json(text: str) -> list[dict[str, object]] | None:
+        """Attempt to recover truncated JSON arrays."""
+        import re as _re
+
+        # Try closing truncated JSON array: find last complete object
+        if text.startswith("["):
+            # Find all complete {...} blocks
+            objs: list[dict[str, object]] = []
+            for m in _re.finditer(r"\{[^{}]*\}", text):
+                try:
+                    objs.append(json.loads(m.group()))
+                except json.JSONDecodeError:
+                    continue
+            if objs:
+                return objs
+        # Single truncated object
+        if text.startswith("{"):
+            # Try adding closing brace
+            for suffix in ("}", '"}', '"]}'):
+                try:
+                    return [json.loads(text + suffix)]
+                except json.JSONDecodeError:
+                    continue
+        return None
+
     def _parse_results(
         self,
         response: str,
@@ -143,16 +169,17 @@ class LLMJudge:
         try:
             items = json.loads(text)
         except json.JSONDecodeError:
-            # Fallback: all criteria fail if we can't parse
-            return [
-                JudgeResult(
-                    criterion=c.description,
-                    passed=False,
-                    confidence=0.0,
-                    reasoning=(f"Failed to parse LLM response: {response[:200]}"),
-                )
-                for c in criteria
-            ]
+            items = self._try_repair_json(text)
+            if items is None:
+                return [
+                    JudgeResult(
+                        criterion=c.description,
+                        passed=False,
+                        confidence=0.0,
+                        reasoning=(f"Failed to parse LLM response: {response[:200]}"),
+                    )
+                    for c in criteria
+                ]
 
         results = []
         for i, criterion in enumerate(criteria):
