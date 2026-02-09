@@ -3,6 +3,10 @@
 
 Provides controlled read/write/list/delete within a workspace directory.
 All paths are validated to prevent traversal outside the workspace.
+
+Supports session isolation via ``--run-id``: when provided, all operations
+are scoped to ``<workspace>/<run_id>/``.  Use ``--command init`` to generate
+a fresh run ID and create the session directory.
 """
 
 from __future__ import annotations
@@ -10,12 +14,15 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import uuid
 from pathlib import Path
 
 
-def _resolve_workspace(workspace: str) -> Path:
-    """Resolve and create workspace directory."""
+def _resolve_workspace(workspace: str, run_id: str | None = None) -> Path:
+    """Resolve and create workspace (or session) directory."""
     ws = Path(workspace).resolve()
+    if run_id:
+        ws = ws / run_id
     ws.mkdir(parents=True, exist_ok=True)
     return ws
 
@@ -30,6 +37,14 @@ def _safe_path(workspace: Path, filename: str) -> Path:
         )
         sys.exit(1)
     return target
+
+
+def cmd_init(workspace_root: str) -> None:
+    """Create a new session directory and return its run_id."""
+    run_id = uuid.uuid4().hex[:12]
+    ws = Path(workspace_root).resolve() / run_id
+    ws.mkdir(parents=True, exist_ok=True)
+    print(json.dumps({"success": True, "run_id": run_id, "path": str(ws)}))
 
 
 def cmd_write(workspace: Path, filename: str) -> None:
@@ -80,13 +95,19 @@ def main() -> None:
     parser.add_argument(
         "--command",
         required=True,
-        choices=["write", "read", "list", "delete"],
+        choices=["init", "write", "read", "list", "delete"],
     )
     parser.add_argument("--workspace", required=True, help="Workspace directory path")
+    parser.add_argument("--run-id", help="Session run ID for parallel isolation")
     parser.add_argument("--filename", help="Target filename within workspace")
     args = parser.parse_args()
 
-    workspace = _resolve_workspace(args.workspace)
+    # init is special — creates session dir, ignores --run-id
+    if args.command == "init":
+        cmd_init(args.workspace)
+        return
+
+    workspace = _resolve_workspace(args.workspace, args.run_id)
 
     if args.command == "list":
         cmd_list(workspace)

@@ -161,12 +161,17 @@ def _auto_tool_permissions(
     if defn.subagents:
         result["task"] = True
 
-    # Skill permissions from agent's skills — deny first
+    # Skill permissions — deny-all unless specific skills are allowed
     if defn.skills:
         skill_perms: dict[str, str] = {"*": "deny"}
         for s in defn.skills:
             skill_perms[s.name] = "allow"
         result["skill"] = skill_perms
+    else:
+        result["skill"] = False
+
+    # MCP — always deny-all by default
+    result["mcp"] = False
 
     return result
 
@@ -383,6 +388,27 @@ def _compile_workflow_prompt(defn: AgentDefinition) -> str:
         if resolved_name not in seen_todos:
             seen_todos.add(resolved_name)
             todo_items.append((resolved_name, step.todo_description))
+
+    # Workspace init (before STEP 0 task list)
+    if defn.workspace:
+        resolved_ws = defn.workspace.replace("{name}", defn.name)
+        parts.append("### STEP 0a: Initialize Workspace Session (FIRST!)")
+        parts.append("")
+        parts.append("**Create an isolated session directory for this run:**")
+        parts.append("")
+        parts.append("```bash")
+        parts.append(
+            f"uv run scripts/workspace_io.py --command init --workspace {resolved_ws}"
+        )
+        parts.append("```")
+        parts.append("")
+        parts.append(
+            "Save the `run_id` from the response —"
+            " pass it as `--run-id` to all subsequent workspace_io.py calls."
+        )
+        parts.append("")
+        parts.append("---")
+        parts.append("")
 
     # STEP 0: Create Task List / Initialize Progress Tracking
     if is_subagent:
@@ -634,6 +660,10 @@ def _compile_security_policy(defn: AgentDefinition) -> str:
     if defn.workspace:
         resolved_ws = defn.workspace.replace("{name}", defn.name)
         lines.append(f"- Write files: only via workspace_io.py to `{resolved_ws}/`")
+        lines.append(
+            "- Session isolation: use `--command init` first, then"
+            " pass `--run-id` to all subsequent calls"
+        )
     elif defn.tool_permissions and defn.tool_permissions.write:
         lines.append("- Write files: yes (unrestricted)")
     else:
@@ -662,6 +692,15 @@ def _compile_security_policy(defn: AgentDefinition) -> str:
             "- Write or create files using the write/edit tools (they are disabled)"
         )
     lines.append("- Run bash commands not listed in your tool documentation")
+    if not defn.skills:
+        lines.append("- Use any skills (all skills are disabled)")
+    else:
+        lines.append("- Use skills other than the ones listed above")
+    if not defn.subagents:
+        lines.append("- Invoke subagents via Task tool (it is disabled)")
+    else:
+        lines.append("- Invoke subagents other than the ones listed above")
+    lines.append("- Use MCP tools (they are disabled)")
     lines.append(
         "- Create files in the project root or any directory outside your workspace"
     )

@@ -519,3 +519,58 @@ class TestWorkspace:
             "uv run scripts/workspace_io.py --workspace .agent_workspace/my-agent *"
         )
         assert pattern in bash
+
+    def test_default_deny_skill_when_no_skills(self):
+        """skill: false when no skills are defined."""
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        assert result["tool"]["skill"] is False
+
+    def test_default_deny_mcp(self):
+        """mcp: false is always emitted."""
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        assert result["tool"]["mcp"] is False
+
+    def test_default_deny_mcp_with_skills(self):
+        """mcp: false even when skills exist."""
+        tool = _make_tool("x")
+        skill = SkillDefinition(
+            name="my-skill",
+            description="test",
+            tools=(tool,),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            skills=(skill,),
+            skill_instructions=(("my-skill", "Use it"),),
+        )
+        result = compile_agent(agent)
+        assert result["tool"]["mcp"] is False
+
+    def test_security_policy_forbids_skills_when_none(self):
+        """Security policy says skills are disabled when none defined."""
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "all skills are disabled" in prompt
+
+    def test_security_policy_forbids_mcp(self):
+        """Security policy always says MCP is disabled."""
+        agent = AgentDefinition(name="test", description="test")
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "MCP tools" in prompt
+
+    def test_security_policy_session_isolation(self):
+        """Security policy mentions session isolation when workspace is set."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            workspace=".agent_workspace/test",
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "--run-id" in prompt
+        assert "init" in prompt
