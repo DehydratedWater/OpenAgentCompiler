@@ -193,6 +193,28 @@ class ToolBuilder(Builder[ToolDefinition]):
         command_pattern = f"uv run scripts/{basename} *"
         usage_example = f"uv run scripts/{basename} {args_str}"
 
+        # Add stdin streaming example for tools that support it
+        if stream_fld is not None:
+            other_args = " ".join(p for p in args_parts if f"--{stream_fld}" not in p)
+            heredoc_cmd = f"uv run scripts/{basename}"
+            if other_args:
+                heredoc_cmd += f" {other_args}"
+            usage_example += (
+                f"\n# Recommended for long/complex {stream_fld}"
+                f" (avoids shell quoting issues):\n"
+                f"{heredoc_cmd} <<'EOF'\n"
+                f"your {stream_fld} content here\n"
+                f"EOF"
+            )
+
+        # Always show --json mode for complex inputs via heredoc
+        usage_example += (
+            f"\n# For complex input with special characters (heredoc to stdin):\n"
+            f"uv run scripts/{basename} --json <<'EOF'\n"
+            f'{{"command": "...", "field": "value with \'quotes\'"}}\n'
+            f"EOF"
+        )
+
         self._actions = [
             ActionDefinition(
                 command_pattern=command_pattern,
