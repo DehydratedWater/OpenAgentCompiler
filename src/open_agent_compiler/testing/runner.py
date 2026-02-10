@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 _SUBAGENT_FALLBACK_RE = re.compile(
-    r"is a subagent|falling back .* default|fallback.*default agent",
+    r'not found\.\s*Falling back to default|agent ".*" not found',
     re.IGNORECASE,
 )
 

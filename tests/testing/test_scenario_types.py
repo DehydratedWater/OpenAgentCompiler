@@ -178,7 +178,10 @@ class TestAgentRunResult:
             return_code=0,
             stdout="",
             stderr="",
-            flow_log="goals/twily_goal_interface is a subagent and cannot be invoked",
+            flow_log=(
+                'agent "goals/twily_goal_interface"'
+                " not found. Falling back to default agent"
+            ),
         )
         assert r.subagent_fallback is True
 
@@ -187,7 +190,7 @@ class TestAgentRunResult:
             return_code=0,
             stdout="",
             stderr="",
-            flow_log="Warning: falling back to default agent",
+            flow_log='agent "workflows/server" not found. Falling back to default',
         )
         assert r.subagent_fallback is True
 
@@ -253,7 +256,10 @@ class TestScenarioResult:
                 return_code=0,
                 stdout="",
                 stderr="",
-                flow_log="goals/twily_goal_interface is a subagent",
+                flow_log=(
+                    'agent "goals/twily_goal_interface"'
+                    " not found. Falling back to default agent"
+                ),
             ),
             verify_results=[],
         )
