@@ -406,9 +406,7 @@ class TestWorkspace:
         )
         result = compile_agent(agent)
         bash = result["tool"]["bash"]
-        pattern = (
-            "uv run scripts/workspace_io.py --workspace .agent_workspace/my-agent *"
-        )
+        pattern = "uv run scripts/workspace_io.py *"
         assert pattern in bash
         assert bash[pattern] == "allow"
 
@@ -515,9 +513,7 @@ class TestWorkspace:
         )
         result = compile_agent(agent)
         bash = result["tool"]["bash"]
-        pattern = (
-            "uv run scripts/workspace_io.py --workspace .agent_workspace/my-agent *"
-        )
+        pattern = "uv run scripts/workspace_io.py *"
         assert pattern in bash
 
     def test_default_deny_skill_when_no_skills(self):

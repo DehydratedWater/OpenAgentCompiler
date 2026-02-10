@@ -173,10 +173,7 @@ def _auto_tool_permissions(
 
     # Workspace — add workspace_io.py bash pattern, keep write/edit false
     if defn.workspace:
-        resolved_ws = defn.workspace.replace("{name}", agent_name)
-        bash_perms[f"uv run scripts/workspace_io.py --workspace {resolved_ws} *"] = (
-            "allow"
-        )
+        bash_perms["uv run scripts/workspace_io.py *"] = "allow"
 
     # Workflow needs progress tracking
     if defn.workflow:
@@ -618,7 +615,25 @@ def _compile_workflow_prompt(
         parts.append(defn.postamble)
         parts.append("")
 
-    return "\n".join(parts)
+    result_text = "\n".join(parts)
+
+    # Rewrite agent/subagent names in step instructions to include postfix.
+    # Collects names from subagent definitions AND task permission entries.
+    if postfix:
+        names_to_postfix: set[str] = set()
+        for sa in defn.subagents:
+            names_to_postfix.add(sa.name)
+        if defn.permissions and defn.permissions.task:
+            for name, _rule in defn.permissions.task:
+                if name != "*":
+                    names_to_postfix.add(name)
+        # Replace longest names first to avoid partial matches
+        for name in sorted(names_to_postfix, key=len, reverse=True):
+            postfixed = _postfix_sa_name(name, postfix)
+            if name != postfixed:
+                result_text = result_text.replace(name, postfixed)
+
+    return result_text
 
 
 def _compile_subagent_md(sa: SubagentDefinition, postfix: str = "") -> dict[str, Any]:
@@ -893,6 +908,22 @@ def _compile_opencode(
                 skill_parts.append(_generate_action_docs(t))
                 skill_parts.append("")
         system_prompt = system_prompt.rstrip("\n") + "\n\n" + "\n".join(skill_parts)
+
+    # Rewrite agent/subagent names in system prompt text to include postfix.
+    # Done BEFORE appending auto-generated sections (which already use
+    # postfixed names) to avoid double-postfixing.
+    if postfix and not defn.workflow:
+        names_to_postfix: set[str] = set()
+        for sa in defn.subagents:
+            names_to_postfix.add(sa.name)
+        if defn.permissions and defn.permissions.task:
+            for name, _rule in defn.permissions.task:
+                if name != "*":
+                    names_to_postfix.add(name)
+        for name in sorted(names_to_postfix, key=len, reverse=True):
+            postfixed_sa = _postfix_sa_name(name, postfix)
+            if name != postfixed_sa:
+                system_prompt = system_prompt.replace(name, postfixed_sa)
 
     # Append auto-generated subagent documentation
     subagent_section = _compile_subagent_section(defn, postfix=postfix)

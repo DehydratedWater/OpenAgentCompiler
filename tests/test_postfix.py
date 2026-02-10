@@ -138,7 +138,7 @@ class TestPostfixCompilation:
         )
         result = compile_agent(agent, postfix=POSTFIX)
         bash = result["tool"]["bash"]
-        expected = f"uv run scripts/workspace_io.py --workspace .agent_workspace/my-agent{POSTFIX} *"  # noqa: E501
+        expected = "uv run scripts/workspace_io.py *"
         assert expected in bash
 
     def test_workflow_subagent_todo_uses_postfixed_name(self):
@@ -157,6 +157,33 @@ class TestPostfixCompilation:
         result = compile_agent(agent, postfix=POSTFIX)
         prompt = result["agent"]["system_prompt"]
         assert f'subagent_todo.py init "my-agent{POSTFIX}"' in prompt
+
+    def test_workflow_step_instructions_postfix_subagent_names(self):
+        """Subagent names in workflow step instructions get postfixed."""
+        step = WorkflowStepDefinition(
+            id=1,
+            name="Invoke",
+            instructions="Use Task to invoke helper/sub1 for the job.",
+            marks_done=("Invoke",),
+        )
+        subs = (
+            SubagentDefinition(
+                name="helper/sub1",
+                description="A helper",
+            ),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            subagents=subs,
+            workflow=(step,),
+        )
+        result = compile_agent(agent, postfix=POSTFIX)
+        prompt = result["agent"]["system_prompt"]
+        # Step instruction should have the postfixed name
+        assert f"helper/sub1{POSTFIX}" in prompt
+        # Original un-postfixed name should NOT appear in the prompt
+        assert "helper/sub1 " not in prompt.replace(f"helper/sub1{POSTFIX}", "")
 
     def test_subagent_without_directory(self):
         subs = (

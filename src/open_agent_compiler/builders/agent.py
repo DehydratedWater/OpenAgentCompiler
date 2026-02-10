@@ -176,6 +176,11 @@ class AgentBuilder(Builder[AgentDefinition]):
             raise ValueError("AgentDefinition requires a name")
         if not self._description:
             raise ValueError("AgentDefinition requires a description")
+        if self._mode == "subagent" and not self._workflow:
+            raise ValueError(
+                f"Subagent {self._name!r} requires at least one workflow step. "
+                "Use .workflow_step() to define the agent's processing steps."
+            )
         return AgentDefinition(
             name=self._name,
             description=self._description,

@@ -10,7 +10,7 @@ from open_agent_compiler._types import (
     ToolDefinition,
     ToolPermissions,
 )
-from open_agent_compiler.builders import AgentBuilder
+from open_agent_compiler.builders import AgentBuilder, WorkflowStepBuilder
 
 
 def _make_tool(name: str) -> ToolDefinition:
@@ -138,3 +138,24 @@ class TestAgentBuilder:
             .build()
         )
         assert agent.workspace == ".agent_workspace/{name}"
+
+    def test_subagent_without_workflow_raises(self, agent_builder: AgentBuilder):
+        with pytest.raises(ValueError, match="requires at least one workflow step"):
+            agent_builder.name("sa").description("d").mode("subagent").build()
+
+    def test_subagent_with_workflow_passes(self, agent_builder: AgentBuilder):
+        step = WorkflowStepBuilder().id("1").name("Do thing").build()
+        agent = (
+            agent_builder.name("sa")
+            .description("d")
+            .mode("subagent")
+            .workflow_step(step)
+            .build()
+        )
+        assert agent.mode == "subagent"
+        assert len(agent.workflow) == 1
+
+    def test_primary_without_workflow_ok(self, agent_builder: AgentBuilder):
+        agent = agent_builder.name("p").description("d").mode("primary").build()
+        assert agent.mode == "primary"
+        assert agent.workflow == ()
