@@ -396,6 +396,55 @@ class TestCompiler:
         prompt = result["agent"]["system_prompt"]
         assert "## Available Subagents" not in prompt
 
+    def test_subagent_mode_cannot_have_task_children(self):
+        """Subagent-mode agents cannot define Task-tool subagents."""
+        subs = (
+            SubagentDefinition(
+                name="nested/child",
+                description="Should not be allowed",
+                mode="subagent",
+            ),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            mode="subagent",
+            subagents=subs,
+        )
+        with pytest.raises(ValueError, match="cannot spawn other subagents"):
+            compile_agent(agent)
+
+    def test_subagent_mode_can_have_primary_children(self):
+        """Subagent-mode agents CAN invoke primary agents via bash."""
+        subs = (
+            SubagentDefinition(
+                name="workflows/goal",
+                description="Goal management",
+                mode="primary",
+            ),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            mode="subagent",
+            subagents=subs,
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "opencode_manager.py" in prompt
+
+    def test_subagent_mode_forbids_task_invocation_in_policy(self):
+        """Subagent security policy forbids Task tool delegation."""
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            mode="subagent",
+            system_prompt="You are a leaf agent.",
+        )
+        result = compile_agent(agent)
+        prompt = result["agent"]["system_prompt"]
+        assert "subagents cannot delegate" in prompt
+
 
 class TestWorkspace:
     def test_workspace_adds_bash_pattern(self):

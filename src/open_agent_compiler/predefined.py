@@ -75,15 +75,24 @@ def subagent_todo_skill() -> SkillDefinition:
 
 
 def opencode_manager_tool() -> ToolDefinition:
-    """Predefined tool for managing OpenCode server and running agents."""
+    """Predefined tool for managing OpenCode server (server ops only).
+
+    Agent invocation patterns are generated per-agent by the compiler
+    based on ``SubagentDefinition(mode="primary")`` entries — not here.
+    """
     return ToolDefinition(
         name="opencode-manager",
-        description="Manage OpenCode web server and run agents programmatically",
+        description="Manage OpenCode web server lifecycle",
         actions=(
             ActionDefinition(
-                command_pattern="uv run scripts/opencode_manager.py *",
-                description="Manage OpenCode server and execute agents",
+                command_pattern="uv run scripts/opencode_manager.py server *",
+                description="Manage OpenCode web server (start/stop/status)",
                 usage_example="uv run scripts/opencode_manager.py server status",
+            ),
+            ActionDefinition(
+                command_pattern="uv run scripts/opencode_manager.py logs *",
+                description="View recent agent run logs",
+                usage_example="uv run scripts/opencode_manager.py logs",
             ),
         ),
         script_files=("opencode_manager.py",),
@@ -97,11 +106,6 @@ def opencode_manager_tool() -> ToolDefinition:
                 name="server-status",
                 description="Check if the OpenCode server is running",
                 command="uv run scripts/opencode_manager.py server status",
-            ),
-            UsageExample(
-                name="run-agent",
-                description="Run an agent with a prompt",
-                command='uv run scripts/opencode_manager.py run --agent "workflows/handler-glm-45-air" "Process this request"',  # noqa: E501
             ),
         ),
     )
@@ -129,7 +133,7 @@ def agent_orchestration_skill() -> SkillDefinition:
             "\n"
             "Execute an agent with:\n"
             "```bash\n"
-            'uv run scripts/opencode_manager.py run --agent "agent/path" "prompt"\n'
+            "uv run scripts/opencode_manager.py run --agent agent/path your prompt here\n"  # noqa: E501
             "```\n"
             "\n"
             "The agent runs as a subprocess. Output and logs are captured automatically.\n"  # noqa: E501

@@ -62,7 +62,7 @@ class TestPostfixCompilation:
         assert "uv run scripts/opencode_manager.py *" not in perm.get("bash", {})
 
     def test_primary_subagent_uses_bash(self):
-        """mode=primary subagents use opencode_manager.py via bash."""
+        """mode=primary subagents get per-agent bash patterns."""
         subs = (
             SubagentDefinition(
                 name="workflows/goal",
@@ -77,11 +77,47 @@ class TestPostfixCompilation:
         )
         result = compile_agent(agent, postfix=POSTFIX)
         perm = result["permission"]
-        # mode=primary → bash permission for opencode_manager.py
+        # mode=primary → per-agent bash pattern (not wildcard)
         assert "bash" in perm
-        assert perm["bash"]["uv run scripts/opencode_manager.py *"] == "allow"
+        pat = (
+            f"uv run scripts/opencode_manager.py run --agent workflows/goal{POSTFIX} *"
+        )
+        assert perm["bash"][pat] == "allow"
+        # No wildcard
+        assert "uv run scripts/opencode_manager.py *" not in perm["bash"]
         # No task permission needed for mode=primary only
         assert "task" not in perm
+
+    def test_multiple_primary_subagents(self):
+        """Each primary subagent gets its own bash pattern."""
+        subs = (
+            SubagentDefinition(
+                name="workflows/goal",
+                description="Goal management",
+                mode="primary",
+            ),
+            SubagentDefinition(
+                name="workflows/todo",
+                description="Task management",
+                mode="primary",
+            ),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            subagents=subs,
+        )
+        result = compile_agent(agent, postfix=POSTFIX)
+        bash = result["permission"]["bash"]
+        goal_pat = (
+            f"uv run scripts/opencode_manager.py run --agent workflows/goal{POSTFIX} *"
+        )
+        todo_pat = (
+            f"uv run scripts/opencode_manager.py run --agent workflows/todo{POSTFIX} *"
+        )
+        assert bash[goal_pat] == "allow"
+        assert bash[todo_pat] == "allow"
+        assert "uv run scripts/opencode_manager.py *" not in bash
 
     def test_mixed_subagent_modes(self):
         """Agent with both subagent and primary modes gets both permissions."""
@@ -104,7 +140,10 @@ class TestPostfixCompilation:
         result = compile_agent(agent, postfix=POSTFIX)
         perm = result["permission"]
         assert perm["task"] == "allow"
-        assert perm["bash"]["uv run scripts/opencode_manager.py *"] == "allow"
+        pat = (
+            f"uv run scripts/opencode_manager.py run --agent workflows/goal{POSTFIX} *"
+        )
+        assert perm["bash"][pat] == "allow"
 
     def test_subagent_md_names_have_postfix(self):
         subs = (

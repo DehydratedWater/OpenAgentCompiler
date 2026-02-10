@@ -153,6 +153,7 @@ def _auto_tool_permissions(
     defn: AgentDefinition,
     agent_name: str = "",
     inline_skills: bool = False,
+    postfix: str = "",
 ) -> dict[str, Any]:
     """Auto-generate tool permission dict from tools and skills.
 
@@ -211,7 +212,12 @@ def _auto_tool_permissions(
         has_task_subs = any(sa.mode == "subagent" for sa in defn.subagents)
         has_bash_subs = any(sa.mode == "primary" for sa in defn.subagents)
         if has_bash_subs:
-            bash_perms["uv run scripts/opencode_manager.py *"] = "allow"
+            for sa in defn.subagents:
+                if sa.mode == "primary":
+                    sa_name = _postfix_sa_name(sa.name, postfix)
+                    bash_perms[
+                        f"uv run scripts/opencode_manager.py run --agent {sa_name} *"
+                    ] = "allow"
         if has_task_subs:
             result["task"] = True
 
@@ -802,7 +808,7 @@ def _compile_subagent_section(defn: AgentDefinition, postfix: str = "") -> str:
             lines.append("")
             lines.append("```bash")
             lines.append(
-                f'uv run scripts/opencode_manager.py run --agent "{sa_name}" "<your instructions>"'  # noqa: E501
+                f"uv run scripts/opencode_manager.py run --agent {sa_name} <your instructions>"  # noqa: E501
             )
             lines.append("```")
             lines.append("")
@@ -900,7 +906,25 @@ def _compile_security_policy(
         lines.append("- Use any skills (all skills are disabled)")
     else:
         lines.append("- Use skills other than the ones listed above")
-    if not defn.subagents:
+    if defn.mode == "subagent" and not defn.subagents:
+        lines.append(
+            "- Invoke other agents via Task tool"
+            " (subagents cannot delegate to other subagents)"
+        )
+    elif defn.mode == "subagent" and defn.subagents:
+        # Has primary children only (Task children blocked by validation)
+        bash_subs = [sa for sa in defn.subagents if sa.mode == "primary"]
+        if bash_subs:
+            sa_names = ", ".join(f"`{sa.name}`" for sa in bash_subs)
+            lines.append(
+                f"- Invoke agents via bash"
+                f" (`opencode_manager.py run --agent`): {sa_names}"
+            )
+        lines.append(
+            "- Invoke agents via Task tool"
+            " (subagents cannot delegate to other subagents)"
+        )
+    elif not defn.subagents:
         lines.append("- Invoke subagents (none are configured for this agent)")
     else:
         task_subs = [sa for sa in defn.subagents if sa.mode == "subagent"]
@@ -950,6 +974,18 @@ def _compile_opencode(
             stacklevel=2,
         )
 
+    # Subagent-mode agents can invoke primary agents (via opencode_manager.py)
+    # but cannot spawn Task-tool subagents (mode="subagent")
+    if defn.mode == "subagent" and defn.subagents:
+        task_children = [sa for sa in defn.subagents if sa.mode == "subagent"]
+        if task_children:
+            names = ", ".join(sa.name for sa in task_children)
+            raise ValueError(
+                f"Agent {defn.name!r} has mode='subagent' but defines"
+                f" Task-tool subagents: {names} — subagents cannot"
+                " spawn other subagents (use mode='primary' instead)"
+            )
+
     all_tools = _collect_all_tools(defn)
 
     # Collect all script files
@@ -973,6 +1009,7 @@ def _compile_opencode(
         defn,
         agent_name=agent_name,
         inline_skills=inline_skills,
+        postfix=postfix,
     )
     if defn.tool_permissions is not None:
         tool_perms = _merge_tool_permissions(tool_perms, defn.tool_permissions)
