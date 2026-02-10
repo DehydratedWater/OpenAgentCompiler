@@ -303,14 +303,29 @@ class ScenarioRunner:
 
         When *concurrent* is ``True``, all scenarios are run in parallel
         via ``asyncio.gather`` (each agent subprocess runs in its own
-        executor thread).  When ``False`` (the default), scenarios run
-        sequentially.
+        executor thread).  Exceptions in individual scenarios are caught
+        and wrapped in a failed :class:`ScenarioResult`.
         """
         if concurrent:
-            return list(
-                await asyncio.gather(*(self.run_scenario(s) for s in scenarios))
-            )
+            return list(await asyncio.gather(*(self._safe_run(s) for s in scenarios)))
         return [await self.run_scenario(s) for s in scenarios]
+
+    async def _safe_run(self, scenario: Scenario) -> ScenarioResult:
+        """Run a single scenario, catching exceptions as failures."""
+        try:
+            return await self.run_scenario(scenario)
+        except Exception as exc:
+            return ScenarioResult(
+                scenario=scenario,
+                seed_outputs=[],
+                agent_result=AgentRunResult(
+                    return_code=1,
+                    stdout="",
+                    stderr=str(exc),
+                    flow_log=f"Exception during scenario execution: {exc}",
+                ),
+                verify_results=[],
+            )
 
     def _run_agent(self, scenario: Scenario) -> AgentRunResult:
         """Run agent via opencode CLI."""

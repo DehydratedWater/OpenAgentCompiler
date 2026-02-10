@@ -402,7 +402,9 @@ def _compile_workflow_prompt(
 
     # Skills section — inline or reference
     if defn.skills and inline_skills:
-        parts.append("## Inlined Skill Reference")
+        parts.append(
+            "## Inlined Skill Reference — (skills already imported, DON'T call for skills)"  # noqa: E501
+        )
         parts.append("")
         for skill in defn.skills:
             parts.append(f"### `{skill.name}` — {skill.description}")
@@ -758,6 +760,23 @@ def _compile_security_policy(
         lines.append(
             "- Write or create files using the write/edit tools (they are disabled)"
         )
+        lines.append(
+            "- Create files via bash (no `cat >`, `echo >`, `tee`, `>`, `>>`, `touch`,"
+            " `mkdir`, `cp`, `mv` or ANY other file-creating command)"
+        )
+        lines.append(
+            "- Store thoughts, notes, analyses, reports, conclusions,"
+            " or ANY intermediate output as files — keep everything in memory"
+            " or write to your workspace via workspace_io.py ONLY"
+        )
+    elif not (defn.tool_permissions and defn.tool_permissions.write):
+        lines.append(
+            "- Write, create, or modify any files (write/edit tools are disabled)"
+        )
+        lines.append(
+            "- Create files via bash (no `cat >`, `echo >`, `tee`, `>`, `>>`, `touch`,"
+            " `mkdir`, `cp`, `mv` or ANY other file-creating command)"
+        )
     lines.append("- Run bash commands not listed in your tool documentation")
     if inline_skills or not defn.skills:
         lines.append("- Use any skills (all skills are disabled)")
@@ -861,7 +880,10 @@ def _compile_opencode(
         )
     elif defn.skills and inline_skills:
         # Non-workflow agents: append inlined skill reference to system prompt
-        skill_parts: list[str] = ["## Inlined Skill Reference", ""]
+        skill_parts: list[str] = [
+            "## Inlined Skill Reference — (skills already imported, DON'T call for skills)",  # noqa: E501
+            "",
+        ]
         for skill in defn.skills:
             skill_parts.append(f"### `{skill.name}` — {skill.description}")
             if skill.instructions:
