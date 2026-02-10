@@ -116,11 +116,16 @@ class ConditionRoute:
 
 @dataclass(frozen=True, slots=True)
 class SubagentDefinition:
-    """Reference to a subagent this agent can trigger via Task tool."""
+    """Reference to a subagent this agent can invoke.
+
+    mode="subagent" (default): Invoked via Task tool with subagent_type parameter.
+    mode="primary": Standalone agent invoked via opencode_manager.py (bash).
+    """
 
     name: str  # "persona/twily_quick_ack-glm-45-air"
     description: str  # "Instant Natural Response + Routing"
     notes: str = ""  # Detailed usage notes
+    mode: str = "subagent"  # "subagent" | "primary"
 
 
 @dataclass(frozen=True, slots=True)

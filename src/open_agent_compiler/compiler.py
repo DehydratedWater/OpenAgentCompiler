@@ -204,9 +204,16 @@ def _auto_tool_permissions(
             result["todoread"] = True
             result["todowrite"] = True
 
-    # Subagents need task
+    # Subagent invocation:
+    # - mode="subagent" → Task tool with subagent_type parameter
+    # - mode="primary" → opencode_manager.py via bash
     if defn.subagents:
-        result["task"] = True
+        has_task_subs = any(sa.mode == "subagent" for sa in defn.subagents)
+        has_bash_subs = any(sa.mode == "primary" for sa in defn.subagents)
+        if has_bash_subs:
+            bash_perms["uv run scripts/opencode_manager.py *"] = "allow"
+        if has_task_subs:
+            result["task"] = True
 
     # Skill permissions — disable when inlined, else deny-all unless specific
     if inline_skills:
@@ -408,6 +415,9 @@ def _compile_workflow_prompt(
     tool_lookup = _build_tool_lookup(defn)
     tool_skill_lookup = _build_tool_skill_lookup(defn)
     is_subagent = defn.mode == "subagent"
+
+    # Build subagent name → mode lookup for step invocation injection
+    sa_mode_lookup: dict[str, str] = {sa.name: sa.mode for sa in defn.subagents}
     parts: list[str] = []
 
     # Preamble
@@ -580,6 +590,27 @@ def _compile_workflow_prompt(
             parts.append(step.instructions)
             parts.append("")
 
+        # Auto-inject subagent invocation syntax based on mode.
+        # Use un-postfixed names here — the final postfix rewrite
+        # at the end of _compile_workflow_prompt handles postfixing.
+        for sa_name in step.subagents:
+            sa_mode = sa_mode_lookup.get(sa_name, "subagent")
+            if sa_mode == "subagent":
+                parts.append(f"**Invoke `{sa_name}` via Task tool:**")
+                parts.append(
+                    f'`subagent_type: "{sa_name}"`, `prompt: "<your instructions>"`'
+                )
+            else:
+                parts.append(f"**Invoke `{sa_name}` via bash:**")
+                parts.append("```bash")
+                parts.append(
+                    "uv run scripts/opencode_manager.py"
+                    f' run --agent "{sa_name}"'
+                    ' "<your instructions>"'
+                )
+                parts.append("```")
+            parts.append("")
+
         # Marks done
         if is_subagent:
             for name in step.marks_done:
@@ -732,13 +763,50 @@ def _compile_subagent_section(defn: AgentDefinition, postfix: str = "") -> str:
     """Generate a markdown section documenting available subagents."""
     if not defn.subagents:
         return ""
+
+    task_subs = [sa for sa in defn.subagents if sa.mode == "subagent"]
+    bash_subs = [sa for sa in defn.subagents if sa.mode == "primary"]
+
     lines: list[str] = ["## Available Subagents", ""]
-    for sa in defn.subagents:
-        sa_name = _postfix_sa_name(sa.name, postfix)
-        lines.append(f"### {sa_name} — {sa.description}")
-        if sa.notes:
-            lines.append(sa.notes)
+
+    # Task-invocable subagents (mode: subagent)
+    if task_subs:
+        lines.append(
+            "Invoke subagents using the **Task tool** with the `subagent_type`"
+            " parameter set to the agent name shown below."
+        )
         lines.append("")
+        for sa in task_subs:
+            sa_name = _postfix_sa_name(sa.name, postfix)
+            lines.append(f"### {sa_name} — {sa.description}")
+            if sa.notes:
+                lines.append(sa.notes)
+            lines.append("")
+            lines.append(
+                f'Task tool call: `subagent_type: "{sa_name}"`, `prompt: "<your instructions>"`'  # noqa: E501
+            )
+            lines.append("")
+
+    # Bash-invocable agents (mode: primary — workflows, standalone agents)
+    if bash_subs:
+        lines.append(
+            "Invoke the following agents using `opencode_manager.py` via the"
+            " **bash** tool. These are standalone primary agents."
+        )
+        lines.append("")
+        for sa in bash_subs:
+            sa_name = _postfix_sa_name(sa.name, postfix)
+            lines.append(f"### {sa_name} — {sa.description}")
+            if sa.notes:
+                lines.append(sa.notes)
+            lines.append("")
+            lines.append("```bash")
+            lines.append(
+                f'uv run scripts/opencode_manager.py run --agent "{sa_name}" "<your instructions>"'  # noqa: E501
+            )
+            lines.append("```")
+            lines.append("")
+
     return "\n".join(lines)
 
 
@@ -772,10 +840,24 @@ def _compile_security_policy(
 
     # Subagents
     if defn.subagents:
-        sa_names = ", ".join(
-            f"`{_postfix_sa_name(sa.name, postfix)}`" for sa in defn.subagents
-        )
-        lines.append(f"- Invoke subagents: {sa_names}")
+        task_subs = [sa for sa in defn.subagents if sa.mode == "subagent"]
+        bash_subs = [sa for sa in defn.subagents if sa.mode == "primary"]
+        if task_subs:
+            sa_names = ", ".join(
+                f"`{_postfix_sa_name(sa.name, postfix)}`" for sa in task_subs
+            )
+            lines.append(
+                "- Invoke subagents via Task tool"
+                f" (`subagent_type` parameter): {sa_names}"
+            )
+        if bash_subs:
+            sa_names = ", ".join(
+                f"`{_postfix_sa_name(sa.name, postfix)}`" for sa in bash_subs
+            )
+            lines.append(
+                "- Invoke agents via bash"
+                f" (`opencode_manager.py run --agent`): {sa_names}"
+            )
     else:
         lines.append("- Invoke subagents: none")
 
@@ -819,9 +901,21 @@ def _compile_security_policy(
     else:
         lines.append("- Use skills other than the ones listed above")
     if not defn.subagents:
-        lines.append("- Invoke subagents via Task tool (it is disabled)")
+        lines.append("- Invoke subagents (none are configured for this agent)")
     else:
+        task_subs = [sa for sa in defn.subagents if sa.mode == "subagent"]
+        bash_subs = [sa for sa in defn.subagents if sa.mode == "primary"]
         lines.append("- Invoke subagents other than the ones listed above")
+        if task_subs:
+            lines.append(
+                "- Use opencode_manager.py to invoke subagents"
+                " (use Task tool with `subagent_type` instead)"
+            )
+        if bash_subs:
+            lines.append(
+                "- Use Task tool for primary/workflow agents"
+                " (use opencode_manager.py instead)"
+            )
     lines.append("- Use MCP tools (they are disabled)")
     lines.append(
         "- Create files in the project root or any directory outside your workspace"
@@ -1039,13 +1133,9 @@ def _compile_opencode(
             )
         result["permission"] = _agent_permissions_to_dict(perms)
     elif defn.subagents:
-        # Auto-generate subagent permissions (with postfixed names)
-        task_perms = (
-            ("*", "deny"),
-            *((_postfix_sa_name(sa.name, postfix), "allow") for sa in defn.subagents),
-        )
-        auto_perms = AgentPermissions(doom_loop="deny", task=task_perms)
-        result["permission"] = _agent_permissions_to_dict(auto_perms)
+        # Subagents are invoked via bash (opencode_manager.py), not the
+        # Task tool.  The bash allow pattern is set in _auto_tool_permissions.
+        result["permission"] = _agent_permissions_to_dict(AgentPermissions())
     else:
         result["permission"] = _agent_permissions_to_dict(AgentPermissions())
 

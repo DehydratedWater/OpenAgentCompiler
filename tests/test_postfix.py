@@ -42,6 +42,7 @@ class TestPostfixCompilation:
         assert result["agent"]["name"] == "my-agent"
 
     def test_subagent_refs_in_permissions(self):
+        """mode=subagent uses Task tool; mode=primary uses bash."""
         subs = (
             SubagentDefinition(
                 name="persona/quick_ack",
@@ -55,8 +56,55 @@ class TestPostfixCompilation:
         )
         result = compile_agent(agent, postfix=POSTFIX)
         perm = result["permission"]
-        assert "task" in perm
-        assert f"persona/quick_ack{POSTFIX}" in perm["task"]
+        # Default mode=subagent → task permission enabled
+        assert perm["task"] == "allow"
+        # No opencode_manager.py needed for mode=subagent
+        assert "uv run scripts/opencode_manager.py *" not in perm.get("bash", {})
+
+    def test_primary_subagent_uses_bash(self):
+        """mode=primary subagents use opencode_manager.py via bash."""
+        subs = (
+            SubagentDefinition(
+                name="workflows/goal",
+                description="Goal management",
+                mode="primary",
+            ),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            subagents=subs,
+        )
+        result = compile_agent(agent, postfix=POSTFIX)
+        perm = result["permission"]
+        # mode=primary → bash permission for opencode_manager.py
+        assert "bash" in perm
+        assert perm["bash"]["uv run scripts/opencode_manager.py *"] == "allow"
+        # No task permission needed for mode=primary only
+        assert "task" not in perm
+
+    def test_mixed_subagent_modes(self):
+        """Agent with both subagent and primary modes gets both permissions."""
+        subs = (
+            SubagentDefinition(
+                name="persona/quick_ack",
+                description="Quick acknowledgment",
+            ),
+            SubagentDefinition(
+                name="workflows/goal",
+                description="Goal management",
+                mode="primary",
+            ),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            subagents=subs,
+        )
+        result = compile_agent(agent, postfix=POSTFIX)
+        perm = result["permission"]
+        assert perm["task"] == "allow"
+        assert perm["bash"]["uv run scripts/opencode_manager.py *"] == "allow"
 
     def test_subagent_md_names_have_postfix(self):
         subs = (

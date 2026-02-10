@@ -16,6 +16,7 @@ class SubagentBuilder(Builder[SubagentDefinition]):
         self._name: str | None = None
         self._description: str | None = None
         self._notes: str = ""
+        self._mode: str = "subagent"
         return self
 
     def name(self, name: str) -> SubagentBuilder:
@@ -30,6 +31,11 @@ class SubagentBuilder(Builder[SubagentDefinition]):
         self._notes = notes
         return self
 
+    def mode(self, mode: str) -> SubagentBuilder:
+        """Set invocation mode: "subagent" (Task tool) or "primary" (bash)."""
+        self._mode = mode
+        return self
+
     def build(self) -> SubagentDefinition:
         if not self._name:
             raise ValueError("SubagentDefinition requires a name")
@@ -39,4 +45,5 @@ class SubagentBuilder(Builder[SubagentDefinition]):
             name=self._name,
             description=self._description,
             notes=self._notes,
+            mode=self._mode,
         )
