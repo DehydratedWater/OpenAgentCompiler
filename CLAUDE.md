@@ -72,6 +72,10 @@ uv run mypy               # type check (strict mode)
 - **Long command strings** — add `# noqa: E501` to lines containing bash commands or usage examples that exceed 88 chars. These are literal command templates that must stay on one line for readability.
 - **Bundled scripts** (`scripts/subagent_todo.py`, `scripts/opencode_manager.py`) are copied verbatim from v2 and excluded from ruff/mypy via `pyproject.toml` overrides. Do not lint-fix them.
 
+## XDG_DATA_HOME convention
+
+**CRITICAL:** Any code that runs opencode agents MUST set `XDG_DATA_HOME` to the consumer project's `.opencode/data/` directory. This is the single source of truth for session storage — all contexts (web server, manager, bot, tests) must use the same path so sessions appear in the web UI. **Never use `~/snap/...` or any other path.**
+
 ## Permission model
 
 The compiler generates a `permission:` section in each agent's frontmatter that controls what tools the agent can use at runtime. The core mechanism:

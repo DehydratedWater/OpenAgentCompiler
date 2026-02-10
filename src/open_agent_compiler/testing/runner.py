@@ -206,7 +206,9 @@ def _check_assertion(data: dict[str, Any], assertion: Assertion) -> AssertionRes
     ops: dict[str, Callable[[Any, Any], bool]] = {
         "eq": operator.eq,
         "gt": operator.gt,
+        "gte": operator.ge,
         "lt": operator.lt,
+        "lte": operator.le,
         "contains": lambda a, b: b in a,
         "truthy": lambda a, _: bool(a),
         "length_gte": lambda a, b: len(a) >= b,

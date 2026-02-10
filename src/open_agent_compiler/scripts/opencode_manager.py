@@ -89,7 +89,7 @@ class OpenCodeManager:
             # Use --hostname 0.0.0.0 to make it accessible across VPN
             # Set XDG_DATA_HOME to match agent execution so sessions appear in web UI
             env = os.environ.copy()
-            env["XDG_DATA_HOME"] = os.path.expanduser("~/snap/code/218/.local/share")
+            env["XDG_DATA_HOME"] = str(PROJECT_ROOT / ".opencode" / "data")
 
             process = subprocess.Popen(
                 [
@@ -221,20 +221,41 @@ class OpenCodeManager:
         """
         start_time = datetime.now()
 
-        # Check if server is running (for web UI access, not for agent execution)
-        server_running = OpenCodeManager.is_server_running()
+        # Guard: refuse to run subagents directly
+        agent_md = PROJECT_ROOT / ".opencode" / "agents" / f"{agent}.md"
+        if agent_md.exists():
+            with open(agent_md) as f:
+                for line in f:
+                    line = line.strip()
+                    if line == "---":
+                        continue
+                    if line.startswith("mode:"):
+                        mode = line.split(":", 1)[1].strip()
+                        if mode == "subagent":
+                            print(
+                                f"[WARN] '{agent}' is a subagent — it should be invoked via the Task tool, not opencode_manager.py."
+                            )
+                            print(
+                                f'[WARN] Proceeding anyway, but prefer: Task tool → "{agent}"'
+                            )
+                            break
+                        break
+                    if not line or line == "---":
+                        break
 
-        # Start server if requested (provides web UI for monitoring)
-        if ensure_server and not server_running:
+        # Ensure web server is running for monitoring
+        if ensure_server and not OpenCodeManager.is_server_running():
             print("[INFO] Starting web server for monitoring UI...")
             OpenCodeManager.start_server()
+
+        server_running = OpenCodeManager.is_server_running()
 
         print(f"[{start_time.strftime('%H:%M:%S')}] Running agent: {agent}")
         print(f"[INFO] Prompt: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
         if server_running:
-            print(f"[INFO] Web UI available at {OPENCODE_URL}")
+            print(f"[INFO] Web UI: {OPENCODE_URL}")
 
-        # Build command - agents run independently, server provides web UI
+        # Build command — attach to running server so session is visible in web UI
         cmd = [
             "opencode",
             "run",
@@ -242,8 +263,10 @@ class OpenCodeManager:
             "DEBUG",
             "--agent",
             agent,
-            prompt,
         ]
+        if server_running:
+            cmd.extend(["--attach", OPENCODE_URL])
+        cmd.append(prompt)
         print(f"[DEBUG] Full command: {' '.join(cmd[:5])} ...")
         print(f"[DEBUG] Working dir: {PROJECT_ROOT}")
 
@@ -254,7 +277,7 @@ class OpenCodeManager:
         # Set XDG_DATA_HOME to match the opencode web server's storage location
         # This ensures sessions appear in the web UI
         env = os.environ.copy()
-        env["XDG_DATA_HOME"] = os.path.expanduser("~/snap/code/218/.local/share")
+        env["XDG_DATA_HOME"] = str(PROJECT_ROOT / ".opencode" / "data")
 
         try:
             process = await asyncio.create_subprocess_exec(
