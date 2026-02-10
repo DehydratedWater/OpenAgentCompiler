@@ -118,7 +118,7 @@ class LLMJudge:
                         },
                     ],
                     "temperature": 0.1,
-                    "max_tokens": 2048,
+                    "max_tokens": 4096,
                 },
             )
             resp.raise_for_status()
@@ -142,6 +142,13 @@ class LLMJudge:
                     continue
             if objs:
                 return objs
+            # No complete objects — try to close truncated last object
+            for suffix in ('"}]', '"}}]', '"})]', '"]', "}]"):
+                try:
+                    result: list[dict[str, object]] = json.loads(text + suffix)
+                    return result
+                except json.JSONDecodeError:
+                    continue
         # Single truncated object
         if text.startswith("{"):
             # Try adding closing brace
