@@ -72,6 +72,30 @@ uv run mypy               # type check (strict mode)
 - **Long command strings** — add `# noqa: E501` to lines containing bash commands or usage examples that exceed 88 chars. These are literal command templates that must stay on one line for readability.
 - **Bundled scripts** (`scripts/subagent_todo.py`, `scripts/opencode_manager.py`) are copied verbatim from v2 and excluded from ruff/mypy via `pyproject.toml` overrides. Do not lint-fix them.
 
+## Permission model
+
+The compiler generates a `permission:` section in each agent's frontmatter that controls what tools the agent can use at runtime. The core mechanism:
+
+1. **`"*": "deny"`** — a single global deny blocks all tools by default (read, edit, bash, skill, task, todoread, todowrite, MCP, doom_loop — everything)
+2. **Selective allows** — only tools the agent actually needs get explicit `"allow"` entries
+3. **Bash patterns** — bash always gets its own sub-dict with `"*": "deny"` + per-script allows
+4. **MCP** — blocked by the global deny. When `auto_mcp_deny=False`, the compiler emits selective allow patterns (`_DEFAULT_MCP_PATTERNS`) to re-enable MCP tools
+5. **doom_loop** — only emitted when set to `"allow"` (deny is implicit via `"*": "deny"`)
+
+The `tool:` section is informational only — it controls what tools the model *sees*, but is **not enforced** in `opencode run` mode. All actual enforcement goes through `permission:`.
+
+Example compiled output:
+```yaml
+permission:
+  "*": deny
+  read: allow          # only when agent needs it
+  bash:
+    "*": "deny"
+    "uv run scripts/foo.py *": "allow"
+  todoread: allow      # only when agent needs it
+  todowrite: allow
+```
+
 ## Consumer project
 
 `fren_infrastructure_control_v3` references this package via:
