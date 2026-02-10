@@ -967,7 +967,22 @@ def _compile_opencode(
 
     # Agent permissions — always generate doom_loop baseline
     if defn.permissions is not None:
-        result["permission"] = _agent_permissions_to_dict(defn.permissions)
+        perms = defn.permissions
+        # Postfix subagent names in explicit task permissions
+        if postfix and perms.task:
+            new_task = tuple(
+                (_postfix_sa_name(name, postfix), rule) if name != "*" else (name, rule)
+                for name, rule in perms.task
+            )
+            perms = AgentPermissions(
+                doom_loop=perms.doom_loop,
+                tool=perms.tool,
+                mcp=perms.mcp,
+                bash=perms.bash,
+                task=new_task,
+                extra=perms.extra,
+            )
+        result["permission"] = _agent_permissions_to_dict(perms)
     elif defn.subagents:
         # Auto-generate subagent permissions (with postfixed names)
         task_perms = (
@@ -978,5 +993,13 @@ def _compile_opencode(
         result["permission"] = _agent_permissions_to_dict(auto_perms)
     else:
         result["permission"] = _agent_permissions_to_dict(AgentPermissions())
+
+    # Enforce read/write/edit in permission section to match tool section.
+    # The tool: section controls tool availability (bool), the permission:
+    # section enforces access policy ("allow"/"deny").  Both must agree.
+    perm_dict = result["permission"]
+    perm_dict["read"] = "allow" if tool_perms.get("read", False) else "deny"
+    perm_dict["write"] = "allow" if tool_perms.get("write", False) else "deny"
+    perm_dict["edit"] = "allow" if tool_perms.get("edit", False) else "deny"
 
     return result
