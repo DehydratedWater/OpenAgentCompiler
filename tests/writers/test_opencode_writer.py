@@ -123,7 +123,7 @@ class TestAgentMd:
         path = tmp_path / ".opencode" / "agents" / "perm-agent.md"
         content = path.read_text()
         assert "permission:" in content
-        assert "doom_loop: deny" in content
+        assert '"*": deny' in content
 
     def test_agent_md_skill_instructions(
         self, tmp_path: Path, sample_compiled: dict[str, Any]

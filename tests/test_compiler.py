@@ -117,7 +117,7 @@ class TestCompiler:
         assert s["name"] == "security-review"
         assert s["tools"] == ["grep"]
         assert "## Available Tools" in s["instructions"]
-        assert "### grep" in s["instructions"]
+        assert "#### Script: grep" in s["instructions"]
         assert "uv run scripts/grep.py" in s["instructions"]
 
     def test_no_duplicate_bash_permissions(self):
@@ -202,10 +202,11 @@ class TestCompiler:
     def test_doom_loop_baseline_when_no_permissions(
         self, sample_agent: AgentDefinition
     ):
-        """Always generates doom_loop baseline even without explicit permissions."""
+        """doom_loop deny is implicit via '*': 'deny', not emitted explicitly."""
         result = compile_agent(sample_agent)
         assert "permission" in result
-        assert result["permission"]["doom_loop"] == "deny"
+        assert result["permission"]["*"] == "deny"
+        assert "doom_loop" not in result["permission"]
 
     def test_mode_in_agent_section(self):
         agent = AgentDefinition(

@@ -78,10 +78,10 @@ class TestInlineSkills:
         )
         result = compile_agent(agent, inline_skills=True)
         prompt = result["agent"]["system_prompt"]
-        assert "## Inlined Skill Reference" in prompt
+        assert "## Available Bash Scripts" in prompt
         assert "Check OWASP top 10." in prompt
         # Tool action docs should be inline
-        assert "### grep" in prompt
+        assert "#### Script: grep" in prompt
         assert "uv run scripts/grep.py" in prompt
 
     def test_workflow_prompt_has_inlined_section(self):
@@ -107,10 +107,10 @@ class TestInlineSkills:
         )
         result = compile_agent(agent, inline_skills=True)
         prompt = result["agent"]["system_prompt"]
-        assert "## Inlined Skill Reference" in prompt
+        assert "## Available Bash Scripts" in prompt
         assert "## Your Skills" not in prompt
         assert "Use SQL to query." in prompt
-        assert "### db_query" in prompt
+        assert "#### Script: db_query" in prompt
 
     def test_bash_permissions_still_generated_for_skill_tools(self):
         tool = _make_tool("grep")
@@ -165,7 +165,7 @@ class TestInlineSkills:
         )
         result = compile_agent(agent, inline_skills=True)
         prompt = result["agent"]["system_prompt"]
-        assert "none (tools are inlined into prompt)" in prompt
+        assert "none (bash scripts are documented in prompt)" in prompt
 
     def test_combined_postfix_and_inline(self):
         tool = _make_tool("grep")
@@ -185,4 +185,4 @@ class TestInlineSkills:
         assert result["skills"] == []
         assert result["tool"]["skill"] is False
         prompt = result["agent"]["system_prompt"]
-        assert "## Inlined Skill Reference" in prompt
+        assert "## Available Bash Scripts" in prompt

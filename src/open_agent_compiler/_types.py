@@ -263,5 +263,6 @@ class AgentDefinition:
     agent_dir: str = ""  # Subdirectory under .opencode/agents/
     trigger_command: str = ""  # Slash command e.g. "/joke"
     input_placeholder: str = ""  # Input box placeholder text
-    auto_mcp_deny: bool = True  # Auto-add "zai-mcp-*": false to tool perms
+    auto_mcp_deny: bool | tuple[str, ...] = True  # Auto-deny MCP tool patterns
+    # True → deny default patterns; False → skip; tuple → deny these patterns
     workspace: str = ""  # Sandboxed write directory, e.g. ".agent_workspace/{name}"

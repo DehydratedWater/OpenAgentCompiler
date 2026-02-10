@@ -68,7 +68,7 @@ def _collect_all_tools(defn: AgentDefinition) -> list[ToolDefinition]:
 
 def _generate_action_docs(tool: ToolDefinition) -> str:
     """Generate markdown documentation from a tool's actions."""
-    lines: list[str] = [f"### {tool.name}", tool.description, ""]
+    lines: list[str] = [f"#### Script: {tool.name}", tool.description, ""]
     for action in tool.actions:
         lines.append(action.description)
         lines.append("")
@@ -131,8 +131,21 @@ def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
         result["bash"] = {p: r for p, r in perms.bash}
     if perms.task:
         result["task"] = {p: r for p, r in perms.task}
-    result["doom_loop"] = perms.doom_loop
+    # Only emit doom_loop when "allow" — "deny" is covered by "*": "deny"
+    if perms.doom_loop == "allow":
+        result["doom_loop"] = perms.doom_loop
     return result
+
+
+# Default MCP tool glob patterns — covers all known global MCP servers.
+# With ``"*": "deny"`` in the permission section, these are only needed as
+# selective *allow* entries when an agent opts out of MCP deny.
+_DEFAULT_MCP_PATTERNS: tuple[str, ...] = (
+    "zai-mcp-*",
+    "web-search-prime*",
+    "web-reader*",
+    "zread*",
+)
 
 
 def _auto_tool_permissions(
@@ -143,12 +156,13 @@ def _auto_tool_permissions(
 ) -> dict[str, Any]:
     """Auto-generate tool permission dict from tools and skills.
 
-    When ``defn.auto_mcp_deny`` is True (default), ``"zai-mcp-*": false``
-    is emitted first for sequential evaluation.
+    When ``defn.auto_mcp_deny`` is truthy, MCP deny patterns are emitted
+    in the ``tool:`` section to hide MCP tools from the model.
 
     *agent_name* is the (possibly postfixed) agent name, used for workspace
     path resolution.  Falls back to ``defn.name`` when empty.
     """
+
     agent_name = agent_name or defn.name
 
     # Bash permissions from tool actions — deny first
@@ -161,7 +175,11 @@ def _auto_tool_permissions(
 
     # MCP deny first (sequentially evaluated, must precede other entries)
     if defn.auto_mcp_deny:
-        result["zai-mcp-*"] = False
+        patterns: tuple[str, ...] = (
+            _DEFAULT_MCP_PATTERNS if defn.auto_mcp_deny is True else defn.auto_mcp_deny  # type: ignore[assignment]
+        )
+        for pattern in patterns:
+            result[pattern] = False
 
     result["bash"] = bash_perms
     result["read"] = False
@@ -399,12 +417,15 @@ def _compile_workflow_prompt(
 
     # Skills section — inline or reference
     if defn.skills and inline_skills:
+        parts.append("## Available Bash Scripts")
+        parts.append("")
         parts.append(
-            "## Inlined Skill Reference — (skills already imported, DON'T call for skills)"  # noqa: E501
+            "**IMPORTANT:** These are NOT callable tools. To use them, run the bash "
+            "commands shown below using the `bash` tool."
         )
         parts.append("")
         for skill in defn.skills:
-            parts.append(f"### `{skill.name}` — {skill.description}")
+            parts.append(f"### {skill.description}")
             if skill.instructions:
                 parts.append(skill.instructions)
             parts.append("")
@@ -413,10 +434,10 @@ def _compile_workflow_prompt(
                 parts.append(_generate_action_docs(t))
                 parts.append("")
     elif defn.skills:
-        parts.append("## Your Skills")
+        parts.append("## Your Skills (use via bash)")
         parts.append("")
         for skill in defn.skills:
-            parts.append(f"### `{skill.name}` — {skill.description}")
+            parts.append(f"### {skill.description}")
             if skill.instructions:
                 parts.append(skill.instructions)
             if skill.tools:
@@ -760,7 +781,7 @@ def _compile_security_policy(
 
     # Skills
     if inline_skills:
-        lines.append("- Use skills: none (tools are inlined into prompt)")
+        lines.append("- Use skills: none (bash scripts are documented in prompt)")
     elif defn.skills:
         sk_names = ", ".join(f"`{s.name}`" for s in defn.skills)
         lines.append(f"- Use skills: {sk_names}")
@@ -896,11 +917,14 @@ def _compile_opencode(
     elif defn.skills and inline_skills:
         # Non-workflow agents: append inlined skill reference to system prompt
         skill_parts: list[str] = [
-            "## Inlined Skill Reference — (skills already imported, DON'T call for skills)",  # noqa: E501
+            "## Available Bash Scripts",
+            "",
+            "**IMPORTANT:** These are NOT callable tools. To use them, run the bash "
+            "commands shown below using the `bash` tool.",
             "",
         ]
         for skill in defn.skills:
-            skill_parts.append(f"### `{skill.name}` — {skill.description}")
+            skill_parts.append(f"### {skill.description}")
             if skill.instructions:
                 skill_parts.append(skill.instructions)
             skill_parts.append("")
@@ -1030,29 +1054,34 @@ def _compile_opencode(
     # ``opencode run`` mode (the tool: section may not be — see bug #6396).
     perm_dict = result["permission"]
 
-    # read
-    perm_dict["read"] = "allow" if tool_perms.get("read", False) else "deny"
+    # Global deny — blocks all tools by default.  Only explicit "allow"
+    # entries below will re-enable specific capabilities.
+    perm_dict["*"] = "deny"
+
+    # read — only allow when explicitly enabled
+    if tool_perms.get("read", False):
+        perm_dict["read"] = "allow"
 
     # edit — canonical key covering write, edit, patch, multiedit
     write_ok = tool_perms.get("write", False)
     edit_ok = tool_perms.get("edit", False)
-    perm_dict["edit"] = "allow" if (write_ok or edit_ok) else "deny"
+    if write_ok or edit_ok:
+        perm_dict["edit"] = "allow"
 
-    # bash — mirror deny/allow patterns so enforcement works in run mode
+    # bash — merge deny/allow patterns (always has its own "*": "deny")
     bash_tool = tool_perms.get("bash")
     if isinstance(bash_tool, dict):
         existing_bash = perm_dict.get("bash")
         if isinstance(existing_bash, dict):
-            # Tool patterns first, then explicit permission patterns override
             merged = dict(bash_tool)
             merged.update(existing_bash)
             perm_dict["bash"] = merged
         else:
             perm_dict["bash"] = dict(bash_tool)
-    elif isinstance(bash_tool, bool) and "bash" not in perm_dict:
-        perm_dict["bash"] = "allow" if bash_tool else "deny"
+    elif isinstance(bash_tool, bool) and bash_tool and "bash" not in perm_dict:
+        perm_dict["bash"] = {"*": "allow"}
 
-    # skill — mirror deny/allow patterns
+    # skill — only allow when explicitly enabled
     skill_tool = tool_perms.get("skill")
     if isinstance(skill_tool, dict):
         existing_skill = perm_dict.get("skill")
@@ -1062,24 +1091,30 @@ def _compile_opencode(
             perm_dict["skill"] = merged
         else:
             perm_dict["skill"] = dict(skill_tool)
-    elif isinstance(skill_tool, bool) and "skill" not in perm_dict:
-        perm_dict["skill"] = "allow" if skill_tool else "deny"
+    elif isinstance(skill_tool, bool) and skill_tool and "skill" not in perm_dict:
+        perm_dict["skill"] = "allow"
 
-    # mcp
-    mcp_tool = tool_perms.get("mcp")
-    if isinstance(mcp_tool, bool) and "mcp" not in perm_dict:
-        perm_dict["mcp"] = "allow" if mcp_tool else "deny"
+    # MCP — ``"*": "deny"`` blocks all MCP tools by default.
+    # When ``auto_mcp_deny`` is False, emit selective allows to let MCP through.
+    if not defn.auto_mcp_deny:
+        patterns = _DEFAULT_MCP_PATTERNS
+        for pattern in patterns:
+            if pattern not in perm_dict:
+                perm_dict[pattern] = "allow"
 
-    # todoread / todowrite
-    if "todoread" not in perm_dict:
-        perm_dict["todoread"] = "allow" if tool_perms.get("todoread", False) else "deny"
-    if "todowrite" not in perm_dict:
-        perm_dict["todowrite"] = (
-            "allow" if tool_perms.get("todowrite", False) else "deny"
-        )
+    # todoread / todowrite — only allow when explicitly enabled
+    if tool_perms.get("todoread", False):
+        perm_dict["todoread"] = "allow"
+    if tool_perms.get("todowrite", False):
+        perm_dict["todowrite"] = "allow"
 
-    # task — only set if not already configured by agent permissions
-    if "task" not in perm_dict:
-        perm_dict["task"] = "allow" if tool_perms.get("task", False) else "deny"
+    # task — only allow if not already configured and tool says allow
+    if "task" not in perm_dict and tool_perms.get("task", False):
+        perm_dict["task"] = "allow"
+
+    # doom_loop — move to end so it can override the global "*": "deny"
+    if "doom_loop" in perm_dict:
+        val = perm_dict.pop("doom_loop")
+        perm_dict["doom_loop"] = val
 
     return result
