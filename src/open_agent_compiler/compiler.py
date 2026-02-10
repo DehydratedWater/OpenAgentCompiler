@@ -994,12 +994,61 @@ def _compile_opencode(
     else:
         result["permission"] = _agent_permissions_to_dict(AgentPermissions())
 
-    # Enforce read/write/edit in permission section to match tool section.
-    # The tool: section controls tool availability (bool), the permission:
-    # section enforces access policy ("allow"/"deny").  Both must agree.
+    # Mirror tool restrictions into the permission: section.
+    # The permission: section is reliably enforced in non-interactive
+    # ``opencode run`` mode (the tool: section may not be — see bug #6396).
     perm_dict = result["permission"]
+
+    # read
     perm_dict["read"] = "allow" if tool_perms.get("read", False) else "deny"
-    perm_dict["write"] = "allow" if tool_perms.get("write", False) else "deny"
-    perm_dict["edit"] = "allow" if tool_perms.get("edit", False) else "deny"
+
+    # edit — canonical key covering write, edit, patch, multiedit
+    write_ok = tool_perms.get("write", False)
+    edit_ok = tool_perms.get("edit", False)
+    perm_dict["edit"] = "allow" if (write_ok or edit_ok) else "deny"
+
+    # bash — mirror deny/allow patterns so enforcement works in run mode
+    bash_tool = tool_perms.get("bash")
+    if isinstance(bash_tool, dict):
+        existing_bash = perm_dict.get("bash")
+        if isinstance(existing_bash, dict):
+            # Tool patterns first, then explicit permission patterns override
+            merged = dict(bash_tool)
+            merged.update(existing_bash)
+            perm_dict["bash"] = merged
+        else:
+            perm_dict["bash"] = dict(bash_tool)
+    elif isinstance(bash_tool, bool) and "bash" not in perm_dict:
+        perm_dict["bash"] = "allow" if bash_tool else "deny"
+
+    # skill — mirror deny/allow patterns
+    skill_tool = tool_perms.get("skill")
+    if isinstance(skill_tool, dict):
+        existing_skill = perm_dict.get("skill")
+        if isinstance(existing_skill, dict):
+            merged = dict(skill_tool)
+            merged.update(existing_skill)
+            perm_dict["skill"] = merged
+        else:
+            perm_dict["skill"] = dict(skill_tool)
+    elif isinstance(skill_tool, bool) and "skill" not in perm_dict:
+        perm_dict["skill"] = "allow" if skill_tool else "deny"
+
+    # mcp
+    mcp_tool = tool_perms.get("mcp")
+    if isinstance(mcp_tool, bool) and "mcp" not in perm_dict:
+        perm_dict["mcp"] = "allow" if mcp_tool else "deny"
+
+    # todoread / todowrite
+    if "todoread" not in perm_dict:
+        perm_dict["todoread"] = "allow" if tool_perms.get("todoread", False) else "deny"
+    if "todowrite" not in perm_dict:
+        perm_dict["todowrite"] = (
+            "allow" if tool_perms.get("todowrite", False) else "deny"
+        )
+
+    # task — only set if not already configured by agent permissions
+    if "task" not in perm_dict:
+        perm_dict["task"] = "allow" if tool_perms.get("task", False) else "deny"
 
     return result
