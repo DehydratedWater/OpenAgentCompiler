@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import warnings
 from typing import Any
 
@@ -233,7 +234,7 @@ def _auto_tool_permissions(
                 if sa.mode == "primary":
                     sa_name = _postfix_sa_name(sa.name, postfix)
                     bash_perms[
-                        f"uv run scripts/opencode_manager.py run --agent {sa_name} *"
+                        f"uv run scripts/opencode_manager.py run*--agent*{sa_name}*"
                     ] = "allow"
         if has_task_subs:
             result["task"] = True
@@ -768,11 +769,14 @@ def _compile_workflow_prompt(
             for name, _rule in defn.permissions.task:
                 if name != "*":
                     names_to_postfix.add(name)
-        # Replace longest names first to avoid partial matches
+        # Replace longest names first; use regex negative lookahead to
+        # prevent partial matches (e.g. "workflows/todo" matching inside
+        # "workflows/todo_goals").
         for name in sorted(names_to_postfix, key=len, reverse=True):
             postfixed = _postfix_sa_name(name, postfix)
             if name != postfixed:
-                result_text = result_text.replace(name, postfixed)
+                pattern = re.escape(name) + r"(?![\w])"
+                result_text = re.sub(pattern, postfixed, result_text)
 
     return result_text
 
@@ -1124,13 +1128,18 @@ def _compile_opencode(
     # System prompt: use workflow prompt if workflow is defined
     system_prompt = defn.system_prompt
     if defn.workflow:
-        system_prompt = _compile_workflow_prompt(
+        workflow_prompt = _compile_workflow_prompt(
             defn,
             agent_name=agent_name,
             postfix=postfix,
             inline_skills=inline_skills,
             todo_mode=todo_mode,
         )
+        # Prepend custom system_prompt to workflow prompt if both exist
+        if defn.system_prompt:
+            system_prompt = defn.system_prompt.rstrip("\n") + "\n\n" + workflow_prompt
+        else:
+            system_prompt = workflow_prompt
     elif defn.skills and inline_skills:
         # Non-workflow agents: append inlined skill reference to system prompt
         skill_parts: list[str] = [
@@ -1164,7 +1173,8 @@ def _compile_opencode(
         for name in sorted(names_to_postfix, key=len, reverse=True):
             postfixed_sa = _postfix_sa_name(name, postfix)
             if name != postfixed_sa:
-                system_prompt = system_prompt.replace(name, postfixed_sa)
+                pattern = re.escape(name) + r"(?![\w])"
+                system_prompt = re.sub(pattern, postfixed_sa, system_prompt)
 
     # Append auto-generated subagent documentation
     subagent_section = _compile_subagent_section(defn, postfix=postfix)

@@ -183,6 +183,15 @@ class OpenCodeWriter:
                 agents_dir = agents_dir / sa["agent_dir"]
             agents_dir.mkdir(parents=True, exist_ok=True)
 
+            path = agents_dir / f"{sa['name']}.md"
+
+            # Skip if a full agent already exists at this path (compiled from
+            # its own builder).  Stubs are ~5 lines; full agents have model
+            # config, system prompts, etc.  Check for "model:" which only
+            # appears in full compiled agents, never in stubs.
+            if path.exists() and "model:" in path.read_text():
+                continue
+
             lines: list[str] = [
                 "---",
                 f"description: {sa['description']}",
@@ -194,7 +203,6 @@ class OpenCodeWriter:
                 lines.append(sa["notes"])
                 lines.append("")
 
-            path = agents_dir / f"{sa['name']}.md"
             path.write_text("\n".join(lines))
 
     def _write_skill_mds(self, compiled: dict[str, Any]) -> None:

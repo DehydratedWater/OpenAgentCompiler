@@ -79,9 +79,7 @@ class TestPostfixCompilation:
         perm = result["permission"]
         # mode=primary → per-agent bash pattern (not wildcard)
         assert "bash" in perm
-        pat = (
-            f"uv run scripts/opencode_manager.py run --agent workflows/goal{POSTFIX} *"
-        )
+        pat = f"uv run scripts/opencode_manager.py run*--agent*workflows/goal{POSTFIX}*"
         assert perm["bash"][pat] == "allow"
         # No wildcard
         assert "uv run scripts/opencode_manager.py *" not in perm["bash"]
@@ -110,14 +108,61 @@ class TestPostfixCompilation:
         result = compile_agent(agent, postfix=POSTFIX)
         bash = result["permission"]["bash"]
         goal_pat = (
-            f"uv run scripts/opencode_manager.py run --agent workflows/goal{POSTFIX} *"
+            f"uv run scripts/opencode_manager.py run*--agent*workflows/goal{POSTFIX}*"
         )
         todo_pat = (
-            f"uv run scripts/opencode_manager.py run --agent workflows/todo{POSTFIX} *"
+            f"uv run scripts/opencode_manager.py run*--agent*workflows/todo{POSTFIX}*"
         )
         assert bash[goal_pat] == "allow"
         assert bash[todo_pat] == "allow"
         assert "uv run scripts/opencode_manager.py *" not in bash
+
+    def test_prefix_name_no_partial_match(self):
+        """workflows/todo must NOT match inside workflows/todo_goals."""
+        subs = (
+            SubagentDefinition(
+                name="workflows/todo",
+                description="Task management",
+                mode="primary",
+            ),
+            SubagentDefinition(
+                name="workflows/todo_goals",
+                description="Todo+Goals view",
+                mode="primary",
+            ),
+        )
+        step = WorkflowStepDefinition(
+            id=1,
+            name="Route",
+            instructions=(
+                "Map:\n"
+                "| /todo | workflows/todo |\n"
+                "| /todo_goals | workflows/todo_goals |"
+            ),
+            marks_done=("Route",),
+        )
+        agent = AgentDefinition(
+            name="test",
+            description="test",
+            subagents=subs,
+            workflow=(step,),
+        )
+        result = compile_agent(agent, postfix=POSTFIX)
+        prompt = result["agent"]["system_prompt"]
+        # todo_goals should be correctly postfixed (not double-postfixed)
+        assert f"workflows/todo_goals{POSTFIX}" in prompt
+        # Ensure no double-postfix artifact
+        assert f"workflows/todo{POSTFIX}_goals{POSTFIX}" not in prompt
+        # todo should also be correctly postfixed
+        assert f"workflows/todo{POSTFIX}" in prompt
+        # Bash permissions should be correct too
+        bash = result["permission"]["bash"]
+        todo_goals_pat = f"uv run scripts/opencode_manager.py run*--agent*workflows/todo_goals{POSTFIX}*"  # noqa: E501
+        todo_pat = (
+            f"uv run scripts/opencode_manager.py run*--agent*workflows/todo{POSTFIX}*"
+        )
+        assert bash[todo_goals_pat] == "allow"
+        assert bash[todo_pat] == "allow"
 
     def test_mixed_subagent_modes(self):
         """Agent with both subagent and primary modes gets both permissions."""
@@ -140,9 +185,7 @@ class TestPostfixCompilation:
         result = compile_agent(agent, postfix=POSTFIX)
         perm = result["permission"]
         assert perm["task"] == "allow"
-        pat = (
-            f"uv run scripts/opencode_manager.py run --agent workflows/goal{POSTFIX} *"
-        )
+        pat = f"uv run scripts/opencode_manager.py run*--agent*workflows/goal{POSTFIX}*"
         assert perm["bash"][pat] == "allow"
 
     def test_subagent_md_names_have_postfix(self):
