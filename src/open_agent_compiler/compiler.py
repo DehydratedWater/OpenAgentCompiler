@@ -304,10 +304,19 @@ def _build_provider_dict(defn: AgentDefinition) -> dict[str, Any]:
                 if mopts_dict:
                     m["options"] = mopts_dict
 
-                if model.input_modalities is not None:
-                    m["inputModalities"] = list(model.input_modalities)
-                if model.output_modalities is not None:
-                    m["outputModalities"] = list(model.output_modalities)
+                if (
+                    model.input_modalities is not None
+                    or model.output_modalities is not None
+                ):
+                    modalities: dict[str, list[str]] = {}
+                    if model.input_modalities is not None:
+                        modalities["input"] = list(model.input_modalities)
+                    modalities["output"] = (
+                        list(model.output_modalities)
+                        if model.output_modalities is not None
+                        else ["text"]
+                    )
+                    m["modalities"] = modalities
 
                 models_dict[model.name] = m
             prov_dict["models"] = models_dict
