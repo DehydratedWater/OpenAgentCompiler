@@ -4,8 +4,10 @@
 """ScriptTool — runtime base class for script-based tools."""
 
 import argparse
+import contextlib
 import json
 import sys
+import time as _time
 import typing
 from abc import ABC, abstractmethod
 from typing import ClassVar, Generic, TypeVar
@@ -38,6 +40,7 @@ class ScriptTool(ABC, Generic[TInput, TOutput]):
     description: ClassVar[str]
     stream_format: ClassVar[StreamFormat | None] = None
     stream_field: ClassVar[str | None] = None
+    _execution_hook: ClassVar[typing.Callable[..., typing.Any] | None] = None
 
     @abstractmethod
     def execute(self, input: TInput) -> TOutput:
@@ -155,5 +158,26 @@ class ScriptTool(ABC, Generic[TInput, TOutput]):
             validated = input_type.model_validate(cli_data)
 
         instance = cls()
-        result = instance.execute(validated)  # type: ignore[arg-type]
-        print(json.dumps(result.model_dump(), default=str))
+        _start = _time.monotonic()
+        _error: str | None = None
+        _result = None
+        try:
+            _result = instance.execute(validated)  # type: ignore[arg-type]
+        except Exception as exc:
+            _error = str(exc)
+            raise
+        finally:
+            _dur = int((_time.monotonic() - _start) * 1000)
+            if cls._execution_hook is not None:
+                _out = _result.model_dump() if _result is not None else None
+                with contextlib.suppress(Exception):
+                    cls._execution_hook(
+                        tool_name=cls.name,
+                        input_data=validated.model_dump(),
+                        output_data=_out,
+                        success=_error is None,
+                        error=_error,
+                        duration_ms=_dur,
+                    )
+        if _result is not None:
+            print(json.dumps(_result.model_dump(), default=str))
