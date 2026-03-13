@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from open_agent_compiler._types import AgentConfig, CompactionConfig, ProviderConfig
+from open_agent_compiler._types import (
+    AgentConfig,
+    CompactionConfig,
+    MCPServerConfig,
+    ProviderConfig,
+)
 from open_agent_compiler.builders._base import Builder
 
 
@@ -16,6 +21,7 @@ class ConfigBuilder(Builder[AgentConfig]):
         self._providers: list[ProviderConfig] = []
         self._default_model: str = ""
         self._compaction: CompactionConfig = CompactionConfig()
+        self._mcp_servers: list[MCPServerConfig] = []
         return self
 
     def provider(self, provider: ProviderConfig) -> ConfigBuilder:
@@ -30,9 +36,27 @@ class ConfigBuilder(Builder[AgentConfig]):
         self._compaction = CompactionConfig(auto=auto, prune=prune)
         return self
 
+    def mcp_server(
+        self,
+        name: str,
+        command: str,
+        args: list[str] | tuple[str, ...] = (),
+        env: dict[str, str] | None = None,
+    ) -> ConfigBuilder:
+        self._mcp_servers.append(
+            MCPServerConfig(
+                name=name,
+                command=command,
+                args=tuple(args),
+                env=tuple((env or {}).items()),
+            )
+        )
+        return self
+
     def build(self) -> AgentConfig:
         return AgentConfig(
             providers=tuple(self._providers),
             default_model=self._default_model,
             compaction=self._compaction,
+            mcp_servers=tuple(self._mcp_servers),
         )

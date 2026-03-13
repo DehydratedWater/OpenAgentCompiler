@@ -159,9 +159,9 @@ def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
 # selective *allow* entries when an agent opts out of MCP deny.
 _DEFAULT_MCP_PATTERNS: tuple[str, ...] = (
     "zai-mcp-*",
-    "web-search-prime*",
     "web-reader*",
     "zread*",
+    "google*",
 )
 
 
@@ -342,6 +342,24 @@ def _build_config_dict(defn: AgentDefinition) -> dict[str, Any]:
     # Compaction
     comp = defn.config.compaction
     config["compaction"] = {"auto": comp.auto, "prune": comp.prune}
+
+    # MCP Servers
+    if defn.config.mcp_servers:
+        mcp_dict: dict[str, Any] = {}
+        for srv in defn.config.mcp_servers:
+            entry: dict[str, Any] = {}
+            if srv.args:
+                # Local server: command + args
+                entry["type"] = "local"
+                entry["command"] = [srv.command, *srv.args]
+            else:
+                # Remote server: command is the URL
+                entry["type"] = "remote"
+                entry["url"] = srv.command
+            if srv.env:
+                entry["environment"] = dict(srv.env)
+            mcp_dict[srv.name] = entry
+        config["mcp"] = mcp_dict
 
     return config
 

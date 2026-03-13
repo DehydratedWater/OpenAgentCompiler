@@ -219,12 +219,23 @@ class CompactionConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class MCPServerConfig:
+    """An MCP server connection."""
+
+    name: str  # key in mcpServers dict, e.g. "google"
+    command: str  # "npx"
+    args: tuple[str, ...] = ()  # ("mcp-remote", "https://...")
+    env: tuple[tuple[str, str], ...] = ()  # (("KEY", "val"), ...)
+
+
+@dataclass(frozen=True, slots=True)
 class AgentConfig:
     """Immutable runtime configuration for an agent."""
 
     providers: tuple[ProviderConfig, ...] = ()
     default_model: str = ""  # "provider/model"
     compaction: CompactionConfig = field(default_factory=CompactionConfig)
+    mcp_servers: tuple[MCPServerConfig, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
