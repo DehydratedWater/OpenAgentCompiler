@@ -100,6 +100,8 @@ class OpenCodeWriter:
             lines.append(f"top_k: {agent['top_k']}")
         if "presence_penalty" in agent:
             lines.append(f"presence_penalty: {agent['presence_penalty']}")
+        if "priority" in agent:
+            lines.append(f"priority: {agent['priority']}")
         if "mode" in agent:
             lines.append(f"mode: {agent['mode']}")
         if agent.get("hidden"):
