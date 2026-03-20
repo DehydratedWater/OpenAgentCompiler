@@ -38,6 +38,7 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._min_p: float | None = None
         self._top_k: int | None = None
         self._presence_penalty: float | None = None
+        self._priority: int | None = None
         self._hidden: bool = False
         self._color: str = ""
         self._steps: int = 0
@@ -119,6 +120,11 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._presence_penalty = presence_penalty
         return self
 
+    def priority(self, priority: int) -> AgentBuilder:
+        """Set scheduling priority (lower = higher). 0=interactive, 5=bg."""
+        self._priority = priority
+        return self
+
     def hidden(self, hidden: bool = True) -> AgentBuilder:
         self._hidden = hidden
         return self
@@ -198,6 +204,7 @@ class AgentBuilder(Builder[AgentDefinition]):
             min_p=self._min_p,
             top_k=self._top_k,
             presence_penalty=self._presence_penalty,
+            priority=self._priority,
             hidden=self._hidden,
             color=self._color,
             steps=self._steps,

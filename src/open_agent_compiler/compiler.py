@@ -1237,6 +1237,8 @@ def _compile_opencode(
         agent_section["top_k"] = defn.top_k
     if defn.presence_penalty is not None:
         agent_section["presence_penalty"] = defn.presence_penalty
+    if defn.priority is not None:
+        agent_section["priority"] = defn.priority
     if defn.hidden:
         agent_section["hidden"] = defn.hidden
     if defn.color:

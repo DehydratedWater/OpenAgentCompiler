@@ -268,6 +268,7 @@ class AgentDefinition:
     min_p: float | None = None
     top_k: int | None = None
     presence_penalty: float | None = None
+    priority: int | None = None  # vLLM scheduling priority (lower = higher priority)
     hidden: bool = False
     color: str = ""  # hex "#FF5733" or theme "primary"
     steps: int = 0  # 0 = not set
