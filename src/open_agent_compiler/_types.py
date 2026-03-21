@@ -283,3 +283,5 @@ class AgentDefinition:
     auto_mcp_deny: bool | tuple[str, ...] = True  # Auto-deny MCP tool patterns
     # True → deny default patterns; False → skip; tuple → deny these patterns
     workspace: str = ""  # Sandboxed write directory, e.g. ".agent_workspace/{name}"
+    # Model class for split profiles: "fast", "analytical", "vision"
+    model_class: str = "default"

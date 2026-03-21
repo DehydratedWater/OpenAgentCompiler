@@ -52,6 +52,7 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._input_placeholder: str = ""
         self._auto_mcp_deny: bool = True
         self._workspace: str = ""
+        self._model_class: str = "default"
         return self
 
     def name(self, name: str) -> AgentBuilder:
@@ -177,6 +178,10 @@ class AgentBuilder(Builder[AgentDefinition]):
         self._workspace = path
         return self
 
+    def model_class(self, cls: str) -> AgentBuilder:
+        self._model_class = cls
+        return self
+
     def build(self) -> AgentDefinition:
         if not self._name:
             raise ValueError("AgentDefinition requires a name")
@@ -218,4 +223,5 @@ class AgentBuilder(Builder[AgentDefinition]):
             input_placeholder=self._input_placeholder,
             auto_mcp_deny=self._auto_mcp_deny,
             workspace=self._workspace,
+            model_class=self._model_class,
         )
