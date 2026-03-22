@@ -1310,9 +1310,10 @@ def _compile_opencode(
     # entries below will re-enable specific capabilities.
     perm_dict["*"] = "deny"
 
-    # read — only allow when explicitly enabled
+    # read + grep — grep is a search variant of read, allow together
     if tool_perms.get("read", False):
         perm_dict["read"] = "allow"
+        perm_dict["grep"] = "allow"
 
     # edit — canonical key covering write, edit, patch, multiedit
     write_ok = tool_perms.get("write", False)
