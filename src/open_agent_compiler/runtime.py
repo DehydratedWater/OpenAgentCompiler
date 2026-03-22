@@ -40,6 +40,7 @@ class ScriptTool(ABC, Generic[TInput, TOutput]):
     description: ClassVar[str]
     stream_format: ClassVar[StreamFormat | None] = None
     stream_field: ClassVar[str | None] = None
+    output_note: ClassVar[str] = ""
     _execution_hook: ClassVar[typing.Callable[..., typing.Any] | None] = None
 
     @abstractmethod
@@ -180,4 +181,7 @@ class ScriptTool(ABC, Generic[TInput, TOutput]):
                         duration_ms=_dur,
                     )
         if _result is not None:
-            print(json.dumps(_result.model_dump(), default=str))
+            out = _result.model_dump()
+            if cls.output_note:
+                out["_note"] = cls.output_note
+            print(json.dumps(out, default=str))
