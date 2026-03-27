@@ -97,7 +97,7 @@ class LLMJudge:
         )
 
     async def _call_api(self, system_prompt: str, user_prompt: str) -> str:
-        import httpx  # type: ignore[import-not-found]
+        import httpx
 
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
