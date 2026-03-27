@@ -211,7 +211,7 @@ class OpenCodeManager:
         Run an agent. The web server (if running) provides a UI for monitoring.
 
         Args:
-            agent: Agent path (e.g., "goals/priority_orchestrator-glm-45-air")
+            agent: Agent path (e.g., "goals/my-orchestrator")
             prompt: The prompt to send to the agent
             log_prefix: Prefix for log file names
             ensure_server: If True, start server if not running (for web UI access)
@@ -537,7 +537,7 @@ def main():
         "--agent",
         "-a",
         required=True,
-        help="Agent path (e.g., goals/priority_orchestrator-glm-45-air)",
+        help="Agent path (e.g., goals/my-orchestrator)",
     )
     run_parser.add_argument(
         "--prefix", "-p", default="opencode", help="Log file prefix"

@@ -1,5 +1,5 @@
 [project]
-name = "agent-framework"
+name = "open-agent-compiler"
 version = "0.1.0"
 description = "Python-first agent framework that compiles agent definitions into backend-specific configurations"
 requires-python = ">=3.12"

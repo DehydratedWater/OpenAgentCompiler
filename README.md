@@ -5,13 +5,13 @@ Python-first agent framework that compiles agent definitions into backend-specif
 ## Installation
 
 ```bash
-pip install agent-framework
+pip install open-agent-compiler
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add agent-framework
+uv add open-agent-compiler
 ```
 
 For local/editable development:

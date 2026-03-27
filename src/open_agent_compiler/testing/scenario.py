@@ -46,7 +46,7 @@ class Scenario:
     """Complete test scenario for one agent."""
 
     name: str  # Human-readable scenario name
-    agent: str  # Agent path, e.g. "goals/twily_goal_interface"
+    agent: str  # Agent path, e.g. "goals/my-agent"
     description: str  # What this scenario tests
     seed_commands: list[ToolCommand]  # Seed data setup (run before agent)
     agent_prompt: str  # Input prompt to the agent

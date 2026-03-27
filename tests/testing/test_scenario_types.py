@@ -179,7 +179,7 @@ class TestAgentRunResult:
             stdout="",
             stderr="",
             flow_log=(
-                'agent "goals/twily_goal_interface"'
+                'agent "goals/my-test-agent"'
                 " not found. Falling back to default agent"
             ),
         )
@@ -257,7 +257,7 @@ class TestScenarioResult:
                 stdout="",
                 stderr="",
                 flow_log=(
-                    'agent "goals/twily_goal_interface"'
+                    'agent "goals/my-test-agent"'
                     " not found. Falling back to default agent"
                 ),
             ),

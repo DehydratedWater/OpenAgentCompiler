@@ -4,9 +4,9 @@ Python-first agent framework that compiles agent definitions into backend-specif
 
 ## Naming
 
-- **Distribution name** (pip/uv): `agent-framework`
+- **Distribution name** (pip/uv): `open-agent-compiler`
 - **Import name** (Python): `open_agent_compiler`
-- These differ intentionally — the consumer `fren_infrastructure_control_v3` depends on `agent-framework` and imports `open_agent_compiler`
+- Consumer projects depend on `open-agent-compiler` and import `open_agent_compiler`
 
 ## Architecture
 
@@ -100,10 +100,10 @@ permission:
   todowrite: allow
 ```
 
-## Consumer project
+## Consumer projects
 
-`fren_infrastructure_control_v3` references this package via:
+To use this package as an editable dependency:
 ```toml
 [tool.uv.sources]
-agent-framework = { path = "../OpenAgentCompiler", editable = true }
+open-agent-compiler = { path = "../OpenAgentCompiler", editable = true }
 ```

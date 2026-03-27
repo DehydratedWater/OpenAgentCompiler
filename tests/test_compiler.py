@@ -168,7 +168,7 @@ class TestCompiler:
             edit=False,
             task=False,
             skill=(("my-skill", "allow"), ("*", "deny")),
-            mcp=(("zai-mcp-*", False),),
+            mcp=(("my-mcp-server-*", False),),
         )
         agent = AgentDefinition(
             name="test",
@@ -181,7 +181,7 @@ class TestCompiler:
         assert tool["read"] is True
         assert tool["write"] is True
         assert tool["skill"]["my-skill"] == "allow"
-        assert tool["zai-mcp-*"] is False
+        assert tool["my-mcp-server-*"] is False
 
     def test_agent_permissions(self):
         """AgentPermissions compile into permission: section."""

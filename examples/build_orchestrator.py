@@ -136,7 +136,7 @@ def build_quick_ack_subagent(thought_transfer, config):
 
     return (
         AgentBuilder()
-        .name("twily_quick_ack-glm-45-air")
+        .name("quick-ack-subagent")
         .description("Instant Natural Response + Routing")
         .mode("subagent")
         .agent_dir("persona")
@@ -227,7 +227,7 @@ def build_orchestrator(thought_transfer, config):
 
     quick_ack_ref = (
         SubagentBuilder()
-        .name("persona/twily_quick_ack-glm-45-air")
+        .name("persona/quick-ack-subagent")
         .description("Instant Natural Response + Routing")
         .notes(
             "Sends IMMEDIATE acknowledgment BEFORE everything else.\n"
@@ -263,7 +263,7 @@ def build_orchestrator(thought_transfer, config):
         .id("2")
         .name("Quick Acknowledgment")
         .todo("Send quick ack", "Immediate feedback + routing decision")
-        .subagent("persona/twily_quick_ack-glm-45-air")
+        .subagent("persona/quick-ack-subagent")
         .use_tool("thought-transfer", "peek")
         .instructions("Use Task tool to invoke the quick_ack subagent.")
         .build()
@@ -322,8 +322,8 @@ def build_orchestrator(thought_transfer, config):
 
     return (
         AgentBuilder()
-        .name("twily-orchestrator")
-        .description("Primary orchestrator for Twily persona")
+        .name("example-orchestrator")
+        .description("Primary orchestrator for Example persona")
         .mode("primary")
         .agent_dir("persona")
         .config(config)
@@ -338,7 +338,7 @@ def build_orchestrator(thought_transfer, config):
             instruction="Use when delegating work to other primary agents",
         )
         .subagent(quick_ack_ref)
-        .preamble("# Fren Orchestrator\n\nYou orchestrate Twily's persona.")
+        .preamble("# Fren Orchestrator\n\nYou orchestrate Example's persona.")
         .workflow_step(step_1)
         .workflow_step(step_1_5)
         .workflow_step(step_2)

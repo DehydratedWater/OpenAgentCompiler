@@ -44,8 +44,8 @@ class JudgeResult:
 class LLMJudge:
     def __init__(
         self,
-        base_url: str = "http://192.168.0.95:5502/v1",
-        model: str = "qwen-coder-next",
+        base_url: str = "http://localhost:8000/v1",
+        model: str = "default",
         api_key: str = "EMPTY",
     ) -> None:
         self.base_url = base_url

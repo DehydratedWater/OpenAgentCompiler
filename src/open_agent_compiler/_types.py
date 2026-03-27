@@ -40,7 +40,7 @@ class ToolPermissions:
 
     ``bash``, ``skill``, and ``mcp`` accept either a boolean (``False`` to
     disable entirely) or a tuple of pattern rules.  ``mcp`` patterns are
-    emitted as top-level entries (e.g. ``"zai-mcp-*": false``).
+    emitted as top-level entries (e.g. ``"my-mcp-*": false``).
     """
 
     bash: bool | tuple[tuple[str, str], ...] = ()  # False or (pattern, rule)
@@ -65,10 +65,10 @@ class AgentPermissions:
 
     doom_loop: str = "deny"  # "allow" | "deny"
     task: tuple[tuple[str, str], ...] = ()  # ("*", "deny"), ("agent", "allow")
-    tool: tuple[tuple[str, str], ...] = ()  # ("zai-mcp-*", "deny")
+    tool: tuple[tuple[str, str], ...] = ()  # ("my-mcp-*", "deny")
     mcp: tuple[tuple[str, str], ...] = ()  # ("*", "deny")
     bash: tuple[tuple[str, str], ...] = ()  # ("*", "deny")
-    extra: tuple[tuple[str, str], ...] = ()  # top-level entries ("zai-mcp-*", "deny")
+    extra: tuple[tuple[str, str], ...] = ()  # top-level entries ("my-mcp-*", "deny")
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,7 +122,7 @@ class SubagentDefinition:
     mode="primary": Standalone agent invoked via opencode_manager.py (bash).
     """
 
-    name: str  # "persona/twily_quick_ack-glm-45-air"
+    name: str  # "persona/my-subagent"
     description: str  # "Instant Natural Response + Routing"
     notes: str = ""  # Detailed usage notes
     mode: str = "subagent"  # "subagent" | "primary"

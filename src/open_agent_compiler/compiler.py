@@ -100,7 +100,7 @@ def _tool_permissions_to_dict(perms: ToolPermissions) -> dict[str, Any]:
     """Convert a ToolPermissions frozen dataclass to a dict.
 
     Boolean ``False`` for bash/skill/mcp emits ``key: false`` (disable entirely).
-    MCP tuple patterns become top-level entries (e.g. ``"zai-mcp-*": false``).
+    MCP tuple patterns become top-level entries (e.g. ``"my-mcp-*": false``).
     """
     result: dict[str, Any] = {}
     # MCP top-level pattern entries first (sequential evaluation)
@@ -136,7 +136,7 @@ def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
     bash → task → doom_loop, matching v2 convention.
     """
     result: dict[str, Any] = {}
-    # Top-level extras first (e.g. "zai-mcp-*": "deny")
+    # Top-level extras first (e.g. "my-mcp-*": "deny")
     for pattern, rule in perms.extra:
         result[pattern] = rule
     # Nested subsections
@@ -154,15 +154,9 @@ def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
     return result
 
 
-# Default MCP tool glob patterns — covers all known global MCP servers.
-# With ``"*": "deny"`` in the permission section, these are only needed as
-# selective *allow* entries when an agent opts out of MCP deny.
-_DEFAULT_MCP_PATTERNS: tuple[str, ...] = (
-    "zai-mcp-*",
-    "web-reader*",
-    "zread*",
-    "google*",
-)
+# Default MCP tool glob patterns — used as selective *allow* entries when an
+# agent opts out of MCP deny.  Override via compile_agent(mcp_patterns=...).
+_DEFAULT_MCP_PATTERNS: tuple[str, ...] = ()
 
 
 def _auto_tool_permissions(
@@ -811,7 +805,7 @@ def _compile_workflow_prompt(
 def _compile_subagent_md(sa: SubagentDefinition, postfix: str = "") -> dict[str, Any]:
     """Compile a SubagentDefinition into a standalone agent dict for writing."""
     postfixed = _postfix_sa_name(sa.name, postfix)
-    # Extract directory and filename from name like "persona/twily_quick_ack-test-abc"
+    # Extract directory and filename from name like "persona/my-subagent-abc"
     if "/" in postfixed:
         parts = postfixed.rsplit("/", 1)
         agent_dir = parts[0]
