@@ -39,5 +39,4 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# uv
-uv.lock
+# uv — lockfile is committed for reproducible dev/CI installs
