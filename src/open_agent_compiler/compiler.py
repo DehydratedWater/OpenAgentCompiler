@@ -244,8 +244,13 @@ def _auto_tool_permissions(
     else:
         result["skill"] = False
 
-    # MCP — always deny-all by default
-    result["mcp"] = False
+    # MCP — deny-all by default unless explicitly enabled via ToolPermissions
+    if defn.tool_permissions and defn.tool_permissions.mcp is not False and defn.tool_permissions.mcp != ():
+        # Explicit mcp=True or mcp patterns provided — skip the blanket deny.
+        # _merge_tool_permissions will apply the actual value.
+        pass
+    else:
+        result["mcp"] = False
 
     return result
 
@@ -1048,7 +1053,14 @@ def _compile_security_policy(
                 "- Use Task tool for primary/workflow agents"
                 " (use opencode_manager.py instead)"
             )
-    lines.append("- Use MCP tools (they are disabled)")
+    # Only forbid MCP if it's actually disabled
+    mcp_enabled = (
+        defn.tool_permissions is not None
+        and defn.tool_permissions.mcp is not False
+        and defn.tool_permissions.mcp != ()
+    )
+    if not mcp_enabled:
+        lines.append("- Use MCP tools (they are disabled)")
     lines.append(
         "- Create files in the project root or any directory outside your workspace"
     )
