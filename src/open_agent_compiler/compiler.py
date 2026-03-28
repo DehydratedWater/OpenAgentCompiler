@@ -245,11 +245,9 @@ def _auto_tool_permissions(
         result["skill"] = False
 
     # MCP — deny-all by default unless explicitly enabled via ToolPermissions
-    if defn.tool_permissions and defn.tool_permissions.mcp is not False and defn.tool_permissions.mcp != ():
-        # Explicit mcp=True or mcp patterns provided — skip the blanket deny.
-        # _merge_tool_permissions will apply the actual value.
-        pass
-    else:
+    tp = defn.tool_permissions
+    mcp_enabled = tp is not None and tp.mcp is not False and tp.mcp != ()
+    if not mcp_enabled:
         result["mcp"] = False
 
     return result
