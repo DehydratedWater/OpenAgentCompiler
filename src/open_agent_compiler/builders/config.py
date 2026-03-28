@@ -39,16 +39,26 @@ class ConfigBuilder(Builder[AgentConfig]):
     def mcp_server(
         self,
         name: str,
-        command: str,
+        command: str = "",
         args: list[str] | tuple[str, ...] = (),
         env: dict[str, str] | None = None,
+        *,
+        url: str = "",
+        headers: dict[str, str] | None = None,
     ) -> ConfigBuilder:
+        """Add an MCP server.
+
+        Local (stdio):  ``mcp_server(name="x", command="npx", args=[...])``
+        Remote (HTTP):  ``mcp_server(name="x", url="https://...", headers={...})``
+        """
         self._mcp_servers.append(
             MCPServerConfig(
                 name=name,
                 command=command,
                 args=tuple(args),
                 env=tuple((env or {}).items()),
+                url=url,
+                headers=tuple((headers or {}).items()),
             )
         )
         return self

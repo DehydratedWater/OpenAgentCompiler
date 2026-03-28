@@ -132,13 +132,11 @@ def _tool_permissions_to_dict(perms: ToolPermissions) -> dict[str, Any]:
 def _agent_permissions_to_dict(perms: AgentPermissions) -> dict[str, Any]:
     """Convert an AgentPermissions frozen dataclass to a dict.
 
-    Fields are emitted in order: extra (top-level patterns) → tool → mcp →
-    bash → task → doom_loop, matching v2 convention.
+    Fields are emitted in order: tool → mcp → bash → task → doom_loop.
+    ``extra`` entries are NOT emitted here — the compiler applies them
+    AFTER the global ``"*": "deny"`` so they take precedence (last-match-wins).
     """
     result: dict[str, Any] = {}
-    # Top-level extras first (e.g. "my-mcp-*": "deny")
-    for pattern, rule in perms.extra:
-        result[pattern] = rule
     # Nested subsections
     if perms.tool:
         result["tool"] = {p: r for p, r in perms.tool}
@@ -244,11 +242,8 @@ def _auto_tool_permissions(
     else:
         result["skill"] = False
 
-    # MCP — deny-all by default unless explicitly enabled via ToolPermissions
-    tp = defn.tool_permissions
-    mcp_enabled = tp is not None and tp.mcp is not False and tp.mcp != ()
-    if not mcp_enabled:
-        result["mcp"] = False
+    # MCP — always deny-all by default
+    result["mcp"] = False
 
     return result
 
@@ -345,12 +340,18 @@ def _build_config_dict(defn: AgentDefinition) -> dict[str, Any]:
         mcp_dict: dict[str, Any] = {}
         for srv in defn.config.mcp_servers:
             entry: dict[str, Any] = {}
-            if srv.args:
-                # Local server: command + args
+            if srv.url:
+                # Remote server: direct HTTP connection
+                entry["type"] = "remote"
+                entry["url"] = srv.url
+                if srv.headers:
+                    entry["headers"] = dict(srv.headers)
+            elif srv.args:
+                # Local server: command + args (stdio)
                 entry["type"] = "local"
                 entry["command"] = [srv.command, *srv.args]
             else:
-                # Remote server: command is the URL
+                # Remote server: command is the URL (legacy)
                 entry["type"] = "remote"
                 entry["url"] = srv.command
             if srv.env:
@@ -1352,7 +1353,8 @@ def _compile_opencode(
         perm_dict["skill"] = "allow"
 
     # MCP — ``"*": "deny"`` blocks all MCP tools by default.
-    # When ``auto_mcp_deny`` is False, emit selective allows to let MCP through.
+    # Specific MCP allows come from AgentPermissions.extra
+    # (e.g. "neocortex-chat*": allow).
     if not defn.auto_mcp_deny:
         patterns = _DEFAULT_MCP_PATTERNS
         for pattern in patterns:
@@ -1368,6 +1370,12 @@ def _compile_opencode(
     # task — only allow if not already configured and tool says allow
     if "task" not in perm_dict and tool_perms.get("task", False):
         perm_dict["task"] = "allow"
+
+    # Extra top-level patterns (e.g. MCP allows) — emitted AFTER "*": "deny"
+    # so they take precedence in last-match-wins evaluation.
+    perms = defn.permissions or AgentPermissions()
+    for pattern, rule in perms.extra:
+        perm_dict[pattern] = rule
 
     # doom_loop — move to end so it can override the global "*": "deny"
     if "doom_loop" in perm_dict:

@@ -179,8 +179,7 @@ class TestAgentRunResult:
             stdout="",
             stderr="",
             flow_log=(
-                'agent "goals/my-test-agent"'
-                " not found. Falling back to default agent"
+                'agent "goals/my-test-agent" not found. Falling back to default agent'
             ),
         )
         assert r.subagent_fallback is True

@@ -220,12 +220,22 @@ class CompactionConfig:
 
 @dataclass(frozen=True, slots=True)
 class MCPServerConfig:
-    """An MCP server connection."""
+    """An MCP server connection.
+
+    Two modes:
+    - **Local** (stdio): ``command`` + ``args`` → subprocess.
+    - **Remote** (HTTP): ``url`` only → direct connection.
+      Optional ``headers`` for auth (e.g. Bearer tokens).
+    """
 
     name: str  # key in mcpServers dict, e.g. "google"
-    command: str  # "npx"
-    args: tuple[str, ...] = ()  # ("mcp-remote", "https://...")
+    command: str = ""  # local: "npx"; remote: unused
+    args: tuple[str, ...] = ()  # local: ("mcp-remote", "https://...")
     env: tuple[tuple[str, str], ...] = ()  # (("KEY", "val"), ...)
+    url: str = ""  # remote: "https://api.example.com/mcp"
+    headers: tuple[
+        tuple[str, str], ...
+    ] = ()  # remote: (("Authorization", "Bearer ..."),)
 
 
 @dataclass(frozen=True, slots=True)
