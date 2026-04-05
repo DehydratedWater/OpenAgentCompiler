@@ -310,6 +310,15 @@ def _build_provider_dict(defn: AgentDefinition) -> dict[str, Any]:
                     )
                     m["modalities"] = modalities
 
+                # Reasoning / thinking config
+                if model.reasoning is not None:
+                    m["reasoning"] = model.reasoning
+                if model.interleaved is not None:
+                    if isinstance(model.interleaved, bool):
+                        m["interleaved"] = model.interleaved
+                    else:
+                        m["interleaved"] = {"field": model.interleaved}
+
                 models_dict[model.name] = m
             prov_dict["models"] = models_dict
 

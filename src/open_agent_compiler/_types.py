@@ -199,6 +199,13 @@ class ModelConfig:
     options: ModelOptions = field(default_factory=ModelOptions)
     input_modalities: tuple[str, ...] | None = None
     output_modalities: tuple[str, ...] | None = None
+    # Reasoning / thinking support
+    reasoning: bool | None = None  # True if this model emits reasoning
+    # interleaved:
+    #   None = not emitted (default — thinking mixed into content)
+    #   True = thinking interleaved in content
+    #   str  = thinking in separate field ("reasoning_content" or "reasoning_details")
+    interleaved: bool | str | None = None
 
 
 @dataclass(frozen=True, slots=True)
