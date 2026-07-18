@@ -1,143 +1,61 @@
-"""Shared test fixtures."""
+"""Shared pytest fixtures.
 
-from typing import Any
+Layout convention: tests/ mirrors open_agent_compiler/. A fixture defined here is visible to
+every test; fixtures specific to a subtree go in that subtree's conftest.py.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
 
 import pytest
 
-from open_agent_compiler._types import (
-    ActionDefinition,
-    AgentConfig,
+from open_agent_compiler.model.core.agent_model import (
     AgentDefinition,
-    ModelConfig,
-    ModelOptions,
-    ProviderConfig,
-    ProviderOptions,
-    SkillDefinition,
-    ToolDefinition,
+    AgentHeader,
+    ModelParameters,
 )
-from open_agent_compiler.builders import (
-    AgentBuilder,
-    ConfigBuilder,
-    SkillBuilder,
-    ToolBuilder,
-)
-from open_agent_compiler.compiler import compile_agent
+from open_agent_compiler.model.core.agent_registry import AgentRegistry
 
 
-@pytest.fixture
-def sample_tool() -> ToolDefinition:
-    return ToolDefinition(
-        name="read_file",
-        description="Read a file from disk",
-        actions=(
-            ActionDefinition(
-                command_pattern="uv run scripts/read_file.py *",
-                description="Read a file from disk",
-                usage_example='uv run scripts/read_file.py --path "<str>"',
-            ),
-        ),
-        script_files=("read_file.py",),
-    )
+@pytest.fixture()
+def tmp_target(tmp_path: Path) -> Path:
+    """A temporary directory to write compiled artifacts into."""
+    out = tmp_path / "build"
+    out.mkdir()
+    return out
 
 
-@pytest.fixture
-def sample_tool_with_stream() -> ToolDefinition:
-    return ToolDefinition(
-        name="db_query",
-        description="Execute SQL queries",
-        actions=(
-            ActionDefinition(
-                command_pattern="uv run scripts/db_query.py *",
-                description=(
-                    "Execute SQL queries."
-                    " Supports stdin streaming"
-                    " (`sql` via stdin as text)."
-                ),
-                usage_example=(
-                    'uv run scripts/db_query.py --sql "<str>" --timeout <int>'
-                ),
-            ),
-        ),
-        script_files=("db_query.py",),
-    )
-
-
-@pytest.fixture
-def sample_config() -> AgentConfig:
-    return AgentConfig(
-        providers=(
-            ProviderConfig(
-                name="anthropic",
-                options=ProviderOptions(api_key="env:ANTHROPIC_API_KEY"),
-                models=(
-                    ModelConfig(
-                        name="sonnet",
-                        id="claude-sonnet-4-5-20250929",
-                        options=ModelOptions(temperature=0.0),
-                    ),
-                ),
-            ),
-        ),
-        default_model="anthropic/sonnet",
-    )
-
-
-@pytest.fixture
-def sample_agent(
-    sample_config: AgentConfig, sample_tool: ToolDefinition
-) -> AgentDefinition:
+@pytest.fixture()
+def minimal_agent() -> AgentDefinition:
+    """The smallest valid AgentDefinition — a primary with no skills/subagents."""
     return AgentDefinition(
-        name="test-agent",
-        description="A test agent",
-        config=sample_config,
-        tools=(sample_tool,),
-        system_prompt="You are a test agent.",
+        header=AgentHeader(
+            agent_id="placeholder",
+            name="minimal",
+            description="A minimal agent for tests.",
+        ),
+        usage_explanation_long="Used by tests as a trivial baseline.",
+        usage_explanation_short="trivial baseline",
     )
 
 
-@pytest.fixture
-def agent_builder() -> AgentBuilder:
-    return AgentBuilder()
+@pytest.fixture()
+def fast_model() -> ModelParameters:
+    return ModelParameters(model_name="test-model-fast", temperature=0.0)
 
 
-@pytest.fixture
-def config_builder() -> ConfigBuilder:
-    return ConfigBuilder()
+@pytest.fixture()
+def slow_model() -> ModelParameters:
+    return ModelParameters(model_name="test-model-slow", temperature=0.7)
 
 
-@pytest.fixture
-def sample_skill(sample_tool: ToolDefinition) -> SkillDefinition:
-    return SkillDefinition(
-        name="code-review",
-        description="Review code for issues",
-        instructions="Carefully review the code for bugs and style issues.",
-        tools=(sample_tool,),
-    )
-
-
-@pytest.fixture
-def tool_builder() -> ToolBuilder:
-    return ToolBuilder()
-
-
-@pytest.fixture
-def skill_builder() -> SkillBuilder:
-    return SkillBuilder()
-
-
-@pytest.fixture
-def sample_compiled(
-    sample_agent: AgentDefinition,
-    sample_skill: SkillDefinition,
-) -> dict[str, Any]:
-    """Compile a full agent (with skills) for writer tests."""
-    agent_with_skill = AgentDefinition(
-        name=sample_agent.name,
-        description=sample_agent.description,
-        config=sample_agent.config,
-        tools=sample_agent.tools,
-        skills=(sample_skill,),
-        skill_instructions=((sample_skill.name, "Use when reviewing code"),),
-        system_prompt=sample_agent.system_prompt,
-    )
-    return compile_agent(agent_with_skill, target="opencode")
+@pytest.fixture()
+def registry(
+    minimal_agent: AgentDefinition,
+    fast_model: ModelParameters,
+) -> AgentRegistry:
+    """A registry with one agent pre-registered as `minimal_test-model-fast_t0.0`."""
+    reg = AgentRegistry()
+    reg.register_agent("minimal", minimal_agent, fast_model)
+    return reg

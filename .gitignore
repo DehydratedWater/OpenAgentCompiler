@@ -1,42 +1,30 @@
-# Byte-compiled / optimized / DLL files
+# Python-generated files
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Distribution / packaging
-dist/
+*.py[oc]
 build/
-*.egg-info/
-*.egg
+dist/
+wheels/
+*.egg-info
 
 # Virtual environments
-.venv/
-venv/
+.venv
+.opencode/*
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Testing / coverage
-.pytest_cache/
-.coverage
-htmlcov/
-.benchmarks/
-
-# mypy
-.mypy_cache/
-
-# ruff
-.ruff_cache/
-
-# Environment variables
+# Local env (API keys for examples / testing)
 .env
-.env.*
+.env.local
+.env.*.local
 
-# OS
-.DS_Store
-Thumbs.db
+# Example build outputs
+examples/*/build/
+examples/*/improved/
+examples/*/run_logs/
+examples/*/.oac/
+examples/*/eval_workspace/
+examples/*/generated/
 
-# uv — lockfile is committed for reproducible dev/CI installs
+# Test scratch
+/tmp_test_*/
+
+# Claude Code local settings
+.claude/

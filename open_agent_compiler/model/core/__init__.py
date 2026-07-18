@@ -1,0 +1,65 @@
+from open_agent_compiler.model.core.agent_model import (
+    AgentDefinition,
+    AgentHeader,
+    AgentMode,
+    AgentVariant,
+    AgentWorkflowStep,
+    CompilationConfig,
+    ModelParameters,
+    TemplateSlot,
+    TemplateTree,
+)
+from open_agent_compiler.model.core.agent_registry import AgentRegistry
+from open_agent_compiler.model.core.permissions_model import (
+    BashToolPermission,
+    DefaultTools,
+    JsonToolPermission,
+    Permission,
+    PermissionType,
+    ToolPermission,
+    ToolScope,
+)
+from open_agent_compiler.model.core.skills_model import (
+    SkillDefinition,
+    SkillExample,
+    WorkflowStep,
+)
+from open_agent_compiler.model.core.tools_model import (
+    ScriptDefinition,
+    SupportedScriptTypes,
+    ToolDefinition,
+    ToolDefinitionHeader,
+    ToolDefinitionLogicBash,
+    ToolDefinitionLogicJson,
+    ToolScriptDefinition,
+)
+
+__all__ = [
+    "AgentDefinition",
+    "AgentHeader",
+    "AgentMode",
+    "AgentVariant",
+    "AgentWorkflowStep",
+    "CompilationConfig",
+    "ModelParameters",
+    "TemplateSlot",
+    "TemplateTree",
+    "AgentRegistry",
+    "BashToolPermission",
+    "DefaultTools",
+    "JsonToolPermission",
+    "Permission",
+    "PermissionType",
+    "ToolPermission",
+    "ToolScope",
+    "SkillDefinition",
+    "SkillExample",
+    "WorkflowStep",
+    "ScriptDefinition",
+    "SupportedScriptTypes",
+    "ToolDefinition",
+    "ToolDefinitionHeader",
+    "ToolDefinitionLogicBash",
+    "ToolDefinitionLogicJson",
+    "ToolScriptDefinition",
+]

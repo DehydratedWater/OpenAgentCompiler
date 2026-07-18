@@ -1,0 +1,49 @@
+site_name: open-agent-compiler
+site_description: >-
+  Python-first agent framework: define composable agent trees once,
+  compile them to multiple agent runtimes, and auto-optimize them with
+  test-driven improvement loops.
+site_url: https://dehydratedwater.github.io/OpenAgentCompiler/
+repo_url: https://github.com/DehydratedWater/OpenAgentCompiler
+repo_name: DehydratedWater/OpenAgentCompiler
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Developer Guide: dev-guide.md
+  - Dialects:
+      - Pi Agent Dialect: pi-agent-dialect.md
+  - Testing:
+      - Retrieval Testing: retrieval-testing.md
+  - Field Lessons:
+      - Optimize the Real Goal: lessons/optimize-the-real-goal-not-text-correctness.md
+      - Thinking Models & Scoring: lessons/thinking-models-and-opencode-scoring.md
+      - Tuning a Local Agent Fleet: lessons/tuning-a-local-agent-fleet.md
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - tables

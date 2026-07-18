@@ -1,16 +1,13 @@
 [project]
 name = "open-agent-compiler"
-version = "0.1.3"
-description = "Python-first agent framework that compiles agent definitions into backend-specific configurations"
-requires-python = ">=3.12"
+version = "1.0.0"
+description = "Python-first agent framework: define composable agent trees once, compile them to multiple agent runtimes (opencode, Claude Code, Pi), and auto-optimize them with test-driven improvement loops."
 readme = "README.md"
-license = {file = "LICENSE"}
-authors = [
-    {name = "Ignacy Daszkiewicz"},
-]
-keywords = ["agent", "framework", "compiler", "opencode", "llm", "ai"]
+license = { file = "LICENSE" }
+authors = [{ name = "Ignacy Daszkiewicz" }]
+keywords = ["agent", "framework", "compiler", "llm", "ai", "opencode", "claude-code", "pi-agent", "prompt-optimization"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
@@ -20,71 +17,68 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Typing :: Typed",
 ]
+requires-python = ">=3.12"
 dependencies = [
-    "pydantic>=2.0",
-    "python-dotenv",
+    "loguru>=0.7.3",
+    "pydantic>=2.13.3",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8",
-    "pytest-asyncio>=0.23",
-    "ruff>=0.4",
-    "mypy>=1.10",
-    "pre-commit>=3",
-]
-bench = [
-    "pytest-benchmark>=4",
-]
-testing = [
-    "httpx>=0.27",
+# The interactive target's LangChain binding. Optional — the compiler core
+# stays dependency-light; only consumers building the interactive/streaming
+# layer install this.
+langchain = [
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
 ]
 
 [project.urls]
 Homepage = "https://github.com/DehydratedWater/OpenAgentCompiler"
 Repository = "https://github.com/DehydratedWater/OpenAgentCompiler"
-Issues = "https://github.com/DehydratedWater/OpenAgentCompiler/issues"
+Documentation = "https://dehydratedwater.github.io/OpenAgentCompiler/"
+Changelog = "https://github.com/DehydratedWater/OpenAgentCompiler/releases"
+
+[project.scripts]
+oac = "open_agent_compiler.cli.main:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/open_agent_compiler"]
+packages = ["open_agent_compiler"]
 
-[tool.hatch.build.targets.sdist]
-include = [
-    "src/",
-    "LICENSE",
-    "README.md",
-    "pyproject.toml",
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+    "jupyter>=1.1.1",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.15.11",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
 ]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+filterwarnings = [
+    "error::DeprecationWarning",
+    "ignore::DeprecationWarning:jupyter_client.*",
+]
 
 [tool.ruff]
 target-version = "py312"
-src = ["src"]
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+extend-exclude = ["notebooks", "examples/*/build*", "examples/*/improved"]
 
 [tool.ruff.lint.per-file-ignores]
-# ScriptTool uses Generic[] for __orig_bases__ introspection — PEP 695 breaks it
-"src/open_agent_compiler/runtime.py" = ["UP046"]
-# Bundled scripts copied verbatim from v2 — not our code to lint
-"src/open_agent_compiler/scripts/subagent_todo.py" = ["ALL"]
-"src/open_agent_compiler/scripts/opencode_manager.py" = ["ALL"]
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-packages = ["open_agent_compiler"]
-mypy_path = "src"
-
-[[tool.mypy.overrides]]
-# Bundled scripts copied verbatim from v2 — skip type checking
-module = ["open_agent_compiler.scripts.subagent_todo", "open_agent_compiler.scripts.opencode_manager"]
-ignore_errors = true
+# The package root re-exports the public API surface for convenience;
+# not every re-export is (yet) part of the stable __all__ contract.
+"open_agent_compiler/__init__.py" = ["F401"]
+# Bundled runtime scripts are written in a deliberately compact style.
+"open_agent_compiler/scripts/*.py" = ["E702"]
+# Tests use compact one-line statements, post-sys.path imports, and
+# intentionally-unused results ("does not raise" checks).
+"tests/*" = ["E402", "E702", "F841"]
