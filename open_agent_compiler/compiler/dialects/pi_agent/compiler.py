@@ -86,6 +86,13 @@ class PiAgentCompiler(Compiler):
                     stacklevel=2,
                 )
 
+        # Native tool calling: pi's extension API (pi.registerTool) —
+        # emit .pi/extensions/oac-tools.ts bridging json-contract tools
+        # to their Python scripts.
+        if self.options.get("native_tools"):
+            from open_agent_compiler.compiler.native_tools import emit_pi_tool_extension
+            emit_pi_tool_extension(self.target, self.resolved_variants)
+
         # Parents (orchestrators) first so later phases can implement
         # stub-overwrite semantics safely; for now order is informational
         # but consistent.

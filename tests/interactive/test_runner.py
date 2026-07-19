@@ -193,10 +193,15 @@ def test_events_emitted_to_sink_with_agent_id_source():
     ])
     run_interactive(_spec(tools=(TOOL,)), "go", client=client,
                     tool_runner=lambda n, a: "ok", sink=sink)
-    assert sink.kinds() == [EventKind.TOOL_START, EventKind.TOOL_END]
+    # The final assistant turn also lands as a MESSAGE event (per-turn
+    # visibility for sink-draining UIs).
+    assert sink.kinds() == [
+        EventKind.TOOL_START, EventKind.TOOL_END, EventKind.MESSAGE,
+    ]
     assert all(e.source == "chat" for e in sink.events)
     assert sink.events[0].payload["tool"] == "priority-manager"
     assert sink.events[1].payload["result"] == "ok"
+    assert sink.events[2].payload["text"] == "done"
 
 
 def test_tool_failure_emits_error_event():
@@ -211,7 +216,9 @@ def test_tool_failure_emits_error_event():
 
     run_interactive(_spec(tools=(TOOL,)), "go", client=client,
                     tool_runner=boom, sink=sink)
-    assert sink.kinds() == [EventKind.TOOL_START, EventKind.TOOL_ERROR]
+    assert sink.kinds() == [
+        EventKind.TOOL_START, EventKind.TOOL_ERROR, EventKind.MESSAGE,
+    ]
     assert sink.events[1].payload["error"] == "nope"
 
 
@@ -230,6 +237,7 @@ def test_emitting_runner_pushes_progress_on_the_same_stream():
                     tool_runner=runner, sink=sink)
     assert sink.kinds() == [
         EventKind.TOOL_START, EventKind.PROGRESS, EventKind.TOOL_END,
+        EventKind.MESSAGE,
     ]
 
 

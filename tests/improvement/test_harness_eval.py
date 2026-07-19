@@ -60,14 +60,18 @@ def test_subprocess_result_satisfies_result_protocol() -> None:
 # ---- PiRunner ----------------------------------------------------------
 
 
-def test_pi_runner_invokes_pi_run_agent(tmp_path: Path) -> None:
+def test_pi_runner_invokes_headless_print_mode(tmp_path: Path) -> None:
     stub = _write_stub_bin(tmp_path / "pi-stub")
     runner = PiRunner(build_dir=tmp_path, pi_bin=str(stub))
     result = runner.run(agent_name="summarizer", prompt="hello world")
     assert result.succeeded
     assert result.error is None
-    # The stub echoes argv: `run --agent summarizer hello world`
-    assert "run --agent summarizer hello world" in result.final_text()
+    text = result.final_text()
+    # Real pi CLI shape: headless -p, project trust, no session pollution,
+    # delegation to the named subagent via the Agent tool.
+    assert text.startswith("-p --mode text --approve --no-session")
+    assert "`summarizer` agent" in text
+    assert "hello world" in text
 
 
 def test_pi_runner_nonzero_exit_surfaces_error(tmp_path: Path) -> None:

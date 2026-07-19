@@ -167,7 +167,7 @@ Deploy or refresh the framework's developer skill bundles into a project's
 | Argument | Meaning |
 |---|---|
 | `target` | project directory to refresh |
-| `--skills LIST` | comma-separated dialects, subset of `opencode,claude` (default both) |
+| `--skills LIST` | comma-separated dialects, subset of `opencode,claude,pi,codex` — the same cross-agent SKILL.md standard (default `opencode,claude`) |
 | `--force` | rewrite even when the installed version matches |
 | `--check` | write nothing; report fresh/stale/missing and exit 1 on drift |
 

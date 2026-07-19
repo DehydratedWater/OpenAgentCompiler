@@ -93,6 +93,14 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "--output", type=Path, default=Path("improved"),
         help="Directory for JSON snapshots (default: ./improved).",
     )
+    p.add_argument(
+        "--store", nargs="?", const="default", default=None,
+        help=(
+            "Record the run (rounds/candidates/winners) in the run store."
+            " Pass a URL ('sqlite:///path.db'), or no value for the"
+            " default .oac/improvement.db — browse with `oac versions`."
+        ),
+    )
 
 
 def _parse_mutators(spec: str) -> list[Mutator]:
@@ -181,10 +189,16 @@ def handle(
     mutators = _parse_mutators(args.mutators)
     evaluator = _load_evaluator(args.evaluator)
 
+    store = None
+    if args.store is not None:
+        from open_agent_compiler.improvement.store import open_store
+        store = open_store(None if args.store == "default" else args.store)
+
     loop = IterativeLoop(
         baseline=baseline, mutators=mutators, criterion=criterion,
         evaluator=evaluator,
         max_rounds=args.max_iters, frontier_size=args.frontier,
+        store=store, run_notes=f"oac improve {args.target}",
     )
     result = loop.run()
     snapshot_paths = write_round_winners(

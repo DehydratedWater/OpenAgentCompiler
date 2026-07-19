@@ -258,12 +258,15 @@ def synthesize_harness(
     ).run()
 
     if skills:
-        from open_agent_compiler.skills import emit_claude, emit_opencode, list_skills
+        from open_agent_compiler.skills import (
+            emit_claude, emit_codex, emit_opencode, emit_pi, list_skills,
+        )
+        emitters = {"opencode": emit_opencode, "claude": emit_claude,
+                    "pi": emit_pi, "codex": emit_codex}
         bundles = list_skills()
-        if "opencode" in skills:
-            emit_opencode(bundles, workspace_repo, force=True)
-        if "claude" in skills:
-            emit_claude(bundles, workspace_repo, force=True)
+        for name in skills:
+            if name in emitters:
+                emitters[name](bundles, workspace_repo, force=True)
 
     harness_dir = workspace_repo / HARNESS_DIR
     harness_dir.mkdir(parents=True, exist_ok=True)
@@ -285,9 +288,22 @@ def synthesize_harness(
     ))
     _write("README.md", _HARNESS_README.format(
         name=profile.name, dialect=dialect,
+        run_command=_run_command_hint(dialect),
         test_command=profile.test_command or "(none detected)",
     ))
     return written
+
+
+def _run_command_hint(dialect: str) -> str:
+    """The dialect-correct way to drive the implementer on a task."""
+    return {
+        "opencode": 'opencode run --agent implementer "Add …"',
+        "pi": 'pi -p --approve "Use the Agent tool to spawn the implementer'
+              ' agent: Add …"',
+        "claude": 'claude -p "Use the implementer subagent: Add …"',
+        "codex": 'codex exec "Spawn the implementer agent as a subagent:'
+                 ' Add …"',
+    }.get(dialect, f"# drive the implementer via your {dialect} runtime")
 
 
 _AGENTS_LOADER = '''\
@@ -580,7 +596,7 @@ the repository (no git remotes — nothing here can reach the upstream).
 ```bash
 # drive the implementer on a task (dialect: {dialect})
 cd <this workspace>
-{dialect} run --agent implementer "Add …"
+{run_command}
 
 # recompile after editing the profile/registry
 uv run python .oac-harness/build_harness.py

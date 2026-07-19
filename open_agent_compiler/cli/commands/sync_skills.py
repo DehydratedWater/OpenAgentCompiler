@@ -6,9 +6,23 @@ import argparse
 from pathlib import Path
 from typing import Any, Callable
 
-from open_agent_compiler.skills import check_drift, emit_claude, emit_opencode, list_skills
+from open_agent_compiler.skills import (
+    check_drift,
+    emit_claude,
+    emit_codex,
+    emit_opencode,
+    emit_pi,
+    list_skills,
+)
 
-_VALID = {"opencode", "claude"}
+_VALID = {"opencode", "claude", "pi", "codex"}
+
+_EMITTERS = {
+    "opencode": emit_opencode,
+    "claude": emit_claude,
+    "pi": emit_pi,
+    "codex": emit_codex,
+}
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -23,7 +37,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     )
     p.add_argument(
         "--skills", default="opencode,claude",
-        help="Comma-separated dialect list. Default: 'opencode,claude'.",
+        help=(
+            "Comma-separated dialect list (subset of"
+            " 'opencode,claude,pi,codex'; SKILL.md is the same cross-agent"
+            " standard for all four). Default: 'opencode,claude'."
+        ),
     )
     p.add_argument(
         "--force", action="store_true",
@@ -62,6 +80,9 @@ def handle(
     if args.check:
         any_drift = False
         for dialect in skills:
+            if dialect not in ("opencode", "claude"):
+                print(f"  (drift check not implemented for {dialect}; skipping)")
+                continue
             reports = check_drift(bundles, args.target, dialect)
             for r in reports:
                 status_label = {
@@ -79,10 +100,7 @@ def handle(
 
     total_written = 0
     for dialect in skills:
-        if dialect == "opencode":
-            out = emit_opencode(bundles, args.target, force=args.force)
-        else:
-            out = emit_claude(bundles, args.target, force=args.force)
+        out = _EMITTERS[dialect](bundles, args.target, force=args.force)
         print(
             f"oac sync-skills [{dialect}]: wrote {len(out.written)} file(s),"
             f" skipped {len(out.skipped_up_to_date)} up-to-date"

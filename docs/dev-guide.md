@@ -583,7 +583,7 @@ offline-runnable capstone: `examples/85_matrix_live_chat/`.
 | `oac improve <factory> --target T --config C [...]` | run the improvement loop |
 | `oac promote <snapshot.json> [--class L] [--target K]` | stage a snapshot for the next compile (per-class / per-target slots) |
 | `oac versions <action> <component> [...]` | browse / load / unload / rollback autolooped versions; `apply-source` rewrites the Python prompt |
-| `oac sync-skills <dir> [--skills opencode,claude] [--check]` | deploy/refresh developer skills |
+| `oac sync-skills <dir> [--skills opencode,claude,pi,codex] [--check]` | deploy/refresh developer skills |
 
 `oac compile` also accepts `--native-tools` (emit the harness's native
 tool-calling form — TS shims for opencode, an MCP tools server for

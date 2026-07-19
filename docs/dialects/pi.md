@@ -199,14 +199,14 @@ After compilation, run agents with pi:
 
 ```bash
 cd build
-pi run --agent orchestrator "Summarize and critique this claim: ..."
+pi -p --approve "Use the Agent tool to spawn the orchestrator agent: Summarize and critique this claim: ..."
 ```
 
 Or spawn subagents directly:
 
 ```bash
-pi run --agent summarizer "Summarize this text: ..."
-pi run --agent critic "Critique this claim: ..."
+pi -p --approve "Use the Agent tool to spawn the summarizer agent: Summarize this text: ..."
+pi -p --approve "Use the Agent tool to spawn the critic agent: Critique this claim: ..."
 ```
 
 ## Dual Compilation

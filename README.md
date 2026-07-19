@@ -58,7 +58,7 @@ subagent spawning plus `pi-permission-system` for permission enforcement):
 
 ```bash
 uv run oac compile myproj.agents:registry --config prod --target build --dialect pi
-cd build && pi run --agent primary "Hi"
+cd build && pi -p --approve "Use the Agent tool to spawn the primary agent: Hi"
 ```
 
 ## Key features

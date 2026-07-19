@@ -114,10 +114,11 @@ def handle(
         _interactive(args)
     workspace = args.out or Path(f"evolved_{args.repo.name}")
     skills = tuple(s for s in args.skills.split(",") if s.strip())
-    unknown = set(skills) - {"opencode", "claude"}
+    unknown = set(skills) - {"opencode", "claude", "pi", "codex"}
     if unknown:
         raise ValueError(
-            f"unknown skill dialects: {sorted(unknown)}; valid: opencode, claude"
+            f"unknown skill dialects: {sorted(unknown)};"
+            " valid: opencode, claude, pi, codex"
         )
 
     print(f"oac evolve: isolating {args.repo} → {workspace}/")
@@ -158,10 +159,11 @@ def handle(
         package_harness(repo_copy, zip_path)
         print(f"oac evolve: packaged → {zip_path}")
 
+    from open_agent_compiler.evolve.synthesize import _run_command_hint
     print(
         "\nNext steps:\n"
         f"  cd {repo_copy}\n"
-        f"  {args.dialect} run --agent implementer \"<a task>\"\n"
+        f"  {_run_command_hint(args.dialect)}\n"
         "  uv run python .oac-harness/evolve_loop.py   # evolve via commit replay\n"
     )
     return 0

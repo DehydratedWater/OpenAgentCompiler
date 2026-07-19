@@ -28,7 +28,7 @@ tool format has always used for `custom_tools` frontmatter.
 | opencode | TS tools in `.opencode/tool/` | One `<name>.ts` shim per tool |
 | claude | none per-tool — MCP servers | `scripts/mcp_tools_server.py` + `.mcp.json` |
 | codex | none per-tool — MCP servers | same server + `[mcp_servers.oac-tools]` in each agent TOML |
-| pi | extension tools (`ext:<extension>/<tool>`) | not generated yet — bash path |
+| pi | extension API (`pi.registerTool`) | `.pi/extensions/oac-tools.ts` registering every tool (Typebox schemas) |
 
 ### opencode: TypeScript shims
 
@@ -83,10 +83,14 @@ build tree (a generated-file dependency, not a framework one).
 
 ### pi
 
-pi's native mechanism is extension tools — a TypeScript extension API
-the compiler does not generate yet. pi builds keep the bash invocation
-path; MCP-based access is possible manually via pi's `ext:mcp/<tool>`
-extension tools pointed at the same generated server.
+pi's native mechanism is its extension API: the compiler emits
+`.pi/extensions/oac-tools.ts`, one `pi.registerTool()` per json-contract
+tool with Typebox parameter schemas, each `execute()` bridging to
+`python3 scripts/<tool>.py --json`. The project-local extension loads
+when the project is trusted — run pi with `--approve` (what `PiRunner`
+does) or approve the trust prompt once. Live-verified: a real pi
+session calls the registered tool natively and returns the ScriptTool's
+output.
 
 ## Choosing formats
 

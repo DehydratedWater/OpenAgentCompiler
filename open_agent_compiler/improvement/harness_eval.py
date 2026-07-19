@@ -20,7 +20,7 @@ on the concrete result types.
 
 Runner caveats per harness:
 
-- **pi** — invokes `pi run --agent <name> "<prompt>"` in the build
+- **pi** — invokes headless `pi -p --approve` in the build
   tree. Output is plain text (no JSON event stream), so `final_text()`
   is stdout. The build tree must have been compiled with
   `--dialect pi`, and the pi runtime needs its two extensions
@@ -163,7 +163,14 @@ def _run_subprocess(
 
 @dataclass
 class PiRunner:
-    """Sync `pi run --agent <name>` invoker for a `--dialect pi` build tree."""
+    """Sync headless `pi -p` invoker for a `--dialect pi` build tree.
+
+    pi has no per-agent CLI flag; compiled `.pi/agents/*.md` files are
+    SUBAGENT types provided by pi-subagents, so the runner asks the main
+    pi agent to spawn the named agent via the Agent tool. `--approve`
+    trusts the build tree's project-local agents/extensions for the run;
+    `--no-session` keeps eval runs out of the session history.
+    """
 
     build_dir: Path
     pi_bin: str = "pi"
@@ -180,10 +187,18 @@ class PiRunner:
         timeout_s: float | None = None,
         extra_env: dict[str, str] | None = None,
     ) -> SubprocessHarnessResult:
-        cmd = [self.pi_bin, "run", "--agent", agent_name, prompt]
+        delegated = (
+            f"Use the Agent tool to spawn the `{agent_name}` agent"
+            " (foreground) for the following task, then return ONLY its"
+            " result.\n\n" + prompt
+        )
+        cmd = [
+            self.pi_bin, "-p", "--mode", "text", "--approve", "--no-session",
+            delegated,
+        ]
         return _run_subprocess(
             harness_name=self.harness_name, cmd=cmd, cwd=self.build_dir,
-            agent_name=agent_name, prompt=prompt,
+            agent_name=agent_name, prompt=delegated,
             timeout_s=timeout_s or self.default_timeout_s,
             extra_env=extra_env,
             retry_on_empty=self.retry_on_empty_output,

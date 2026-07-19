@@ -341,6 +341,10 @@ def run_interactive(
         )
         rounds += 1
         content = response.content
+        if content:
+            # Per-turn visibility on the event stream (async servers /
+            # UIs draining a sink see turns as they land).
+            emitter.message(content)
         if not response.tool_calls:
             break
         if tool_runner is None:
@@ -393,10 +397,41 @@ def run_interactive(
     )
 
 
+async def run_interactive_async(
+    spec: InteractiveAgentSpec,
+    user_input: str | list[dict],
+    *,
+    tool_runner: ToolRunner | None = None,
+    client: ChatClient | None = None,
+    sink: EventSink | Callable[..., Any] | None = None,
+    max_tool_rounds: int = 8,
+    history: list[dict] | None = None,
+    **params: Any,
+) -> RunResult:
+    """Async entry point for `run_interactive`.
+
+    The blocking turn (provider round-trips + tool subprocesses) runs in
+    a worker thread via asyncio.to_thread, so an async server (FastAPI,
+    a telegram bot's event loop) can serve turns concurrently without
+    blocking. Incremental visibility comes from `sink`: tool.start/end/
+    error and per-turn `message` events fire from inside the run —
+    token-level streaming remains the bindings' job (LangChain /
+    PydanticAI), which stream natively against the same spec.
+    """
+    import asyncio
+
+    return await asyncio.to_thread(
+        run_interactive, spec, user_input,
+        tool_runner=tool_runner, client=client, sink=sink,
+        max_tool_rounds=max_tool_rounds, history=history, **params,
+    )
+
+
 __all__ = [
     "ChatToolCall",
     "ChatResponse",
     "ChatClient",
+    "run_interactive_async",
     "OpenAICompatClient",
     "RunResult",
     "ToolRunner",

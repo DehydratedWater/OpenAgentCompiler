@@ -24,7 +24,9 @@ from open_agent_compiler.skills.emitters import (
     EmissionResult,
     check_drift,
     emit_claude,
+    emit_codex,
     emit_opencode,
+    emit_pi,
 )
 from open_agent_compiler.skills.registry import get_skill, list_skills
 
@@ -36,7 +38,9 @@ __all__ = [
     "EmissionResult",
     "check_drift",
     "emit_claude",
+    "emit_codex",
     "emit_opencode",
+    "emit_pi",
     "get_skill",
     "list_skills",
 ]

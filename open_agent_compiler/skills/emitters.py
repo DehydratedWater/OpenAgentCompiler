@@ -34,15 +34,20 @@ class EmissionResult(BaseModel):
 
 
 def _frontmatter(bundle: SkillBundle) -> str:
+    # Descriptions routinely contain colons — JSON-escape the values so
+    # the frontmatter stays valid YAML for every consumer of the
+    # cross-agent SKILL.md standard.
+    import json
+
     lines = [
         "---",
         f"name: {bundle.name}",
-        f"description: {bundle.description}",
+        f"description: {json.dumps(bundle.description)}",
         f"version: {bundle.version}",
     ]
     if bundle.tools_hint:
         hint = ", ".join(bundle.tools_hint)
-        lines.append(f"tools_hint: {hint}")
+        lines.append(f"tools_hint: {json.dumps(hint)}")
     lines.append("---")
     lines.append("")
     return "\n".join(lines)
@@ -131,6 +136,41 @@ def emit_claude(
     claude_md = target / "CLAUDE.md"
     claude_md.write_text(_claude_md_index(bundles))
     out.written.append(claude_md)
+    return out
+
+
+def emit_pi(
+    bundles: list[SkillBundle], target: Path, *, force: bool = False,
+) -> EmissionResult:
+    """Write bundles into <target>/.pi/skills/.
+
+    pi discovers the cross-agent `<name>/SKILL.md` standard from
+    `.pi/skills/` (pi-subagents "skill preloading"), so every bundle is
+    emitted — the opencode/claude `targets` filter is a legacy of the
+    two-dialect era, not a statement about pi.
+    """
+    out = EmissionResult(target_dir=target / ".pi" / "skills")
+    for b in bundles:
+        written, skipped = _write_skill(b, out.target_dir / b.name, force=force)
+        out.written.extend(written)
+        out.skipped_up_to_date.extend(skipped)
+    return out
+
+
+def emit_codex(
+    bundles: list[SkillBundle], target: Path, *, force: bool = False,
+) -> EmissionResult:
+    """Write bundles into <target>/.codex/skills/.
+
+    Codex scans `.codex/skills/<name>/SKILL.md` (one level deep, name +
+    description frontmatter — the same cross-agent standard), loading
+    full instructions on demand. Every bundle is emitted.
+    """
+    out = EmissionResult(target_dir=target / ".codex" / "skills")
+    for b in bundles:
+        written, skipped = _write_skill(b, out.target_dir / b.name, force=force)
+        out.written.extend(written)
+        out.skipped_up_to_date.extend(skipped)
     return out
 
 

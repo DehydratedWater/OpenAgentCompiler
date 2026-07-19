@@ -20,7 +20,7 @@ uv run python examples/81_pi_exploration/build_agents.py
 
 ```bash
 cd examples/81_pi_exploration/build
-pi run --agent explorer-orchestrator "Find all files that handle authentication"
+pi -p --approve "Use the Agent tool to spawn the explorer-orchestrator agent: Find all files that handle authentication"
 ```
 
 The orchestrator will spawn pi's Explore agent to investigate, then
