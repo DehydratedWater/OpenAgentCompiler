@@ -5,20 +5,33 @@ This page explains the framework's fast/slow split: how the *same*
 an agent runtime) and as a snappy in-process **interactive** agent (bound to a
 streaming chat model) — and when to route to which.
 
+```mermaid
+flowchart TB
+    AD["AgentDefinition (one source of truth)"]
+    AD -- "worker tier" --> CS["CompileScript(dialect=...)"]
+    AD -- "interactive tier" --> BIS["build_interactive_spec(...)"]
+    CS --> TREES[".opencode/ .claude/ .pi/ .codex/ trees<br/>run as a subprocess by a coding-agent runtime"]
+    BIS --> SPEC["InteractiveAgentSpec<br/>bound in-process: LangChain runnable<br/>or run_interactive()"]
+    TREES --> W["long-running · side-effecting<br/>fire-and-forget · strong isolation"]
+    SPEC --> I["streaming · request/response<br/>sub-second first token"]
 ```
-                      AgentDefinition (one source of truth)
-                                     │
-              ┌──────── worker tier ─┴─── interactive tier ────────┐
-              ▼                                                    ▼
-   CompileScript(dialect=...)                        build_interactive_spec(...)
-              │                                                    │
-   .opencode/ .claude/ .pi/ trees                       InteractiveAgentSpec
-   run as a SUBPROCESS by a                       bound IN-PROCESS: LangChain
-   coding-agent runtime                           runnable or run_interactive()
-              │                                                    │
-   long-running · side-effecting                  streaming · request/response
-   fire-and-forget · strong isolation             sub-second first token
-```
+
+??? note "Text version of this diagram"
+
+    ```
+                          AgentDefinition (one source of truth)
+                                         │
+                  ┌──────── worker tier ─┴─── interactive tier ────────┐
+                  ▼                                                    ▼
+       CompileScript(dialect=...)                        build_interactive_spec(...)
+                  │                                                    │
+       .opencode/ .claude/ .pi/ trees                       InteractiveAgentSpec
+       run as a SUBPROCESS by a                       bound IN-PROCESS: LangChain
+       coding-agent runtime                           runnable or run_interactive()
+                  │                                                    │
+       long-running · side-effecting                  streaming · request/response
+       fire-and-forget · strong isolation             sub-second first token
+    ```
 
 ## The worker tier (slow lane)
 

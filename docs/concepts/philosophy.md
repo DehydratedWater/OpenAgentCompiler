@@ -110,18 +110,29 @@ mechanics: [Improvement loop](../guides/improvement-loop.md).
 
 ## The shape that falls out
 
+```mermaid
+flowchart LR
+    DEF["typed definitions<br/>AgentDefinition<br/>+ tools + skills<br/>+ tests + workflow"]
+    COMP["compiler<br/>dialects: opencode,<br/>claude, pi, codex"]
+    RT["runtimes<br/>.opencode/ .claude/ .pi/ .codex/ (workers)<br/>InteractiveAgentSpec (in-process chat)"]
+    DEF --> COMP --> RT
+    DEF -. "improvement loop: mutate / evaluate —<br/>promoted snapshots feed the next compile" .-> COMP
 ```
-     typed definitions          compiler           runtimes
-  ┌──────────────────────┐   ┌───────────┐   ┌──────────────────────┐
-  │ AgentDefinition       │   │ dialects: │   │ .opencode/ .claude/  │
-  │  + tools + skills     ├──▶│ opencode  ├──▶│ .pi/  (workers)      │
-  │  + tests + workflow   │   │ claude,pi │   │ InteractiveAgentSpec │
-  └──────────┬───────────┘   └───────────┘   │  (in-process chat)   │
-             │                    ▲          └──────────────────────┘
-             │   mutate/evaluate  │
-             └────────────────────┘
-              improvement loop (promoted snapshots feed the next compile)
-```
+
+??? note "Text version of this diagram"
+
+    ```
+         typed definitions          compiler           runtimes
+      ┌──────────────────────┐   ┌───────────┐   ┌──────────────────────┐
+      │ AgentDefinition       │   │ dialects: │   │ .opencode/ .claude/  │
+      │  + tools + skills     ├──▶│ opencode  ├──▶│ .pi/  (workers)      │
+      │  + tests + workflow   │   │ claude,pi │   │ InteractiveAgentSpec │
+      └──────────┬───────────┘   └───────────┘   │  (in-process chat)   │
+                 │                    ▲          └──────────────────────┘
+                 │   mutate/evaluate  │
+                 └────────────────────┘
+                  improvement loop (promoted snapshots feed the next compile)
+    ```
 
 Definitions in, artifacts out, and a feedback loop that treats the definitions
 themselves as the thing being optimized.

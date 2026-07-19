@@ -17,23 +17,38 @@ prompts, tools, skills, workflows, permissions, subagents, tests. The
 framework then turns that single definition into whatever a runtime
 needs:
 
+```mermaid
+flowchart TB
+    AD["AgentDefinition (Pydantic)<br/>prompt · tools · skills · workflow<br/>permissions · subagents · tests"]
+    AD --> OC[".opencode/agents/*.md<br/>(OpenCode runtime)"]
+    AD --> CL[".claude/agents/*.md<br/>(Claude Code)"]
+    AD --> PI[".pi/agents/*.md<br/>(Pi + pi-subagents)"]
+    AD --> IS["InteractiveAgentSpec<br/>→ LangChain runnable"]
+    OC --> W["worker tier: long-running, side-effecting,<br/>fire-and-forget"]
+    CL --> W
+    PI --> W
+    IS --> CH["interactive tier: in-process, streaming,<br/>request/response chat layer"]
 ```
-                        ┌────────────────────────────────────────────┐
-                        │        AgentDefinition (Pydantic)          │
-                        │  prompt · tools · skills · workflow ·      │
-                        │  permissions · subagents · tests           │
-                        └──────────────┬─────────────────────────────┘
-                                       │
-            ┌───────── worker tier ────┼──────────┐        ┌─ interactive tier ─┐
-            ▼                          ▼          ▼        ▼                    │
-   .opencode/agents/*.md    .claude/agents/*.md  .pi/agents/*.md   InteractiveAgentSpec
-   (OpenCode runtime)       (Claude Code)        (Pi + pi-subagents)  → LangChain runnable
-            │                          │          │        │
-            └──────────────┬───────────┴──────────┘        │
-                           ▼                               ▼
-              long-running, side-effecting,      in-process, streaming,
-              fire-and-forget "workers"          request/response chat layer
-```
+
+??? note "Text version of this diagram"
+
+    ```
+                            ┌────────────────────────────────────────────┐
+                            │        AgentDefinition (Pydantic)          │
+                            │  prompt · tools · skills · workflow ·      │
+                            │  permissions · subagents · tests           │
+                            └──────────────┬─────────────────────────────┘
+                                           │
+                ┌───────── worker tier ────┼──────────┐        ┌─ interactive tier ─┐
+                ▼                          ▼          ▼        ▼                    │
+       .opencode/agents/*.md    .claude/agents/*.md  .pi/agents/*.md   InteractiveAgentSpec
+       (OpenCode runtime)       (Claude Code)        (Pi + pi-subagents)  → LangChain runnable
+                │                          │          │        │
+                └──────────────┬───────────┴──────────┘        │
+                               ▼                               ▼
+                  long-running, side-effecting,      in-process, streaming,
+                  fire-and-forget "workers"          request/response chat layer
+    ```
 
 (The worker tier also compiles to `.codex/agents/*.toml` for the OpenAI
 Codex CLI — omitted from the diagram for width.)

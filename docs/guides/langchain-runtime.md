@@ -11,20 +11,30 @@ which tier, see [execution tiers](../concepts/execution-tiers.md).
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    AD[AgentDefinition] -- "build_interactive_spec()" --> IS["InteractiveAgentSpec<br/>(runtime-agnostic intermediate)"]
+    IS --> LC["LangChain binding<br/>bind() → prompt | ChatOpenAI(+tools)"]
+    IS --> FL["framework-owned loop<br/>run_interactive() → RunResult"]
+    LC --> ORCH["your orchestration:<br/>LangGraph, AgentExecutor, or a manual loop"]
 ```
-AgentDefinition ──build_interactive_spec()──▶ InteractiveAgentSpec
-                                                    │
-                              (runtime-agnostic intermediate)
-                                                    │
-                 ┌──────────────────────────────────┴───────────────┐
-                 ▼                                                  ▼
-      LangChain binding                              framework-owned loop
-  bind() → prompt | ChatOpenAI(+tools)            run_interactive() → RunResult
-                 │
-                 ▼
-   your orchestration: LangGraph,
-   AgentExecutor, or a manual loop
-```
+
+??? note "Text version of this diagram"
+
+    ```
+    AgentDefinition ──build_interactive_spec()──▶ InteractiveAgentSpec
+                                                        │
+                                  (runtime-agnostic intermediate)
+                                                        │
+                     ┌──────────────────────────────────┴───────────────┐
+                     ▼                                                  ▼
+          LangChain binding                              framework-owned loop
+      bind() → prompt | ChatOpenAI(+tools)            run_interactive() → RunResult
+                     │
+                     ▼
+       your orchestration: LangGraph,
+       AgentExecutor, or a manual loop
+    ```
 
 The design splits responsibility in three layers:
 

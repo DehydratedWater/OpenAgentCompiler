@@ -6,22 +6,37 @@ agent trees on disk: registry → template → config → resolution → build g
 
 The whole thing in one picture:
 
+```mermaid
+flowchart TB
+    AD[AgentDefinition] --> REG["register_agent()"]
+    MP[ModelParameters] --> REG
+    REG --> AID[agent_id]
+    AID --> TT["TemplateTree(slots=[TemplateSlot ...])<br/>“the shape”"]
+    TT --> CC["CompilationConfig(template_name, slot_overrides)<br/>“the selection”"]
+    CC --> RC["resolve_config('prod')"]
+    RC -- "{slot_name: AgentVariant}" --> BG["build graph (parents → children)"]
+    BG --> DC["dialect compiler<br/>(opencode | claude | pi | codex)"]
+    DC --> BUILD[build/]
 ```
- AgentDefinition ─┐
- ModelParameters ─┴─▶ register_agent() ──▶ agent_id
-                                             │
- TemplateTree(slots=[TemplateSlot ──────────┘ ])   "the shape"
-                        │
- CompilationConfig(template_name, slot_overrides)   "the selection"
-                        │
-              resolve_config("prod")
-                        │  {slot_name: AgentVariant}
-              build graph (parents → children)
-                        │
-              dialect compiler (opencode | claude | pi)
-                        │
-                     build/
-```
+
+??? note "Text version of this diagram"
+
+    ```
+     AgentDefinition ─┐
+     ModelParameters ─┴─▶ register_agent() ──▶ agent_id
+                                                 │
+     TemplateTree(slots=[TemplateSlot ──────────┘ ])   "the shape"
+                            │
+     CompilationConfig(template_name, slot_overrides)   "the selection"
+                            │
+                  resolve_config("prod")
+                            │  {slot_name: AgentVariant}
+                  build graph (parents → children)
+                            │
+                  dialect compiler (opencode | claude | pi)
+                            │
+                         build/
+    ```
 
 ## Layer 1: agents — `register_agent`
 

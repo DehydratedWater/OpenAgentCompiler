@@ -9,18 +9,30 @@ system prompts, tools, skills, workflows, permissions, subagents, and
 tests — and the framework turns that single source of truth into whatever
 each target runtime needs.
 
+```mermaid
+flowchart TB
+    AD["AgentDefinition (Pydantic)<br/>prompt · tools · skills · workflow<br/>permissions · subagents · tests"]
+    AD -- compile --> OC[".opencode/agents/*.md<br/>(OpenCode runtime)"]
+    AD -- compile --> CC[".claude/agents/*.md<br/>(Claude Code)"]
+    AD -- compile --> PI[".pi/agents/*.md<br/>(Pi agents)"]
+    AD -- compile --> CX[".codex/agents/*.toml<br/>(Codex CLI)"]
+    AD -- compile --> IS["InteractiveAgentSpec<br/>(LangChain / PydanticAI runnable)"]
 ```
-                ┌────────────────────────────────────────────┐
-                │        AgentDefinition (Pydantic)          │
-                │  prompt · tools · skills · workflow ·      │
-                │  permissions · subagents · tests           │
-                └──────────────┬─────────────────────────────┘
-                               │ compile
-      ┌────────────────────────┼────────────────────┬──────────────────┐
-      ▼                        ▼                    ▼                  ▼
-.opencode/agents/*.md   .claude/agents/*.md   .pi/agents/*.md   InteractiveAgentSpec
-(OpenCode runtime)      (Claude Code)         (Pi agents)       (LangChain runnable)
-```
+
+??? note "Text version of this diagram"
+
+    ```
+                    ┌────────────────────────────────────────────┐
+                    │        AgentDefinition (Pydantic)          │
+                    │  prompt · tools · skills · workflow ·      │
+                    │  permissions · subagents · tests           │
+                    └──────────────┬─────────────────────────────┘
+                                   │ compile
+          ┌────────────────────────┼────────────────────┬──────────────────┐
+          ▼                        ▼                    ▼                  ▼
+    .opencode/agents/*.md   .claude/agents/*.md   .pi/agents/*.md   InteractiveAgentSpec
+    (OpenCode runtime)      (Claude Code)         (Pi agents)       (LangChain runnable)
+    ```
 
 ## Install
 
