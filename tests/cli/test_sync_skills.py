@@ -148,3 +148,36 @@ def test_check_drift_returns_fresh_for_clean_install(tmp_path: Path) -> None:
     reports = check_drift(list_skills(), target, "opencode")
     assert all(r.status == "fresh" for r in reports)
     assert any(r.skill_name == "getting-started" for r in reports)
+
+
+# ---- pi / codex drift check ---------------------------------------------
+
+
+@pytest.mark.parametrize("dialect", ["pi", "codex"])
+def test_check_drift_covers_pi_and_codex(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], dialect: str,
+) -> None:
+    target = tmp_path / "proj"
+    target.mkdir()
+    # Nothing deployed yet — every bundle reports missing.
+    reports = check_drift(list_skills(), target, dialect)
+    assert reports and all(r.status == "missing" for r in reports)
+
+    cli_main(["sync-skills", str(target), "--skills", dialect])
+    capsys.readouterr()
+    rc = cli_main(["sync-skills", str(target), "--check", "--skills", dialect])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "OK" in out and "MISS" not in out and "STALE" not in out
+
+    sidecar = next((target / f".{dialect}" / "skills").glob("*/.skill_version"))
+    sidecar.write_text("not-the-real-hash")
+    rc = cli_main(["sync-skills", str(target), "--check", "--skills", dialect])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "STALE" in out
+
+
+def test_check_drift_rejects_unknown_dialect(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="unknown skill dialect"):
+        check_drift(list_skills(), tmp_path, "cursor")

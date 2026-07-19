@@ -20,7 +20,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from open_agent_compiler.skills.bundle import DialectTarget, SkillBundle
+from open_agent_compiler.skills.bundle import SkillBundle
 
 DriftStatus = Literal["fresh", "stale", "missing"]
 
@@ -179,7 +179,7 @@ class DriftReport(BaseModel):
 
     model_config = ConfigDict(frozen=False)
 
-    dialect: DialectTarget
+    dialect: str
     skill_name: str
     status: DriftStatus
     installed_hash: str | None = None
@@ -188,23 +188,39 @@ class DriftReport(BaseModel):
     current_version: str
 
 
-def _dialect_dir(target: Path, dialect: DialectTarget) -> Path:
-    return target / (".opencode" if dialect == "opencode" else ".claude") / "skills"
+_SKILL_DIRS = {
+    "opencode": ".opencode",
+    "claude": ".claude",
+    "pi": ".pi",
+    "codex": ".codex",
+}
+
+
+def _dialect_dir(target: Path, dialect: str) -> Path:
+    if dialect not in _SKILL_DIRS:
+        raise ValueError(
+            f"unknown skill dialect {dialect!r}; valid: {sorted(_SKILL_DIRS)}"
+        )
+    return target / _SKILL_DIRS[dialect] / "skills"
 
 
 def check_drift(
-    bundles: list[SkillBundle], target: Path, dialect: DialectTarget,
+    bundles: list[SkillBundle], target: Path, dialect: str,
 ) -> list[DriftReport]:
     """Inspect a target and report which skills are fresh / stale / missing.
 
     'fresh' — installed sidecar matches the current bundle's content_hash.
     'stale' — sidecar present but hash differs (re-sync recommended).
     'missing' — no sidecar / SKILL.md found for this skill.
+
+    Works for all four dialects; pi/codex emit every bundle, so only
+    opencode/claude apply the legacy `targets` filter (mirroring the
+    emitters).
     """
     base = _dialect_dir(target, dialect)
     reports: list[DriftReport] = []
     for b in bundles:
-        if dialect not in b.targets:
+        if dialect in ("opencode", "claude") and dialect not in b.targets:
             continue
         sidecar = base / b.name / ".skill_version"
         installed = _read_version_sidecar(sidecar)

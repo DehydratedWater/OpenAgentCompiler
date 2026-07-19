@@ -80,9 +80,6 @@ def handle(
     if args.check:
         any_drift = False
         for dialect in skills:
-            if dialect not in ("opencode", "claude"):
-                print(f"  (drift check not implemented for {dialect}; skipping)")
-                continue
             reports = check_drift(bundles, args.target, dialect)
             for r in reports:
                 status_label = {
