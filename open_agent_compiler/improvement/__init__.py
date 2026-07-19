@@ -157,6 +157,11 @@ from open_agent_compiler.improvement.store import (
     register_store_scheme,
     version_from_candidate_row,
 )
+from open_agent_compiler.improvement.compiled_eval import (
+    RegistryFactory,
+    build_compiled_evaluator,
+    compiled_probe_executable,
+)
 from open_agent_compiler.improvement.interactive_eval import (
     SpecFactory,
     build_interactive_evaluator,
@@ -319,6 +324,10 @@ __all__ = [
     "open_store",
     "register_store_scheme",
     "version_from_candidate_row",
+    # compiled-target evaluator (compile → run → judge, one call)
+    "RegistryFactory",
+    "build_compiled_evaluator",
+    "compiled_probe_executable",
     # interactive-tier evaluator (realtime runner as a target)
     "SpecFactory",
     "build_interactive_evaluator",
