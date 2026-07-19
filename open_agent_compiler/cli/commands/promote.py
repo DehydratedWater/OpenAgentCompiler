@@ -35,6 +35,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         ),
     )
     p.add_argument(
+        "--target", default=None,
+        help=(
+            "Promote into a per-target slot (a run_per_target_loops key"
+            " like 'pi+fast' or 'interactive'; writes"
+            " .oac/promoted/<id>__<target>.json). Takes precedence over"
+            " --class at load time: target > class > default."
+        ),
+    )
+    p.add_argument(
         "--show", action="store_true",
         help="Print the snapshot's metrics + definition instead of promoting.",
     )
@@ -63,11 +72,17 @@ def handle(
             args.snapshot, args.project,
             force=args.force,
             model_class=args.model_class,
+            target=args.target,
         )
     except FileExistsError as exc:
         print(f"oac promote: {exc}")
         return 2
-    class_suffix = f" [class={args.model_class}]" if args.model_class else ""
+    if args.target:
+        class_suffix = f" [target={args.target}]"
+    elif args.model_class:
+        class_suffix = f" [class={args.model_class}]"
+    else:
+        class_suffix = ""
     print(
         f"oac promote: {snap.version.component_id}{class_suffix} → {dest}"
         " (pick up on next `python build_agents.py` run)"

@@ -145,7 +145,25 @@ from open_agent_compiler.improvement.probe_cache import (
     ProbeResult,
     ProbeSynthesizer,
 )
+from open_agent_compiler.improvement.harness_eval import (
+    CodexRunner,
+    HarnessResult,
+    HarnessRunner,
+    PiRunner,
+    SubprocessHarnessResult,
+    get_runner,
+    list_runners,
+    register_runner,
+)
 from open_agent_compiler.improvement.split_loop import PerClassResult, run_per_class_loops
+from open_agent_compiler.improvement.target_loop import (
+    INTERACTIVE_HARNESS,
+    EvaluatorFactory,
+    OptimizationTarget,
+    PerTargetResult,
+    run_per_target_loops,
+    targets_from_split_profile,
+)
 from open_agent_compiler.improvement.improvement_agent import (
     ImprovementAgentMutator,
     Invoker,
@@ -265,6 +283,22 @@ __all__ = [
     "ProbeSynthesizer",
     "PerClassResult",
     "run_per_class_loops",
+    # per-target loops (harness × model_class adaptation matrix)
+    "INTERACTIVE_HARNESS",
+    "EvaluatorFactory",
+    "OptimizationTarget",
+    "PerTargetResult",
+    "run_per_target_loops",
+    "targets_from_split_profile",
+    # harness-agnostic eval runners
+    "CodexRunner",
+    "HarnessResult",
+    "HarnessRunner",
+    "PiRunner",
+    "SubprocessHarnessResult",
+    "get_runner",
+    "list_runners",
+    "register_runner",
     "ImprovementAgentMutator",
     "Invoker",
     "build_improvement_agent_definition",

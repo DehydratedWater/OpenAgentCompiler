@@ -331,10 +331,15 @@ class OpencodeRunResult:
 
 @dataclass
 class OpencodeRunner:
-    """Sync subprocess.run-based opencode invoker for eval loops."""
+    """Sync subprocess.run-based opencode invoker for eval loops.
+
+    Satisfies the `HarnessRunner` protocol (harness_eval.py) so target
+    loops can treat opencode as one harness among several.
+    """
 
     build_dir: Path
     opencode_bin: str = OPENCODE_BIN_DEFAULT
+    harness_name: str = "opencode"
     default_timeout_s: float = 180.0
     # Auto-retry once when stdout has zero parseable text events.
     # The empty-output failure is rare (~1 in 20 in stress testing)

@@ -10,8 +10,11 @@ Snapshot layout under <root>/:
 
 `oac improve` writes round winners with write_round_winners(); `oac
 promote` copies a snapshot into <project>/.oac/promoted/<component_id>.json
-(or <component_id>__<class>.json for per-class winners) so the user's
-agents/registry.py can pick it up on next compile.
+(or <component_id>__<slot>.json, where the slot is a model_class like
+"fast" or a per-target key like "pi+fast" / "interactive" from
+run_per_target_loops) so the user's agents/registry.py can pick it up
+on next compile. Slot resolution at load time is
+target → model_class → default within each bucket.
 
 Per-client promotions (Phase A) live one directory deeper, under a
 client bucket:
@@ -64,11 +67,16 @@ def _filename(version: ComponentVersion) -> str:
     return f"{version.content_hash[:12]}.json"
 
 
-def _promoted_filename(component_id: str, model_class: str | None) -> str:
-    """`<safe_id>.json` (default) or `<safe_id>__<class>.json` (per-class)."""
+def _promoted_filename(component_id: str, slot: str | None) -> str:
+    """`<safe_id>.json` (default) or `<safe_id>__<slot>.json`.
+
+    `slot` is either a model_class ("fast") or a target key
+    ("pi+fast", "interactive") — both use the same filename shape, so
+    per-target and per-class promotions coexist in one bucket.
+    """
     safe = component_id.replace("/", "__")
-    if model_class:
-        return f"{safe}__{model_class}.json"
+    if slot:
+        return f"{safe}__{slot}.json"
     return f"{safe}.json"
 
 
@@ -205,14 +213,19 @@ def promote(
     force: bool = False,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
 ) -> Path:
     """Copy a snapshot into the project's `.oac/promoted/` so a registry
     factory can pick it up on next compile.
 
-    Without `model_class`, writes the default slot:
+    Without `model_class`/`target`, writes the default slot:
         <project_root>/.oac/promoted/<safe_id>.json
     With `model_class`, writes a class-specific slot:
         <project_root>/.oac/promoted/<safe_id>__<class>.json
+    With `target` (a per-target loop key like "pi+fast" or
+    "interactive"), writes the target slot — takes precedence over
+    `model_class` when both are given:
+        <project_root>/.oac/promoted/<safe_id>__<target>.json
 
     `client_id` selects a per-client bucket one directory deeper:
         <project_root>/.oac/promoted/<client_id>/<safe_id>.json
@@ -226,7 +239,7 @@ def promote(
     promoted_dir = _promoted_dir(project_root, client_id)
     promoted_dir.mkdir(parents=True, exist_ok=True)
     dest = promoted_dir / _promoted_filename(
-        snap.version.component_id, model_class,
+        snap.version.component_id, target or model_class,
     )
     if dest.exists() and not force:
         raise FileExistsError(
@@ -238,18 +251,23 @@ def promote(
 
 def _find_in_bucket(
     promoted_dir: Path, component_id: str, model_class: str | None,
+    target: str | None = None,
 ) -> Snapshot | None:
-    """Per-class > default > None fallback *within one bucket directory*.
+    """Per-target > per-class > default > None fallback *within one bucket*.
 
-    When `model_class` is provided, look first for
-    `<safe_id>__<class>.json`; if absent, fall back to `<safe_id>.json`;
-    if neither exists, return None. With no `model_class`, only the
-    default slot is consulted.
+    When `target` is provided (a per-target loop key like "pi+fast"),
+    look first for `<safe_id>__<target>.json`. When `model_class` is
+    provided, `<safe_id>__<class>.json` is next; then `<safe_id>.json`;
+    then None. So a compile asking for a specific target gets the
+    target-tuned winner when one was promoted, degrades to the
+    class-tuned winner, and finally to the shared default.
     """
-    if model_class:
-        per_class = promoted_dir / _promoted_filename(component_id, model_class)
-        if per_class.exists():
-            hit = _read_promoted_tolerant(per_class)
+    for slot in (target, model_class):
+        if not slot:
+            continue
+        slot_path = promoted_dir / _promoted_filename(component_id, slot)
+        if slot_path.exists():
+            hit = _read_promoted_tolerant(slot_path)
             if hit is not None:
                 return hit
     default_path = promoted_dir / _promoted_filename(component_id, None)
@@ -264,27 +282,30 @@ def find_promoted_snapshot(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
 ) -> Snapshot | None:
     """Resolve a promoted snapshot with client → base → None fallback.
 
     When `client_id` is given, the client bucket
     `.oac/promoted/<client_id>/` is consulted first; if it yields
     nothing, the base bucket `.oac/promoted/` is tried. Within each
-    bucket the per-class fallback still applies (per-class > default).
+    bucket the slot fallback applies (per-target > per-class > default).
     client_id=None consults only the base bucket — unchanged behavior.
 
-    Resolution order with both axes:
-      <client>/<id>__<class>  →  <client>/<id>  →  <id>__<class>  →  <id>  →  None
+    Resolution order with all axes:
+      <client>/<id>__<target> → <client>/<id>__<class> → <client>/<id>
+      → <id>__<target> → <id>__<class> → <id> → None
     """
     root = project_root or Path.cwd()
     if client_id:
         client_hit = _find_in_bucket(
             _promoted_dir(root, client_id), component_id, model_class,
+            target,
         )
         if client_hit is not None:
             return client_hit
     return _find_in_bucket(
-        _promoted_dir(root, None), component_id, model_class,
+        _promoted_dir(root, None), component_id, model_class, target,
     )
 
 
@@ -294,6 +315,7 @@ def load_promoted_snapshot(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
 ) -> Snapshot | None:
     """Return the latest promoted Snapshot for `component_id`, or None.
 
@@ -304,7 +326,7 @@ def load_promoted_snapshot(
     """
     return find_promoted_snapshot(
         component_id, project_root,
-        model_class=model_class, client_id=client_id,
+        model_class=model_class, client_id=client_id, target=target,
     )
 
 
@@ -342,6 +364,7 @@ def find_promoted_snapshot_with_branch(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
 ) -> Snapshot | None:
     """Resolve a promotion for an agent, considering its ``branch:<id>`` twin.
 
@@ -361,11 +384,11 @@ def find_promoted_snapshot_with_branch(
     """
     own = find_promoted_snapshot(
         component_id, project_root,
-        model_class=model_class, client_id=client_id,
+        model_class=model_class, client_id=client_id, target=target,
     )
     branch = find_promoted_snapshot(
         _branch_component_id(component_id), project_root,
-        model_class=model_class, client_id=client_id,
+        model_class=model_class, client_id=client_id, target=target,
     )
     if branch is None:
         return own
@@ -383,6 +406,7 @@ def load_promoted_definition(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
 ) -> dict | None:
     """Return just the promoted ComponentVersion.definition dict, or None.
 
@@ -401,7 +425,7 @@ def load_promoted_definition(
     """
     snap = find_promoted_snapshot(
         component_id, project_root,
-        model_class=model_class, client_id=client_id,
+        model_class=model_class, client_id=client_id, target=target,
     )
     if snap is None:
         return None
@@ -445,6 +469,7 @@ def apply_promoted_to_agent(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
     fields: tuple[str, ...] = _AGENT_FIELDS_DEFAULT,
     consider_branch: bool = True,
 ):
@@ -458,6 +483,12 @@ def apply_promoted_to_agent(
     `model_class` selects the per-class slot with a fallback to the
     default slot; pass the agent's intended model class to pick the
     right snapshot when class-specific tuning was promoted.
+
+    `target` selects a per-target slot (a `run_per_target_loops` key
+    like "pi+fast" or "interactive") with the highest precedence —
+    pass the target the compile is for so a harness+model-specific
+    winner is applied when one was promoted, falling back to the
+    per-class and then the default slot.
 
     `client_id` selects the per-client bucket with a fallback to the
     base bucket — a client's compile reads its own promotions, falling
@@ -476,13 +507,13 @@ def apply_promoted_to_agent(
     if consider_branch:
         snap = find_promoted_snapshot_with_branch(
             component_id, project_root,
-            model_class=model_class, client_id=client_id,
+            model_class=model_class, client_id=client_id, target=target,
         )
         promoted = dict(snap.version.definition) if snap is not None else None
     else:
         promoted = load_promoted_definition(
             component_id, project_root,
-            model_class=model_class, client_id=client_id,
+            model_class=model_class, client_id=client_id, target=target,
         )
     if not promoted:
         return agent_definition
@@ -506,6 +537,7 @@ def apply_promoted_to_tool(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
     header_fields: tuple[str, ...] = _TOOL_HEADER_FIELDS_DEFAULT,
 ):
     """Merge promoted-header fields onto a ToolDefinition.
@@ -523,7 +555,7 @@ def apply_promoted_to_tool(
     """
     promoted = load_promoted_definition(
         component_id, project_root,
-        model_class=model_class, client_id=client_id,
+        model_class=model_class, client_id=client_id, target=target,
     )
     if not promoted:
         return tool_definition
@@ -541,6 +573,7 @@ def apply_promoted_to_skill(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
     fields: tuple[str, ...] = _SKILL_FIELDS_DEFAULT,
 ):
     """Merge promoted-skill fields onto a SkillDefinition.
@@ -552,7 +585,7 @@ def apply_promoted_to_skill(
     """
     promoted = load_promoted_definition(
         component_id, project_root,
-        model_class=model_class, client_id=client_id,
+        model_class=model_class, client_id=client_id, target=target,
     )
     if not promoted:
         return skill_definition
@@ -564,7 +597,7 @@ def apply_promoted_to_skill(
 
 def _apply_promoted_to_skill_tools(
     skill, project_root: Path | None, model_class: str | None,
-    client_id: str | None = None,
+    client_id: str | None = None, target: str | None = None,
 ):
     """Walk a skill's workflow_steps + examples, applying tool promotions.
 
@@ -585,6 +618,7 @@ def _apply_promoted_to_skill_tools(
                     apply_promoted_to_tool(
                         t, t.header.name, project_root,
                         model_class=model_class, client_id=client_id,
+                        target=target,
                     ) for t in step.tools_used
                 ],
             }) if step.tools_used else step
@@ -604,6 +638,7 @@ def apply_promoted_to_tree(
     *,
     model_class: str | None = None,
     client_id: str | None = None,
+    target: str | None = None,
     agent_component_id: str | None = None,
 ):
     """Apply promoted improvements across an entire AgentDefinition tree.
@@ -636,17 +671,17 @@ def apply_promoted_to_tree(
     component_id = agent_component_id or agent_definition.header.agent_id
     out = apply_promoted_to_agent(
         agent_definition, component_id, project_root,
-        model_class=model_class, client_id=client_id,
+        model_class=model_class, client_id=client_id, target=target,
     )
     if out.skills:
         new_skills = []
         for s in out.skills:
             improved = apply_promoted_to_skill(
                 s, s.name, project_root,
-                model_class=model_class, client_id=client_id,
+                model_class=model_class, client_id=client_id, target=target,
             )
             improved = _apply_promoted_to_skill_tools(
-                improved, project_root, model_class, client_id,
+                improved, project_root, model_class, client_id, target,
             )
             new_skills.append(improved)
         out = out.model_copy(update={"skills": new_skills})
@@ -654,7 +689,7 @@ def apply_promoted_to_tree(
         new_tools = [
             apply_promoted_to_tool(
                 t, t.header.name, project_root,
-                model_class=model_class, client_id=client_id,
+                model_class=model_class, client_id=client_id, target=target,
             )
             for t in out.extra_tools
         ]
