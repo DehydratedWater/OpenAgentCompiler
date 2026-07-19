@@ -1,6 +1,6 @@
 [project]
 name = "open-agent-compiler"
-version = "1.6.1"
+version = "1.6.2"
 description = "Python-first agent framework: define composable agent trees once, compile them to multiple agent runtimes (opencode, Claude Code, Pi), and auto-optimize them with test-driven improvement loops."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -61,6 +61,7 @@ dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.15.11",
+    "pre-commit>=4.0",
     "langchain-core>=0.3",
     "langchain-openai>=0.2",
     "pydantic-ai-slim[openai]>=0.4",

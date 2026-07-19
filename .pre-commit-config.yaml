@@ -1,0 +1,16 @@
+# Local hooks so commits get the same checks CI runs.
+# Install once per clone:  uv run pre-commit install
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
+    hooks:
+      - id: ruff
+        args: [--fix]
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest (quick)
+        entry: uv run pytest tests/ -q -x
+        language: system
+        pass_filenames: false
+        types: [python]
