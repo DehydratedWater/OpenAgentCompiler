@@ -20,8 +20,13 @@ class OpenCodeCompiler(Compiler):
         "split_profiles",
     })
 
-    def __init__(self, target: Path, resolved_variants: dict[str, AgentVariant]):
-        super().__init__(target, resolved_variants)
+    def __init__(
+        self,
+        target: Path,
+        resolved_variants: dict[str, AgentVariant],
+        options: dict | None = None,
+    ):
+        super().__init__(target, resolved_variants, options)
 
     def compile(self):
         self.target.mkdir(parents=True, exist_ok=True)
@@ -64,3 +69,11 @@ class OpenCodeCompiler(Compiler):
                     f"{agent.postfix}-primary",
                     primary_variant, primary_permissions,
                 )
+
+        # Native tool calling: emit .opencode/tool/<name>.ts shims for
+        # json-contract tools. Guarded by dialect_name so ClaudeCodeCompiler
+        # (which reuses this compile then renames the tree) doesn't emit
+        # TS files Claude Code would never read — its native route is MCP.
+        if self.options.get("native_tools") and self.dialect_name == "opencode":
+            from open_agent_compiler.compiler.native_tools import emit_opencode_ts_shims
+            emit_opencode_ts_shims(self.target, self.resolved_variants)

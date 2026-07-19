@@ -18,8 +18,20 @@ class ClaudeCodeCompiler(OpenCodeCompiler):
         super().compile()
         src_dir = self.target / ".opencode"
         dst_dir = self.target / ".claude"
-        if not src_dir.exists():
-            return
-        if dst_dir.exists():
-            shutil.rmtree(dst_dir)
-        shutil.move(str(src_dir), str(dst_dir))
+        if src_dir.exists():
+            if dst_dir.exists():
+                shutil.rmtree(dst_dir)
+            shutil.move(str(src_dir), str(dst_dir))
+
+        # Native tool calling: Claude Code has no per-tool file format —
+        # its native route is an MCP server. Emit the tools server and
+        # register it in .mcp.json.
+        if self.options.get("native_tools"):
+            from open_agent_compiler.compiler.native_tools import (
+                collect_json_tools,
+                emit_claude_mcp_config,
+                emit_mcp_tools_server,
+            )
+            if collect_json_tools(self.resolved_variants):
+                emit_mcp_tools_server(self.target)
+                emit_claude_mcp_config(self.target)

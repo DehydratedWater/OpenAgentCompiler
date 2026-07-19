@@ -114,6 +114,15 @@ class CompileScript(BaseModel):
             " bucket. None = the base, single-tenant build (unchanged)."
         ),
     )
+    native_tools: bool = Field(
+        default=False,
+        description=(
+            "Emit the harness's NATIVE tool-calling form for json-contract"
+            " tools alongside the bash docs: .opencode/tool/<name>.ts shims"
+            " (opencode), an MCP tools server + .mcp.json (claude) or"
+            " [mcp_servers] blocks (codex). See compiler/native_tools.py."
+        ),
+    )
     store_url: str | None = Field(
         default=None,
         description=(
@@ -262,9 +271,13 @@ class CompileScript(BaseModel):
                         mock_profile_name=self.mock_profile,
                         client_id=self.client_id,
                         dialect=self.dialect,
+                        options={"native_tools": self.native_tools},
                     )
         else:
-            build(self.target, base_registry, self.config, dialect=self.dialect)
+            build(
+                self.target, base_registry, self.config, dialect=self.dialect,
+                options={"native_tools": self.native_tools},
+            )
         after = self._snapshot()
         written = sorted(after - before)
 

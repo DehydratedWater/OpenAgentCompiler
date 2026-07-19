@@ -43,6 +43,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         help="Delete the target directory before writing.",
     )
     p.add_argument(
+        "--native-tools",
+        action="store_true",
+        help=(
+            "Also emit the harness's native tool-calling form for"
+            " json-contract tools (.opencode/tool/*.ts shims for opencode;"
+            " an MCP tools server for claude/codex)."
+        ),
+    )
+    p.add_argument(
         "--dry-run",
         action="store_true",
         help="Resolve the configuration but do not write any files.",
@@ -64,6 +73,7 @@ def handle(
         config=args.config,
         dialect=args.dialect,
         clean=args.clean,
+        native_tools=args.native_tools,
         dry_run=args.dry_run,
         verbose=args.verbose,
     )

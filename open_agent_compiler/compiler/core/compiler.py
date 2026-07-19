@@ -32,9 +32,17 @@ class Compiler(ABC):
     dialect_name: ClassVar[str] = ""
     supports_features: ClassVar[frozenset[str]] = frozenset()
 
-    def __init__(self, target: Path, resolved_variants: dict[str, AgentVariant]) -> None:
+    def __init__(
+        self,
+        target: Path,
+        resolved_variants: dict[str, AgentVariant],
+        options: dict | None = None,
+    ) -> None:
         self.target = target
         self.resolved_variants = resolved_variants
+        # Free-form compile options (e.g. {"native_tools": True}) flowed
+        # from CompileScript; dialects read what they understand.
+        self.options = options or {}
 
     @abstractmethod
     def compile(self) -> None: ...

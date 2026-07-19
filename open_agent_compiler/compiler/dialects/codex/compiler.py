@@ -118,6 +118,19 @@ class CodexCompiler(Compiler):
 
         self._write_agents_md(order)
 
+        # Native tool calling: Codex has no per-tool file format — its
+        # native route is an MCP server. Emit the tools server and append
+        # its stdio registration to every compiled agent TOML.
+        if self.options.get("native_tools"):
+            from open_agent_compiler.compiler.native_tools import (
+                append_codex_mcp_server,
+                collect_json_tools,
+                emit_mcp_tools_server,
+            )
+            if collect_json_tools(self.resolved_variants):
+                emit_mcp_tools_server(self.target)
+                append_codex_mcp_server(self.target)
+
     def _write_agents_md(self, order: list[str]) -> None:
         """Write an AGENTS.md index so Codex sessions in the build tree
         know which custom agents exist and when to delegate."""

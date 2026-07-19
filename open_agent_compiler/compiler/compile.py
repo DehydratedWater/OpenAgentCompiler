@@ -15,12 +15,13 @@ def build(
     config_name: str,
     *,
     dialect: str = "opencode",
+    options: dict | None = None,
 ) -> None:
     """Single-pass compile using whatever presets were bound at registration."""
     with active_context(CompilationContext()):
         resolved_variants = registry.resolve_config(config_name)
         dialect_cls = get_dialect(dialect)
-        compiler = dialect_cls(target, resolved_variants)
+        compiler = dialect_cls(target, resolved_variants, options)
         compiler.compile()
 
 
@@ -34,6 +35,7 @@ def build_variant(
     mock_profile_name: str | None = None,
     client_id: str | None = None,
     dialect: str = "opencode",
+    options: dict | None = None,
 ) -> None:
     """One pass under `spec`: apply its preset + postfix to every variant.
 
@@ -60,5 +62,5 @@ def build_variant(
             slot: apply_variant(spec, variant) for slot, variant in resolved.items()
         }
         dialect_cls = get_dialect(dialect)
-        compiler = dialect_cls(target, per_variant)
+        compiler = dialect_cls(target, per_variant, options)
         compiler.compile()
