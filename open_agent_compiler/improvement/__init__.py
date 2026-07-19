@@ -145,6 +145,13 @@ from open_agent_compiler.improvement.probe_cache import (
     ProbeResult,
     ProbeSynthesizer,
 )
+from open_agent_compiler.improvement.interactive_eval import (
+    SpecFactory,
+    build_interactive_evaluator,
+    interactive_probe_executable,
+    outcome_from_run,
+    score_interactive_spec,
+)
 from open_agent_compiler.improvement.harness_eval import (
     CodexRunner,
     HarnessResult,
@@ -290,6 +297,12 @@ __all__ = [
     "PerTargetResult",
     "run_per_target_loops",
     "targets_from_split_profile",
+    # interactive-tier evaluator (realtime runner as a target)
+    "SpecFactory",
+    "build_interactive_evaluator",
+    "interactive_probe_executable",
+    "outcome_from_run",
+    "score_interactive_spec",
     # harness-agnostic eval runners
     "CodexRunner",
     "HarnessResult",
