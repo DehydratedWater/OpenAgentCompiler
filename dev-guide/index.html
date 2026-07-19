@@ -1,0 +1,3316 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python-first agent framework: define composable agent trees once, compile them to multiple agent runtimes, and auto-optimize them with test-driven improvement loops.">
+      
+      
+      
+        <link rel="canonical" href="https://dehydratedwater.github.io/OpenAgentCompiler/dev-guide/">
+      
+      
+        <link rel="prev" href="../reference/retrieval-testing/">
+      
+      
+        <link rel="next" href="../lessons/optimize-the-real-goal-not-text-correctness/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>All-in-One Guide - open-agent-compiler</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#open-agent-compiler-all-in-one-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="open-agent-compiler" class="md-header__button md-logo" aria-label="open-agent-compiler" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            open-agent-compiler
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              All-in-One Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DehydratedWater/OpenAgentCompiler" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DehydratedWater/OpenAgentCompiler
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="open-agent-compiler" class="md-nav__button md-logo" aria-label="open-agent-compiler" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    open-agent-compiler
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DehydratedWater/OpenAgentCompiler" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DehydratedWater/OpenAgentCompiler
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/first-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/project-scaffold/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scaffolding a Project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy & Assumptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/agent-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Agent Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/registry-and-compilation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry & Compilation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/execution-tiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Tiers (Fast & Slow)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/support-triage-bot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support Triage Bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/database-reporting-tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Reporting Tool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/one-agent-three-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    One Agent, Three Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/self-improving-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Improving Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/fast-chat-slow-worker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fast Chat, Slow Worker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/workflows-and-subagents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows & Subagents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/variants-and-profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Variants & Split Profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/improvement-loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Improvement Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/optimization-targets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization Targets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/evolve-coding-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolve a Coding Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/native-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native Tool Calling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/interactive-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Interactive Tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/langchain-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain Runtime Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dialects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialects/opencode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenCode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialects/claude-code/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialects/pi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pi
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialects/codex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codex
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/retrieval-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All-in-One Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All-in-One Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-this-framework-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What this framework is
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. What this framework is">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-two-tiers-and-when-to-use-which" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The two tiers, and when to use which
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-installation-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Installation &amp; setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Quick start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Quick start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3a-scaffold-a-project-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. Scaffold a project (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3b-or-define-an-agent-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3b. Or define an agent by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Core concepts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-compiling-dialects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Compiling: dialects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bash-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bash tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-scripttools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON ScriptTools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mocks-and-accessprofiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mocks and AccessProfiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-workflows-subagents-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Workflows, subagents, permissions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Workflows, subagents, permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subagents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permissions-security-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permissions &amp; SECURITY POLICY
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Skills
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-variants-split-profiles-multi-model-fleets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Variants &amp; split profiles (multi-model fleets)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Variants &amp; split profiles (multi-model fleets)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#variantspec-same-tree-n-models-one-compile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VariantSpec — same tree, N models, one compile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#splitprofile-preset-per-model_class-within-one-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SplitProfile — preset per model_class within one pass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compilationcontext-flags-without-globals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CompilationContext — flags without globals
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-the-improvement-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. The improvement loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-the-interactive-tier-langchain-binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. The interactive tier (LangChain binding)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. The interactive tier (LangChain binding)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#per-target-adaptation-harness-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-target adaptation (harness × model)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-oac-cli-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. oac CLI reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-examples-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Examples index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Lessons
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Field Lessons
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lessons/optimize-the-real-goal-not-text-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimize the Real Goal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lessons/thinking-models-and-opencode-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thinking Models & Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lessons/tuning-a-local-agent-fleet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tuning a Local Agent Fleet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-this-framework-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What this framework is
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. What this framework is">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-two-tiers-and-when-to-use-which" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The two tiers, and when to use which
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-installation-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Installation &amp; setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Quick start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Quick start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3a-scaffold-a-project-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3a. Scaffold a project (recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3b-or-define-an-agent-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3b. Or define an agent by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-core-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Core concepts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-compiling-dialects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Compiling: dialects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bash-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bash tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-scripttools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON ScriptTools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mocks-and-accessprofiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mocks and AccessProfiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-workflows-subagents-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Workflows, subagents, permissions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Workflows, subagents, permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workflow-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subagents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permissions-security-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permissions &amp; SECURITY POLICY
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Skills
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-variants-split-profiles-multi-model-fleets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Variants &amp; split profiles (multi-model fleets)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Variants &amp; split profiles (multi-model fleets)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#variantspec-same-tree-n-models-one-compile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VariantSpec — same tree, N models, one compile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#splitprofile-preset-per-model_class-within-one-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SplitProfile — preset per model_class within one pass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compilationcontext-flags-without-globals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CompilationContext — flags without globals
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-the-improvement-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. The improvement loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-the-interactive-tier-langchain-binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. The interactive tier (LangChain binding)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. The interactive tier (LangChain binding)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#per-target-adaptation-harness-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-target adaptation (harness × model)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-oac-cli-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. oac CLI reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-examples-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Examples index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="open-agent-compiler-all-in-one-guide">open-agent-compiler — All-in-One Guide<a class="headerlink" href="#open-agent-compiler-all-in-one-guide" title="Permanent link">&para;</a></h1>
+<p>Everything on one page: defining, compiling, running, testing, and
+auto-improving agents with <code>open-agent-compiler</code>. If you prefer
+focused, step-by-step pages, start with
+<a href="../getting-started/first-agent/">Your First Agent</a>, the
+<a href="../concepts/philosophy/">concept pages</a>, and the
+<a href="../tutorials/">tutorials</a> instead — this page is the reference
+version of the same material.</p>
+<hr />
+<h2 id="1-what-this-framework-is">1. What this framework is<a class="headerlink" href="#1-what-this-framework-is" title="Permanent link">&para;</a></h2>
+<p>You define agents <strong>once</strong>, as typed Python (Pydantic models) — system
+prompts, tools, skills, workflows, permissions, subagents, tests. The
+framework then turns that single definition into whatever a runtime
+needs:</p>
+<pre class="mermaid"><code>flowchart TB
+    AD["AgentDefinition (Pydantic)&lt;br/&gt;prompt · tools · skills · workflow&lt;br/&gt;permissions · subagents · tests"]
+    AD --&gt; OC[".opencode/agents/*.md&lt;br/&gt;(OpenCode runtime)"]
+    AD --&gt; CL[".claude/agents/*.md&lt;br/&gt;(Claude Code)"]
+    AD --&gt; PI[".pi/agents/*.md&lt;br/&gt;(Pi + pi-subagents)"]
+    AD --&gt; IS["InteractiveAgentSpec&lt;br/&gt;→ LangChain runnable"]
+    OC --&gt; W["worker tier: long-running, side-effecting,&lt;br/&gt;fire-and-forget"]
+    CL --&gt; W
+    PI --&gt; W
+    IS --&gt; CH["interactive tier: in-process, streaming,&lt;br/&gt;request/response chat layer"]</code></pre>
+<details class="note">
+<summary>Text version of this diagram</summary>
+<div class="highlight"><pre><span></span><code>                        ┌────────────────────────────────────────────┐
+                        │        AgentDefinition (Pydantic)          │
+                        │  prompt · tools · skills · workflow ·      │
+                        │  permissions · subagents · tests           │
+                        └──────────────┬─────────────────────────────┘
+                                       │
+            ┌───────── worker tier ────┼──────────┐        ┌─ interactive tier ─┐
+            ▼                          ▼          ▼        ▼                    │
+   .opencode/agents/*.md    .claude/agents/*.md  .pi/agents/*.md   InteractiveAgentSpec
+   (OpenCode runtime)       (Claude Code)        (Pi + pi-subagents)  → LangChain runnable
+            │                          │          │        │
+            └──────────────┬───────────┴──────────┘        │
+                           ▼                               ▼
+              long-running, side-effecting,      in-process, streaming,
+              fire-and-forget &quot;workers&quot;          request/response chat layer
+</code></pre></div>
+</details>
+<p>(The worker tier also compiles to <code>.codex/agents/*.toml</code> for the OpenAI
+Codex CLI — omitted from the diagram for width.)</p>
+<p>Around that core sit:</p>
+<ul>
+<li><strong><code>oac</code> CLI</strong> — scaffold projects, compile, introspect, test, improve,
+  promote.</li>
+<li><strong>Embedded testing</strong> — capability/tool/agent tests defined next to the
+  agents, run with mocks so CI never needs credentials.</li>
+<li><strong>Improvement loop</strong> — mutate prompts/parameters, evaluate, keep the
+  frontier, snapshot winners, promote them into the next compile.</li>
+<li><strong>Scaffolding</strong> — <code>oac init</code> generates a ready-to-run project (from
+  barebones up to a per-client personalized SaaS shape).</li>
+<li><strong>Developer skill bundles</strong> — <code>oac sync-skills</code> installs markdown
+  skills into <code>.opencode/skills/</code> and <code>.claude/skills/</code> so the coding
+  agents working <em>on</em> your project know how to use the framework.</li>
+</ul>
+<h3 id="the-two-tiers-and-when-to-use-which">The two tiers, and when to use which<a class="headerlink" href="#the-two-tiers-and-when-to-use-which" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Worker</strong> (compiled dialect)</th>
+<th><strong>Interactive</strong> (binding)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Emits</td>
+<td><code>.opencode/</code> / <code>.claude/</code> / <code>.pi/</code> / <code>.codex/</code> agent trees</td>
+<td>an in-process <code>InteractiveAgentSpec</code> → LangChain runnable</td>
+</tr>
+<tr>
+<td>Tools bind to</td>
+<td>bash / JSON emission inside a coding-agent runtime</td>
+<td>native tool-calling</td>
+</tr>
+<tr>
+<td>Contract</td>
+<td>fire-and-forget, side-effects, returns a handle</td>
+<td>streaming, request/response, returns a value</td>
+</tr>
+<tr>
+<td>Latency profile</td>
+<td>seconds-to-minutes, autonomous</td>
+<td>sub-second first token, conversational</td>
+</tr>
+<tr>
+<td>Use it for</td>
+<td>long, testable, autonomous tasks</td>
+<td>the dynamic / chat layer</td>
+</tr>
+</tbody>
+</table>
+<p>A typical app uses <strong>both</strong>: the interactive agent holds the
+conversation and dispatches a worker (compiled to opencode/pi) that
+runs in the background to completion and communicates by side-effects.
+Both tiers are derived from the <em>same</em> <code>AgentDefinition</code> — that is the
+unified interface.</p>
+<hr />
+<h2 id="2-installation-setup">2. Installation &amp; setup<a class="headerlink" href="#2-installation-setup" title="Permanent link">&para;</a></h2>
+<p>Requirements: Python ≥ 3.12.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>open-agent-compiler
+<span class="c1"># or</span>
+uv<span class="w"> </span>add<span class="w"> </span>open-agent-compiler
+oac<span class="w"> </span>--help
+</code></pre></div>
+<p>For development on the framework itself, clone the repo and use
+<a href="https://docs.astral.sh/uv/">uv</a>:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/DehydratedWater/OpenAgentCompiler
+<span class="nb">cd</span><span class="w"> </span>OpenAgentCompiler
+uv<span class="w"> </span>sync<span class="w">            </span><span class="c1"># installs the framework + dev deps</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w">   </span><span class="c1"># ~1300 tests, all green, no credentials needed</span>
+</code></pre></div>
+<p>Projects scaffolded by <code>oac init</code> depend on the published
+<code>open-agent-compiler</code> package; when the running <code>oac</code> comes from a
+source checkout, the scaffold also adds a <code>[tool.uv.sources]</code> entry
+pointing back at that checkout so it tracks your local framework.</p>
+<p>Optional extra for the interactive tier:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>langchain<span class="w">    </span><span class="c1"># langchain-core + langchain-openai</span>
+</code></pre></div>
+<hr />
+<h2 id="3-quick-start">3. Quick start<a class="headerlink" href="#3-quick-start" title="Permanent link">&para;</a></h2>
+<h3 id="3a-scaffold-a-project-recommended">3a. Scaffold a project (recommended)<a class="headerlink" href="#3a-scaffold-a-project-recommended" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>init<span class="w"> </span>myproj<span class="w"> </span>--template<span class="w"> </span>barebones<span class="w"> </span>--llm<span class="w"> </span>anthropic<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--skills<span class="w"> </span>opencode,claude
+<span class="nb">cd</span><span class="w"> </span>myproj
+cp<span class="w"> </span>.env.example<span class="w"> </span>.env<span class="w">         </span><span class="c1"># fill in real keys</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>build_agents.py
+<span class="nb">cd</span><span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>opencode<span class="w"> </span>run<span class="w"> </span>--agent<span class="w"> </span>primary<span class="w"> </span><span class="s2">&quot;Hi&quot;</span>
+</code></pre></div>
+<p><code>oac init</code> templates:</p>
+<table>
+<thead>
+<tr>
+<th>Template</th>
+<th>What you get</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>barebones</code></td>
+<td>agent registry + <code>build_agents.py</code> compile script</td>
+</tr>
+<tr>
+<td><code>web</code></td>
+<td>+ FastAPI service (<code>app/</code>) + Docker</td>
+</tr>
+<tr>
+<td><code>full</code></td>
+<td>+ telegram bot + Postgres (SQLAlchemy async + Alembic)</td>
+</tr>
+<tr>
+<td><code>saas-personalized</code></td>
+<td>per-client auto-optimization SaaS: intake/personalize/serve endpoints, personalization module, mocked per-client tests (ship green)</td>
+</tr>
+</tbody>
+</table>
+<p>Useful flags: <code>--dialect {opencode,claude,pi}</code> (what the generated
+<code>build_agents.py</code> compiles to), <code>--with-postgres</code>, <code>--with-sqlite</code>
+(starter ScriptTool + AccessProfile), <code>--with-mcp-server</code>,
+<code>--with-redis</code>, <code>--with-qdrant</code>, <code>--with-telegram-bot</code>, <code>--with-cron</code>,
+<code>--observability langfuse</code>, <code>--proxy nginx|traefik</code>, <code>-i</code> for
+interactive prompts. <code>--no-uv-sync</code> skips the automatic dependency
+install.</p>
+<h3 id="3b-or-define-an-agent-by-hand">3b. Or define an agent by hand<a class="headerlink" href="#3b-or-define-an-agent-by-hand" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># agents/registry.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentDefinition</span><span class="p">,</span> <span class="n">AgentHeader</span><span class="p">,</span> <span class="n">AgentRegistry</span><span class="p">,</span>
+    <span class="n">CompilationConfig</span><span class="p">,</span> <span class="n">ModelParameters</span><span class="p">,</span>
+    <span class="n">TemplateSlot</span><span class="p">,</span> <span class="n">TemplateTree</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">registry</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">AgentRegistry</span><span class="p">:</span>
+    <span class="n">reg</span> <span class="o">=</span> <span class="n">AgentRegistry</span><span class="p">()</span>
+
+    <span class="n">greeter</span> <span class="o">=</span> <span class="n">AgentDefinition</span><span class="p">(</span>
+        <span class="n">header</span><span class="o">=</span><span class="n">AgentHeader</span><span class="p">(</span>
+            <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;greeter&quot;</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;greeter&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Friendly one-line greeter.&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">usage_explanation_long</span><span class="o">=</span><span class="s2">&quot;Greets users warmly, one sentence.&quot;</span><span class="p">,</span>
+        <span class="n">usage_explanation_short</span><span class="o">=</span><span class="s2">&quot;greets&quot;</span><span class="p">,</span>
+        <span class="n">system_prompt</span><span class="o">=</span><span class="s2">&quot;You are a friendly greeter. Reply in one sentence.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">agent_id</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">register_agent</span><span class="p">(</span>
+        <span class="s2">&quot;greeter&quot;</span><span class="p">,</span> <span class="n">greeter</span><span class="p">,</span>
+        <span class="n">ModelParameters</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;anthropic/claude-sonnet-4-5&quot;</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">reg</span><span class="o">.</span><span class="n">register_template</span><span class="p">(</span><span class="n">TemplateTree</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+        <span class="n">slots</span><span class="o">=</span><span class="p">[</span><span class="n">TemplateSlot</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">,</span> <span class="n">default_agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">)],</span>
+    <span class="p">))</span>
+    <span class="n">reg</span><span class="o">.</span><span class="n">create_compilation_config</span><span class="p">(</span>
+        <span class="n">CompilationConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="n">template_name</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">reg</span>
+</code></pre></div>
+<p>Compile it — from Python:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler.compiler.script</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompileScript</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agents.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">registry</span>
+
+<span class="n">CompileScript</span><span class="p">(</span>
+    <span class="n">target</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;build&quot;</span><span class="p">),</span>
+    <span class="n">factory</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;opencode&quot;</span><span class="p">,</span>   <span class="c1"># or &quot;claude&quot; or &quot;pi&quot;</span>
+    <span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+<p>…or from the CLI (works from the project root, no install needed):</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>compile<span class="w"> </span>agents:registry<span class="w"> </span>--config<span class="w"> </span>prod<span class="w"> </span>--target<span class="w"> </span>build<span class="w">            </span><span class="c1"># opencode</span>
+uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>compile<span class="w"> </span>agents:registry<span class="w"> </span>--config<span class="w"> </span>prod<span class="w"> </span>--target<span class="w"> </span>build<span class="w"> </span>--dialect<span class="w"> </span>pi
+uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>info<span class="w"> </span>--dialects<span class="w">     </span><span class="c1"># lists: claude, codex, opencode, pi</span>
+uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>info<span class="w"> </span>agents:registry
+</code></pre></div>
+<hr />
+<h2 id="4-core-concepts">4. Core concepts<a class="headerlink" href="#4-core-concepts" title="Permanent link">&para;</a></h2>
+<p>The registry is a three-layer indirection that keeps <em>what an agent is</em>
+separate from <em>where it runs</em>:</p>
+<ol>
+<li><strong><code>AgentDefinition</code></strong> — the full behavioral definition (prompt,
+   tools, skills, workflow, permissions, subagents, tests). Registered
+   under a name with <code>ModelParameters</code> → yields an <code>agent_id</code>.</li>
+<li><strong><code>TemplateTree</code> / <code>TemplateSlot</code></strong> — the <em>shape</em> of a deployment: a
+   named set of slots (e.g. <code>primary</code>, <code>helper</code>, <code>critic</code>), each with a
+   default agent id. Slots are what the dialect compiles to files.</li>
+<li><strong><code>CompilationConfig</code></strong> — a named selection of template (+ per-slot
+   overrides), so <code>prod</code>, <code>ci</code>, <code>cheap</code> can pick different agents into
+   the same tree.</li>
+</ol>
+<p>Key <code>AgentDefinition</code> fields (all optional unless noted):</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>header</code> <em>(required)</em></td>
+<td><code>AgentHeader(agent_id, name, description)</code></td>
+</tr>
+<tr>
+<td><code>usage_explanation_long/short</code> <em>(required)</em></td>
+<td>human/agent docs; long form is the body fallback when no prompt/workflow</td>
+</tr>
+<tr>
+<td><code>system_prompt</code></td>
+<td>the core prompt (prepended before the workflow when both are set)</td>
+</tr>
+<tr>
+<td><code>prompt_sections</code></td>
+<td>named, individually-optimizable sections; <code>system_prompt</code> is re-derived from them on promotion</td>
+</tr>
+<tr>
+<td><code>workflow</code></td>
+<td>list of <code>WorkflowStepDefinition</code> — see §7</td>
+</tr>
+<tr>
+<td><code>todo_mode</code></td>
+<td><code>strict</code> / <code>lazy</code> / <code>none</code> progress tracking</td>
+</tr>
+<tr>
+<td><code>workspace</code></td>
+<td>working-directory convention (<code>{name}</code> interpolated)</td>
+</tr>
+<tr>
+<td><code>extra_tools</code></td>
+<td><code>ToolDefinition</code>s — bash tools and/or JSON ScriptTools</td>
+</tr>
+<tr>
+<td><code>skills</code></td>
+<td><code>SkillDefinition</code>s compiled into prompt + frontmatter</td>
+</tr>
+<tr>
+<td><code>subagents</code></td>
+<td><code>AgentHeader</code>s this agent may spawn</td>
+</tr>
+<tr>
+<td><code>tool_permissions</code></td>
+<td><code>ToolPermissions(read/write/edit/mcp)</code> booleans</td>
+</tr>
+<tr>
+<td><code>mcp_servers</code></td>
+<td><code>MCPServerDefinition</code>s with per-server tool allowlists</td>
+</tr>
+<tr>
+<td><code>model_class</code></td>
+<td>routing key for <code>SplitProfile</code> (see §9)</td>
+</tr>
+<tr>
+<td><code>agent_tests</code> / <code>capability_tests</code> / <code>tool_tests</code></td>
+<td>embedded tests (see §10)</td>
+</tr>
+</tbody>
+</table>
+<p>(<code>also_compile_as_primary</code> — emitting a directly-invocable <code>-primary</code>
+twin for a subagent — is a <code>TemplateSlot</code> field, set where the agent is
+placed in the tree, not on the definition itself.)</p>
+<hr />
+<h2 id="5-compiling-dialects">5. Compiling: dialects<a class="headerlink" href="#5-compiling-dialects" title="Permanent link">&para;</a></h2>
+<p><code>CompileScript</code> is the single compile entry point:</p>
+<div class="highlight"><pre><span></span><code><span class="n">CompileScript</span><span class="p">(</span>
+    <span class="n">target</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;build&quot;</span><span class="p">),</span>          <span class="c1"># output dir</span>
+    <span class="n">factory</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>              <span class="c1"># or factory_spec=&quot;agents:registry&quot;</span>
+    <span class="n">config</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>                 <span class="c1"># CompilationConfig name</span>
+    <span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;opencode&quot;</span><span class="p">,</span>            <span class="c1"># opencode | claude | pi | codex | &lt;registered&gt;</span>
+    <span class="n">clean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                    <span class="c1"># or clean_strategy=&quot;per_variant&quot;</span>
+    <span class="n">variants</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>                <span class="c1"># optional multi-pass (see §9)</span>
+    <span class="n">access_profile</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>         <span class="c1"># optional resource bindings (see §6)</span>
+    <span class="n">mock_profile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>             <span class="c1"># optional mock bindings for CI</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>                <span class="c1"># per-tenant personalized builds</span>
+    <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+<p>What each dialect emits:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>opencode</code> (default)</th>
+<th><code>claude</code></th>
+<th><code>pi</code></th>
+<th><code>codex</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent files</td>
+<td><code>.opencode/agents/*.md</code></td>
+<td><code>.claude/</code> tree</td>
+<td><code>.pi/agents/*.md</code></td>
+<td><code>.codex/agents/*.toml</code> + <code>AGENTS.md</code> index</td>
+</tr>
+<tr>
+<td>Tool scripts</td>
+<td><code>scripts/</code> + bundled infra (<code>subagent_todo.py</code>, <code>workspace_io.py</code>, <code>opencode_manager.py</code>)</td>
+<td>scripts</td>
+<td><code>scripts/</code> (per-tool only)</td>
+<td><code>scripts/</code> (per-tool only)</td>
+</tr>
+<tr>
+<td>Permissions</td>
+<td><code>permission:</code> block + <code>tools:</code> toggles</td>
+<td>equivalent</td>
+<td><code>tools:</code> allowlist + <code>disallowed_tools:</code> frontmatter</td>
+<td><code>sandbox_mode</code> (read-only / workspace-write)</td>
+</tr>
+<tr>
+<td>Subagent spawn</td>
+<td>Task tool; primary-mode via <code>opencode_manager.py</code></td>
+<td>Task tool</td>
+<td><code>Agent()</code> tool (pi-subagents) — single mechanism</td>
+<td>natural-language delegation (no spawn tool)</td>
+</tr>
+<tr>
+<td>Todos</td>
+<td><code>todoread</code>/<code>todowrite</code></td>
+<td>equivalent</td>
+<td><code>TODO.md</code> conventions</td>
+<td><code>TODO.md</code> conventions</td>
+</tr>
+<tr>
+<td>MCP</td>
+<td><code>permission.mcp.&lt;name&gt;</code> per server</td>
+<td>equivalent</td>
+<td><strong>not mapped</strong> — compile warning, configure <code>ext:mcp/&lt;tool&gt;</code> manually</td>
+<td><code>[mcp_servers.&lt;name&gt;]</code> for url servers; stdio warns</td>
+</tr>
+</tbody>
+</table>
+<p>Dialects are pluggable — register your own:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler.compiler.dialects.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">register</span>
+<span class="n">register</span><span class="p">(</span><span class="s2">&quot;mydialect&quot;</span><span class="p">,</span> <span class="n">MyCompiler</span><span class="p">)</span>   <span class="c1"># subclass open_agent_compiler.compiler.core.compiler.Compiler</span>
+</code></pre></div>
+<p>See <a href="../dialects/pi/">pi-agent-dialect.md</a> for the full pi
+mapping, <a href="../dialects/codex/">the codex dialect page</a> for the Codex
+mapping, and <code>examples/80_pi_agents/build_both.py</code> for compiling the
+same tree to two runtimes side by side.</p>
+<hr />
+<h2 id="6-tools">6. Tools<a class="headerlink" href="#6-tools" title="Permanent link">&para;</a></h2>
+<h3 id="bash-tools">Bash tools<a class="headerlink" href="#bash-tools" title="Permanent link">&para;</a></h3>
+<p>Declared with <code>ToolDefinition(header=..., bash_tool=ToolDefinitionLogicBash(...))</code>
+— the compiled prompt documents the command, positive/negative examples,
+and the permission layer allowlists it.</p>
+<h3 id="json-scripttools">JSON ScriptTools<a class="headerlink" href="#json-scripttools" title="Permanent link">&para;</a></h3>
+<p>A <code>ToolDefinition</code> with <code>json_tool=ToolDefinitionLogicJson(...)</code> carries
+<code>tool_scripts</code> — actual script files (inline <code>script_contents</code> or a
+<code>source_file_path</code>) that the compiler writes into the build tree's
+<code>scripts/</code>. The runtime side subclasses <code>ScriptTool[InModel, OutModel]</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScriptTool</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">NoteIn</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">NoteOut</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">ok</span><span class="p">:</span> <span class="nb">bool</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">NotesTool</span><span class="p">(</span><span class="n">ScriptTool</span><span class="p">[</span><span class="n">NoteIn</span><span class="p">,</span> <span class="n">NoteOut</span><span class="p">]):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;notes_db&quot;</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;Persist a note.&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">NoteIn</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoteOut</span><span class="p">:</span>
+        <span class="o">...</span>  <span class="c1"># real work</span>
+        <span class="k">return</span> <span class="n">NoteOut</span><span class="p">(</span><span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Surface exact command verbs in the prompt.</strong> Compiled agents flail
+(wrong <code>--command</code> verbs, <code>ls</code> + <code>--help</code> exploration) unless the prompt
+names the exact verbs a ScriptTool accepts — derive them from the tool's
+dispatch enum and inject them into the tool docs.</p>
+<h3 id="mocks-and-accessprofiles">Mocks and AccessProfiles<a class="headerlink" href="#mocks-and-accessprofiles" title="Permanent link">&para;</a></h3>
+<p>Every tool can carry a <code>MockResponse</code> (<code>fixed</code> / <code>echo</code> / <code>callable</code>),
+and compile-time <code>mock_profile</code> / <code>access_profile</code> names select which
+binding a build uses:</p>
+<ul>
+<li><strong>AccessProfile</strong> — binds named resources per environment (prod =
+  real Postgres, ci = in-memory SQLite) via <code>ResourceHandle</code>s.</li>
+<li><strong>MockProfile</strong> — per-tool mock overrides so <code>oac test</code> runs
+  everything green without credentials.</li>
+</ul>
+<p>See <code>examples/30_tools</code>, <code>examples/32_multi_turn_mocks</code>,
+<code>examples/33_sqlite_resources</code>.</p>
+<hr />
+<h2 id="7-workflows-subagents-permissions">7. Workflows, subagents, permissions<a class="headerlink" href="#7-workflows-subagents-permissions" title="Permanent link">&para;</a></h2>
+<h3 id="workflow-steps">Workflow steps<a class="headerlink" href="#workflow-steps" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler.model.core.agent_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">WorkflowStepDefinition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler.model.core.workflow_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Criterion</span><span class="p">,</span> <span class="n">Route</span>
+
+<span class="n">WorkflowStepDefinition</span><span class="p">(</span>
+    <span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ReviewDraft&quot;</span><span class="p">,</span>
+    <span class="n">instructions</span><span class="o">=</span><span class="s2">&quot;Assess the draft against the brief.&quot;</span><span class="p">,</span>
+    <span class="n">evaluates</span><span class="o">=</span><span class="p">(</span>
+        <span class="n">Criterion</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;quality&quot;</span><span class="p">,</span>
+                  <span class="n">question</span><span class="o">=</span><span class="s2">&quot;Is the draft good enough to ship?&quot;</span><span class="p">,</span>
+                  <span class="n">possible_values</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">)),</span>
+    <span class="p">),</span>
+    <span class="n">routes</span><span class="o">=</span><span class="p">(</span><span class="n">Route</span><span class="p">(</span><span class="n">criteria_name</span><span class="o">=</span><span class="s2">&quot;quality&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">,</span> <span class="n">goto_step</span><span class="o">=</span><span class="mi">1</span><span class="p">),),</span>
+    <span class="n">subagents</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;critic&quot;</span><span class="p">,),</span>          <span class="c1"># spawned at this step</span>
+    <span class="n">marks_done</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;draft-reviewed&quot;</span><span class="p">,),</span> <span class="c1"># todo bookkeeping</span>
+    <span class="c1"># gate=GateDefinition(...)      # conditional execution</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The dialect renders steps as numbered prompt sections with criteria,
+conditional routes, tool notes, subagent invocation snippets, and (in
+<code>strict</code> todo mode) an explicit STEP-0 task-list bootstrap plus
+per-step completion marks.</p>
+<h3 id="subagents">Subagents<a class="headerlink" href="#subagents" title="Permanent link">&para;</a></h3>
+<p>List them as <code>AgentHeader</code>s on <code>defn.subagents</code>, reference them from
+steps by name, and give each its own slot in the <code>TemplateTree</code> so it
+compiles alongside the parent. <code>mode="subagent"</code> (default) spawns via
+the runtime's Task/<code>Agent()</code> tool; <code>mode="primary"</code> (opencode only)
+invokes via the bundled <code>opencode_manager.py</code>. See
+<code>examples/40_subagents</code>, <code>examples/50_primary_dispatch</code>.</p>
+<h3 id="permissions-security-policy">Permissions &amp; SECURITY POLICY<a class="headerlink" href="#permissions-security-policy" title="Permanent link">&para;</a></h3>
+<p><code>tool_permissions=ToolPermissions(read=..., write=..., edit=..., mcp=...)</code>
+compiles to <em>both</em> the runtime's enforcement config (opencode
+<code>permission:</code> block / pi <code>disallowed_tools:</code>) <em>and</em> a SECURITY POLICY
+prompt section, keeping enforcement and agent awareness in sync.
+Per-server MCP allowlists via <code>mcp_servers=[MCPServerDefinition(name="slack",
+allowed_tools=[...])]</code> (opencode/claude only; pi warns).</p>
+<hr />
+<h2 id="8-skills">8. Skills<a class="headerlink" href="#8-skills" title="Permanent link">&para;</a></h2>
+<p>Two distinct things share the word "skill":</p>
+<ol>
+<li><strong>Agent skills</strong> (<code>AgentDefinition.skills</code>) —
+   <code>SkillDefinition(name, description, usage_explanation_long, workflow_steps,
+   positive_examples, ...)</code> compiled into the agent's prompt and
+   frontmatter. They teach the <em>compiled agent</em> a capability.</li>
+<li><strong>Developer skill bundles</strong> (<code>oac sync-skills</code>) — 14 opinionated
+   markdown skills installed into a <em>project's</em> <code>.opencode/skills/</code> and
+   <code>.claude/skills/</code> so coding agents (OpenCode, Claude Code) working
+   in that repo know the framework: <code>getting-started</code>,
+   <code>authoring-agents</code>, <code>authoring-tools</code>, <code>writing-tests</code>,
+   <code>providers-and-models</code>, <code>variants-and-profiles</code>,
+   <code>interactive-agents</code>, <code>improvement-loop</code>, <code>docker-and-compose</code>,
+   <code>project-orchestration</code>, and more.</li>
+</ol>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>sync-skills<span class="w"> </span>.<span class="w"> </span>--skills<span class="w"> </span>opencode,claude<span class="w">   </span><span class="c1"># deploy / refresh</span>
+uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>sync-skills<span class="w"> </span>.<span class="w"> </span>--check<span class="w">                    </span><span class="c1"># drift report</span>
+</code></pre></div>
+<p><code>oac init --skills opencode,claude</code> deploys them at scaffold time.</p>
+<hr />
+<h2 id="9-variants-split-profiles-multi-model-fleets">9. Variants &amp; split profiles (multi-model fleets)<a class="headerlink" href="#9-variants-split-profiles-multi-model-fleets" title="Permanent link">&para;</a></h2>
+<h3 id="variantspec-same-tree-n-models-one-compile">VariantSpec — same tree, N models, one compile<a class="headerlink" href="#variantspec-same-tree-n-models-one-compile" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler</span><span class="w"> </span><span class="kn">import</span> <span class="n">VariantSpec</span><span class="p">,</span> <span class="n">ModelPreset</span><span class="p">,</span> <span class="n">SamplingDefaults</span>
+
+<span class="n">specs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">VariantSpec</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;claude&quot;</span><span class="p">,</span> <span class="n">postfix</span><span class="o">=</span><span class="s2">&quot;-claude&quot;</span><span class="p">,</span>
+                <span class="n">preset</span><span class="o">=</span><span class="n">ModelPreset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="s2">&quot;anthropic&quot;</span><span class="p">,</span>
+                                   <span class="n">model_id</span><span class="o">=</span><span class="s2">&quot;claude-sonnet-4-5&quot;</span><span class="p">,</span>
+                                   <span class="n">sampling</span><span class="o">=</span><span class="n">SamplingDefaults</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">))),</span>
+    <span class="n">VariantSpec</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;glm&quot;</span><span class="p">,</span> <span class="n">postfix</span><span class="o">=</span><span class="s2">&quot;-glm&quot;</span><span class="p">,</span>
+                <span class="n">preset</span><span class="o">=</span><span class="n">ModelPreset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="s2">&quot;zai-coding-plan&quot;</span><span class="p">,</span>
+                                   <span class="n">model_id</span><span class="o">=</span><span class="s2">&quot;glm-4.5-air&quot;</span><span class="p">,</span>
+                                   <span class="n">sampling</span><span class="o">=</span><span class="n">SamplingDefaults</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">))),</span>
+<span class="p">]</span>
+<span class="n">CompileScript</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;build&quot;</span><span class="p">),</span> <span class="n">factory</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span>
+              <span class="n">variants</span><span class="o">=</span><span class="n">specs</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+<p>Each pass appends its <code>postfix</code> to every compiled file — the runtime
+picks a variant at invocation time.</p>
+<h3 id="splitprofile-preset-per-model_class-within-one-pass">SplitProfile — preset per <code>model_class</code> within one pass<a class="headerlink" href="#splitprofile-preset-per-model_class-within-one-pass" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler</span><span class="w"> </span><span class="kn">import</span> <span class="n">SplitProfile</span>
+
+<span class="n">split</span> <span class="o">=</span> <span class="n">SplitProfile</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="n">postfix</span><span class="o">=</span><span class="s2">&quot;-split&quot;</span><span class="p">,</span>
+    <span class="n">preset</span><span class="o">=</span><span class="n">deep_preset</span><span class="p">,</span>                       <span class="c1"># fallback</span>
+    <span class="n">class_map</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fast&quot;</span><span class="p">:</span> <span class="n">fast_preset</span><span class="p">,</span>           <span class="c1"># quick acks</span>
+               <span class="s2">&quot;analytical&quot;</span><span class="p">:</span> <span class="n">deep_preset</span><span class="p">},</span>    <span class="c1"># reasoning</span>
+    <span class="n">default_class</span><span class="o">=</span><span class="s2">&quot;analytical&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Agents opt in with <code>AgentDefinition(model_class="fast")</code>. This is how a
+fleet routes cheap slots to a local vLLM model and hard slots to a
+frontier model in a single compile.</p>
+<h3 id="compilationcontext-flags-without-globals">CompilationContext — flags without globals<a class="headerlink" href="#compilationcontext-flags-without-globals" title="Permanent link">&para;</a></h3>
+<p><code>current_context().flag("is_local")</code> inside agent factories lets one
+registry branch per variant (local tools vs prod tools) without global
+state.</p>
+<hr />
+<h2 id="10-testing">10. Testing<a class="headerlink" href="#10-testing" title="Permanent link">&para;</a></h2>
+<p>Tests live <strong>on the definitions</strong> and run with <code>uv run oac test</code>:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span><span class="nb">test</span><span class="w"> </span>agents:registry<span class="w"> </span>--config<span class="w"> </span>prod
+uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span><span class="nb">test</span><span class="w"> </span>agents:registry<span class="w"> </span>--config<span class="w"> </span>prod<span class="w"> </span>--kind<span class="w"> </span>tool<span class="w"> </span>--filter<span class="w"> </span>notes
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Model</th>
+<th>What it checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>capability</td>
+<td><code>CapabilityTest</code></td>
+<td>pure introspection of the compiled artifact: <code>must_have_tools</code>, <code>must_not_have_tools</code>, <code>must_have_skills</code>, …</td>
+</tr>
+<tr>
+<td>tool</td>
+<td><code>ToolTest</code></td>
+<td>drives a tool handler (or its mock) with <code>input</code>, asserts on output; <code>mock_profile</code> selects bindings</td>
+</tr>
+<tr>
+<td>agent</td>
+<td><code>AgentTest</code></td>
+<td>end-to-end scenario (single- or multi-turn) with <code>expected_tool_calls</code> + <code>evaluators</code>; needs an invoker callable since execution is deployment-specific</td>
+</tr>
+</tbody>
+</table>
+<p>Results append to <code>.oac/test_results.jsonl</code>; a green-hash cache skips
+unchanged tests (<code>--force</code> bypasses). Design rule: <strong>every tool ships a
+mock</strong>, so the whole suite is runnable in CI with zero credentials.</p>
+<hr />
+<h2 id="11-the-improvement-loop">11. The improvement loop<a class="headerlink" href="#11-the-improvement-loop" title="Permanent link">&para;</a></h2>
+<p>The framework's differentiator: agents are <strong>optimizable components</strong>.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>improve<span class="w"> </span>agents:registry<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--target<span class="w"> </span>primary<span class="w"> </span>--config<span class="w"> </span>prod<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--criteria<span class="w"> </span>criteria.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mutators<span class="w"> </span>identity,prompt-suffix:<span class="s2">&quot;Be terse.&quot;</span>,llm-prompt-rewriter<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--evaluator<span class="w"> </span>myproj.evals:score<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max-iters<span class="w"> </span><span class="m">3</span><span class="w"> </span>--frontier<span class="w"> </span><span class="m">3</span><span class="w"> </span>--output<span class="w"> </span>./improved
+
+uv<span class="w"> </span>run<span class="w"> </span>oac<span class="w"> </span>promote<span class="w"> </span>./improved/&lt;winner&gt;.json<span class="w">   </span><span class="c1"># → .oac/promoted/</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>build_agents.py<span class="w">                  </span><span class="c1"># next compile picks it up</span>
+</code></pre></div>
+<p>The loop: mutate → compile → evaluate → keep the frontier → snapshot.
+Bundled mutators: <code>identity</code> (control), <code>prompt-prefix:&lt;text&gt;</code>,
+<code>prompt-suffix:&lt;text&gt;</code>, <code>temperature:&lt;delta&gt;</code>, <code>llm-prompt-rewriter</code>
+(an LLM rewrites the prompt against your criteria). The Python API
+(<code>IterativeLoop</code>, <code>run_fleet</code>, <code>build_branch_loop</code>,
+<code>contract_gate</code>/<code>require_tool_called</code>/<code>require_artifact</code> outcome
+contracts) supports per-agent <em>and</em> per-branch loops, LLM judges, and
+fleet runs across model variants.</p>
+<p>Promotion is section-aware: if a definition uses <code>prompt_sections</code>, the
+promoted snapshot re-derives <code>system_prompt</code> from the improved sections,
+so per-section gains persist across compiles.</p>
+<p>Practical notes from real fleets:</p>
+<ul>
+<li>Run improvement with <strong>workers=2</strong> against local vLLM; infra timeouts
+  must be <em>skipped</em>, not scored 0, or they poison the scoreboard.</li>
+<li>Stochastic agents need multi-sample evaluation.</li>
+<li>Namespace parallel per-model loops (ws/ports/snapshots/DB) so N
+  models tune concurrently.</li>
+</ul>
+<p>See <code>examples/20_optimization_run</code>, <code>25_per_model_optimization</code>,
+<code>26_promote_and_reload</code>, <code>27_composable_improvements</code>.</p>
+<hr />
+<h2 id="12-the-interactive-tier-langchain-binding">12. The interactive tier (LangChain binding)<a class="headerlink" href="#12-the-interactive-tier-langchain-binding" title="Permanent link">&para;</a></h2>
+<p>For the chat/streaming layer, derive an in-process spec from the <em>same</em>
+definition:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_interactive_spec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">open_agent_compiler.interactive.bindings.langchain_binding</span><span class="w"> </span><span class="kn">import</span> <span class="n">bind</span>
+
+<span class="n">spec</span> <span class="o">=</span> <span class="n">build_interactive_spec</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">my_agent</span><span class="p">,</span> <span class="n">live_profile</span><span class="o">=</span><span class="n">LIVE_PROFILE</span><span class="p">)</span>
+<span class="n">runnable</span> <span class="o">=</span> <span class="n">bind</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">tool_runner</span><span class="o">=</span><span class="n">my_tool_runner</span><span class="p">)</span>   <span class="c1"># streaming LCEL runnable</span>
+
+<span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">runnable</span><span class="o">.</span><span class="n">stream</span><span class="p">({</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;make it punchier&quot;</span><span class="p">)]}):</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p><code>build_interactive_spec</code> renders the agent's core intent (prompt +
+workflow-as-guidance + skills-as-capabilities) <strong>without</strong> the worker
+scaffolding (bash/todo/security blocks) because interactive tools bind
+natively. <code>SplitProfile</code> gives workers and the live tier different
+providers from one registry (e.g. workers on zai-coding-plan via
+opencode, live tier on a local OpenAI-compatible vLLM). The
+framework-owned tool loop (<code>open_agent_compiler.interactive.runner</code>) records
+<code>ToolCallRecord</code>s so interactive runs are scoreable by the same
+improvement loop.</p>
+<p>Local-model tip: Qwen3.x via vLLM needs <code>enable_thinking=false</code> (or
+structured output), otherwise <code>content</code> comes back empty.</p>
+<p>An alternative realtime binding exists for PydanticAI
+(<code>bindings/pydantic_ai_binding.py</code>, extra <code>[pydantic-ai]</code>) — same
+spec, same ToolRunner/event contracts, native <code>output_type</code> support.</p>
+<h3 id="per-target-adaptation-harness-model">Per-target adaptation (harness × model)<a class="headerlink" href="#per-target-adaptation-harness-model" title="Permanent link">&para;</a></h3>
+<p>The loop generalizes beyond one model class: <code>run_per_target_loops</code>
+runs one loop per <code>(harness, model_class)</code> target — opencode / pi /
+codex / claude via <code>build_compiled_evaluator</code> + pluggable
+<code>HarnessRunner</code>s, plus the in-process <code>interactive</code> tier via
+<code>build_interactive_evaluator</code>. Winners promote into per-target slots
+(<code>oac promote --target pi+fast</code>; resolution target → class → default),
+history records to the SQLite run store (<code>.oac/improvement.db</code>,
+<code>open_store()</code>), and <code>oac versions</code> manages what's loaded. Full story:
+<a href="../guides/optimization-targets/">optimization targets</a>;
+offline-runnable capstone: <code>examples/85_matrix_live_chat/</code>.</p>
+<hr />
+<h2 id="13-oac-cli-reference">13. <code>oac</code> CLI reference<a class="headerlink" href="#13-oac-cli-reference" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>oac init &lt;dir&gt; [--template ...] [--dialect ...] [-i]</code></td>
+<td>scaffold a project (see §3a)</td>
+</tr>
+<tr>
+<td><code>oac compile &lt;factory&gt; --config C --target D [--dialect X] [--clean] [--dry-run]</code></td>
+<td>compile a registry</td>
+</tr>
+<tr>
+<td><code>oac info &lt;factory&gt;</code> / <code>oac info --dialects</code></td>
+<td>introspect registry / list dialects</td>
+</tr>
+<tr>
+<td><code>oac test &lt;factory&gt; --config C [--kind K] [--filter S] [--force]</code></td>
+<td>run embedded tests</td>
+</tr>
+<tr>
+<td><code>oac improve &lt;factory&gt; --target T --config C [...]</code></td>
+<td>run the improvement loop</td>
+</tr>
+<tr>
+<td><code>oac promote &lt;snapshot.json&gt; [--class L] [--target K]</code></td>
+<td>stage a snapshot for the next compile (per-class / per-target slots)</td>
+</tr>
+<tr>
+<td><code>oac versions &lt;action&gt; &lt;component&gt; [...]</code></td>
+<td>browse / load / unload / rollback autolooped versions; <code>apply-source</code> rewrites the Python prompt</td>
+</tr>
+<tr>
+<td><code>oac sync-skills &lt;dir&gt; [--skills opencode,claude,pi,codex] [--check]</code></td>
+<td>deploy/refresh developer skills</td>
+</tr>
+</tbody>
+</table>
+<p><code>oac compile</code> also accepts <code>--native-tools</code> (emit the harness's native
+tool-calling form — TS shims for opencode, an MCP tools server for
+claude/codex; see <a href="../guides/native-tools/">native tool calling</a>).</p>
+<p><code>&lt;factory&gt;</code> is always <code>module:callable</code> returning an <code>AgentRegistry</code>;
+the CWD is on the import path, so <code>agents:registry</code> works from a
+project root.</p>
+<hr />
+<h2 id="14-examples-index">14. Examples index<a class="headerlink" href="#14-examples-index" title="Permanent link">&para;</a></h2>
+<p>All examples run end-to-end against real LLMs (see <code>examples/README.md</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00_hello</code></td>
+<td>minimum working agent</td>
+</tr>
+<tr>
+<td><code>10_multi_provider</code></td>
+<td>one agent, three providers via variants</td>
+</tr>
+<tr>
+<td><code>20_optimization_run</code> → <code>27_composable_improvements</code></td>
+<td>improvement loop, per-model optimization, promote/reload, composition</td>
+</tr>
+<tr>
+<td><code>28_context_blocks</code>, <code>29_long_running_task</code></td>
+<td>context assembly, long tasks</td>
+</tr>
+<tr>
+<td><code>30_tools</code> → <code>36_mcp_server</code></td>
+<td>ScriptTools, spawn-agent handles, multi-turn mocks, SQLite AccessProfiles, per-agent MCP, FastAPI dispatch, agents-as-MCP-tools</td>
+</tr>
+<tr>
+<td><code>40_subagents</code>, <code>50_primary_dispatch</code>, <code>60_workflow_agent</code></td>
+<td>subagent trees, primary dispatch, gated workflows</td>
+</tr>
+<tr>
+<td><code>70_oac_test</code></td>
+<td>the embedded test runner</td>
+</tr>
+<tr>
+<td><code>80_pi_agents</code>, <code>81_pi_exploration</code></td>
+<td>pi dialect; same tree compiled for opencode <em>and</em> pi</td>
+</tr>
+<tr>
+<td><code>90_init_scaffold</code>, <code>91_saas_personalized</code></td>
+<td>scaffold shapes</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="15-troubleshooting">15. Troubleshooting<a class="headerlink" href="#15-troubleshooting" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>uv sync</code> fails in a scaffolded project</strong> — the generated
+  <code>[tool.uv.sources]</code> must point at your framework checkout; regenerate
+  with a current <code>oac init</code> or add it manually.</li>
+<li><strong><code>oac compile: No module named 'agents'</code></strong> — run from the project
+  root (the CWD is what gets importable), or install the project.</li>
+<li><strong>Compiled agent flails on a custom tool</strong> — put the tool's exact
+  command verbs in its usage docs (§6).</li>
+<li><strong><code>opencode run</code> hangs at startup</strong> — launch with <code>--print-logs</code>
+  (file-sink deadlock in some versions); always give concurrent
+  opencode runs private <code>XDG_DATA_HOME</code> dirs or they hit
+  <code>database is locked</code>.</li>
+<li><strong>Improvement scores flat at 0.00</strong> — check the compiled config loads
+  at all (<code>opencode run</code> an agent manually) before suspecting model
+  quality; a rejected config scores every probe zero.</li>
+<li><strong>Pi build ignores MCP</strong> — expected; watch for the compile warning
+  and configure <code>ext:mcp/&lt;tool&gt;</code> manually (see
+  <a href="../dialects/pi/">pi-agent-dialect.md</a>).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

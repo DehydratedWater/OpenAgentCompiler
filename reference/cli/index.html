@@ -1,0 +1,2500 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python-first agent framework: define composable agent trees once, compile them to multiple agent runtimes, and auto-optimize them with test-driven improvement loops.">
+      
+      
+      
+        <link rel="canonical" href="https://dehydratedwater.github.io/OpenAgentCompiler/reference/cli/">
+      
+      
+        <link rel="prev" href="../../dialects/codex/">
+      
+      
+        <link rel="next" href="../examples/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>CLI - open-agent-compiler</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#oac-cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="open-agent-compiler" class="md-header__button md-logo" aria-label="open-agent-compiler" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            open-agent-compiler
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/DehydratedWater/OpenAgentCompiler" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DehydratedWater/OpenAgentCompiler
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="open-agent-compiler" class="md-nav__button md-logo" aria-label="open-agent-compiler" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    open-agent-compiler
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/DehydratedWater/OpenAgentCompiler" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    DehydratedWater/OpenAgentCompiler
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your First Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/project-scaffold/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scaffolding a Project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy & Assumptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/agent-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Agent Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/registry-and-compilation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Registry & Compilation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/execution-tiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Tiers (Fast & Slow)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/support-triage-bot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support Triage Bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/database-reporting-tool/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Reporting Tool
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/one-agent-three-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    One Agent, Three Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/self-improving-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Self-Improving Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/fast-chat-slow-worker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fast Chat, Slow Worker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/workflows-and-subagents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows & Subagents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/variants-and-profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Variants & Split Profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/improvement-loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Improvement Loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/optimization-targets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimization Targets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/evolve-coding-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolve a Coding Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/native-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native Tool Calling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/interactive-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Interactive Tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/langchain-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain Runtime Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialects
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dialects
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dialects/opencode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenCode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dialects/claude-code/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dialects/pi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pi
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dialects/codex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codex
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#oac-compile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac compile
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac info
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac test
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-improve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac improve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-promote" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac promote
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-evolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac evolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-sync-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac sync-skills
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac init
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retrieval-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retrieval Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All-in-One Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Lessons
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Field Lessons
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lessons/optimize-the-real-goal-not-text-correctness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Optimize the Real Goal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lessons/thinking-models-and-opencode-scoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thinking Models & Scoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lessons/tuning-a-local-agent-fleet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tuning a Local Agent Fleet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#oac-compile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac compile
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac info
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac test
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-improve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac improve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-promote" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac promote
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-evolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac evolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-sync-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac sync-skills
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oac-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oac init
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="oac-cli-reference"><code>oac</code> CLI reference<a class="headerlink" href="#oac-cli-reference" title="Permanent link">&para;</a></h1>
+<p>Every <code>oac</code> subcommand with its real arguments and one worked example each.
+Most commands take a <em>factory spec</em> — <code>module:callable</code> returning an
+<code>AgentRegistry</code> (e.g. <code>agents:registry</code>). The current working directory is
+prepended to the import path, so specs resolve from a project root without
+installing the project.</p>
+<p>Global: <code>oac --version</code> prints the installed version; <code>oac &lt;command&gt; --help</code>
+prints the authoritative flag list.</p>
+<h2 id="oac-compile"><code>oac compile</code><a class="headerlink" href="#oac-compile" title="Permanent link">&para;</a></h2>
+<p>Compile a registered configuration to a target directory.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>factory</code></td>
+<td><code>module:callable</code> returning an <code>AgentRegistry</code></td>
+</tr>
+<tr>
+<td><code>--config NAME</code> <em>(required)</em></td>
+<td><code>CompilationConfig</code> name registered on the registry</td>
+</tr>
+<tr>
+<td><code>--target DIR</code> <em>(required)</em></td>
+<td>output directory for compiled artifacts</td>
+</tr>
+<tr>
+<td><code>--dialect NAME</code></td>
+<td>output dialect (default <code>opencode</code>; list with <code>oac info --dialects</code>)</td>
+</tr>
+<tr>
+<td><code>--clean</code></td>
+<td>delete the target directory before writing</td>
+</tr>
+<tr>
+<td><code>--native-tools</code></td>
+<td>also emit the harness's native tool-calling form for json-contract tools (see <a href="../../guides/native-tools/">native tool calling</a>)</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>resolve the configuration but write nothing</td>
+</tr>
+<tr>
+<td><code>-v, --verbose</code></td>
+<td>per-run summary</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span>compile<span class="w"> </span>agents:registry<span class="w"> </span>--config<span class="w"> </span>prod<span class="w"> </span>--target<span class="w"> </span>build<span class="w"> </span>--dialect<span class="w"> </span>pi<span class="w"> </span>--clean
+</code></pre></div>
+<p>For programmatic compiles (variants, access profiles, mock profiles,
+per-client builds) use <code>CompileScript</code> directly — the CLI is a thin adapter
+over it.</p>
+<h2 id="oac-info"><code>oac info</code><a class="headerlink" href="#oac-info" title="Permanent link">&para;</a></h2>
+<p>Inspect a registry without compiling, or list dialects.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>factory</code> <em>(optional)</em></td>
+<td>registry to introspect; prints agents, templates, configs</td>
+</tr>
+<tr>
+<td><code>--dialects</code></td>
+<td>list registered output dialects</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span>info<span class="w"> </span>agents:registry
+oac<span class="w"> </span>info<span class="w"> </span>--dialects
+</code></pre></div>
+<h2 id="oac-test"><code>oac test</code><a class="headerlink" href="#oac-test" title="Permanent link">&para;</a></h2>
+<p>Discover and run the tests embedded on agent/tool definitions
+(<code>CapabilityTest</code>, <code>ToolTest</code>, <code>AgentTest</code>), emitting one JSONL line per
+result. Exit code is 1 if anything failed. See the
+<a href="../../guides/testing/">testing guide</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>factory</code></td>
+<td>registry to test</td>
+</tr>
+<tr>
+<td><code>--config NAME</code> <em>(required)</em></td>
+<td><code>CompilationConfig</code> to compile + test</td>
+</tr>
+<tr>
+<td><code>--results PATH</code></td>
+<td>JSONL artifact path (default <code>.oac/test_results.jsonl</code>)</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>bypass the green-hash cache; rerun every discovered test</td>
+</tr>
+<tr>
+<td><code>--filter SUBSTR</code></td>
+<td>only tests whose name contains this substring</td>
+</tr>
+<tr>
+<td><code>--kind {capability,tool,agent}</code></td>
+<td>only tests of one kind</td>
+</tr>
+<tr>
+<td><code>--variant NAME</code></td>
+<td>variant label recorded in artifacts (informational)</td>
+</tr>
+<tr>
+<td><code>-v, --verbose</code></td>
+<td>per-test pass/fail/skip lines</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span><span class="nb">test</span><span class="w"> </span>agents:registry<span class="w"> </span>--config<span class="w"> </span>prod<span class="w"> </span>--kind<span class="w"> </span>tool<span class="w"> </span>--force<span class="w"> </span>-v
+</code></pre></div>
+<p>Reruns skip tests whose composite hash matches a previous green run
+(<code>skipped=N</code> in the summary) — that is the incremental cache, not a failure.</p>
+<h2 id="oac-improve"><code>oac improve</code><a class="headerlink" href="#oac-improve" title="Permanent link">&para;</a></h2>
+<p>Run the iterative improvement loop on one component: mutate, evaluate, keep a
+frontier, snapshot round winners. See the
+<a href="../../guides/improvement-loop/">improvement loop guide</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>factory</code></td>
+<td>registry containing the target</td>
+</tr>
+<tr>
+<td><code>--target ID</code> <em>(required)</em></td>
+<td>component to improve (agent slot or registered name)</td>
+</tr>
+<tr>
+<td><code>--config NAME</code> <em>(required)</em></td>
+<td>config that resolves the target agent</td>
+</tr>
+<tr>
+<td><code>--criteria FILE</code> <em>(required)</em></td>
+<td>YAML file describing the <code>OptimisationCriterion</code></td>
+</tr>
+<tr>
+<td><code>--mutators SPECS</code></td>
+<td>comma-separated: <code>identity</code>, <code>prompt-prefix:&lt;text&gt;</code>, <code>prompt-suffix:&lt;text&gt;</code>, <code>temperature:&lt;delta&gt;</code>, <code>llm-prompt-rewriter</code> (default <code>identity</code>)</td>
+</tr>
+<tr>
+<td><code>--evaluator MOD:FN</code></td>
+<td>callable taking a <code>ComponentVersion</code>, returning a metrics dict; default is a noop returning <code>{'pass_rate': 1.0}</code> — replace it for real signal</td>
+</tr>
+<tr>
+<td><code>--max-iters N</code></td>
+<td>loop rounds (default 3)</td>
+</tr>
+<tr>
+<td><code>--frontier N</code></td>
+<td>frontier size kept between rounds (default 3)</td>
+</tr>
+<tr>
+<td><code>--output DIR</code></td>
+<td>snapshot directory (default <code>improved/</code>)</td>
+</tr>
+<tr>
+<td><code>--store [URL]</code></td>
+<td>record rounds/candidates/winners in the run store; bare <code>--store</code> uses the default <code>sqlite:///.oac/improvement.db</code>, or pass a connection URL — browse afterwards with <code>oac versions</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span>improve<span class="w"> </span>agents:registry<span class="w"> </span>--target<span class="w"> </span>primary<span class="w"> </span>--config<span class="w"> </span>prod<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--criteria<span class="w"> </span>criteria.yaml<span class="w"> </span>--max-iters<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mutators<span class="w"> </span>identity,llm-prompt-rewriter<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--evaluator<span class="w"> </span>myproject.evaluators:run_oac_test<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>improved/
+</code></pre></div>
+<h2 id="oac-promote"><code>oac promote</code><a class="headerlink" href="#oac-promote" title="Permanent link">&para;</a></h2>
+<p>Stage a winning snapshot so the next compile picks it up (copies it into
+<code>.oac/promoted/</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>snapshot</code></td>
+<td>path to a snapshot JSON (typically <code>improved/&lt;component&gt;/&lt;hash&gt;.json</code>)</td>
+</tr>
+<tr>
+<td><code>--project DIR</code></td>
+<td>project root (default: cwd)</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>overwrite an existing promotion for the same component</td>
+</tr>
+<tr>
+<td><code>--class LABEL</code></td>
+<td>promote into a per-model-class slot (<code>.oac/promoted/&lt;id&gt;__&lt;class&gt;.json</code>)</td>
+</tr>
+<tr>
+<td><code>--target KEY</code></td>
+<td>promote into a per-target slot (<code>pi+fast</code>, <code>interactive</code>, …); load-time resolution is target → class → default</td>
+</tr>
+<tr>
+<td><code>--show</code></td>
+<td>print the snapshot's metrics + definition instead of promoting</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span>promote<span class="w"> </span>improved/primary/3fa2b1c9.json<span class="w"> </span>--class<span class="w"> </span><span class="nb">local</span><span class="w"> </span>--force
+oac<span class="w"> </span>promote<span class="w"> </span>improved/summarizer/pi+fast/LATEST.json<span class="w"> </span>--target<span class="w"> </span>pi+fast
+</code></pre></div>
+<h2 id="oac-evolve"><code>oac evolve</code><a class="headerlink" href="#oac-evolve" title="Permanent link">&para;</a></h2>
+<p>Evolve a repo-tailored coding harness: isolated clone (no remotes) →
+repo recon → synthesized agents/skills compiled into the workspace →
+replay + teacher-gap evolution scaffolding → zip. See
+<a href="../../guides/evolve-coding-harness/">the evolve guide</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>repo</code></td>
+<td>path to the repository to adapt to</td>
+</tr>
+<tr>
+<td><code>--out DIR</code></td>
+<td>workspace for the isolated copy (default <code>./evolved_&lt;name&gt;</code>)</td>
+</tr>
+<tr>
+<td><code>-i, --interactive</code></td>
+<td>prompt for every option</td>
+</tr>
+<tr>
+<td><code>--dialect NAME</code></td>
+<td>harness dialect (default <code>opencode</code>)</td>
+</tr>
+<tr>
+<td><code>--model M</code></td>
+<td>model for the synthesized agents</td>
+</tr>
+<tr>
+<td><code>--reference-model M</code></td>
+<td>stronger teacher model for gap evolution</td>
+</tr>
+<tr>
+<td><code>--commits N</code></td>
+<td>replay commits for evolution scoring (default 5)</td>
+</tr>
+<tr>
+<td><code>--skills LIST</code></td>
+<td>developer skill bundles to deploy (default <code>opencode,claude</code>)</td>
+</tr>
+<tr>
+<td><code>--zip PATH</code> / <code>--no-zip</code></td>
+<td>package the workspace (default <code>&lt;out&gt;.zip</code>)</td>
+</tr>
+<tr>
+<td><code>--native-tools</code></td>
+<td>compile the harness with native tool calling</td>
+</tr>
+</tbody>
+</table>
+<h2 id="oac-versions"><code>oac versions</code><a class="headerlink" href="#oac-versions" title="Permanent link">&para;</a></h2>
+<p>Browse, load, unload, and roll back autolooped versions. Reads the run
+store at <code>&lt;project&gt;/.oac/improvement.db</code> (see the
+<a href="../../guides/optimization-targets/">optimization targets guide</a>).</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list &lt;component&gt;</code></td>
+<td>recorded versions with scores; <code>*</code> marks the loaded one</td>
+</tr>
+<tr>
+<td><code>show &lt;component&gt; &lt;hash&gt;</code></td>
+<td>one candidate in full (definition + metrics)</td>
+</tr>
+<tr>
+<td><code>load &lt;component&gt; &lt;hash&gt;</code></td>
+<td>write that version into the promoted slot</td>
+</tr>
+<tr>
+<td><code>unload &lt;component&gt;</code></td>
+<td>remove the promotion — the baseline passes through</td>
+</tr>
+<tr>
+<td><code>rollback &lt;component&gt;</code></td>
+<td>re-load the previously promoted version</td>
+</tr>
+<tr>
+<td><code>apply-source &lt;component&gt; &lt;file.py&gt;</code></td>
+<td>rewrite the <code>system_prompt</code> literal in the Python source</td>
+</tr>
+</tbody>
+</table>
+<p>Shared flags: <code>--project</code>, <code>--store URL</code>, <code>--target KEY</code>, <code>--class LABEL</code>,
+<code>--client ID</code>, <code>--force</code>.</p>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span>versions<span class="w"> </span>list<span class="w"> </span>summarizer<span class="w"> </span>--target<span class="w"> </span>pi+fast
+oac<span class="w"> </span>versions<span class="w"> </span>rollback<span class="w"> </span>summarizer<span class="w"> </span>--target<span class="w"> </span>pi+fast
+</code></pre></div>
+<h2 id="oac-sync-skills"><code>oac sync-skills</code><a class="headerlink" href="#oac-sync-skills" title="Permanent link">&para;</a></h2>
+<p>Deploy or refresh the framework's developer skill bundles into a project's
+<code>.opencode/skills/</code> and <code>.claude/skills/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target</code></td>
+<td>project directory to refresh</td>
+</tr>
+<tr>
+<td><code>--skills LIST</code></td>
+<td>comma-separated dialects, subset of <code>opencode,claude,pi,codex</code> — the same cross-agent SKILL.md standard (default <code>opencode,claude</code>)</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>rewrite even when the installed version matches</td>
+</tr>
+<tr>
+<td><code>--check</code></td>
+<td>write nothing; report fresh/stale/missing and exit 1 on drift</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span>sync-skills<span class="w"> </span>.<span class="w"> </span>--skills<span class="w"> </span>opencode,claude<span class="w"> </span>--check
+</code></pre></div>
+<h2 id="oac-init"><code>oac init</code><a class="headerlink" href="#oac-init" title="Permanent link">&para;</a></h2>
+<p>Scaffold a new project. Covered step by step in
+<a href="../../getting-started/project-scaffold/">project scaffolding</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target</code></td>
+<td>directory to scaffold into (created if missing)</td>
+</tr>
+<tr>
+<td><code>-i, --interactive</code></td>
+<td>prompt for every option</td>
+</tr>
+<tr>
+<td><code>--name NAME</code></td>
+<td>project name (default: directory name)</td>
+</tr>
+<tr>
+<td><code>--template {barebones,web,full,saas-personalized}</code></td>
+<td>scaffold shape (default <code>web</code>)</td>
+</tr>
+<tr>
+<td><code>--llm {anthropic,openai,openrouter,vllm,zai-coding-plan}</code></td>
+<td>starter provider (default <code>anthropic</code>)</td>
+</tr>
+<tr>
+<td><code>--dialect NAME</code></td>
+<td>dialect the generated <code>build_agents.py</code> targets (default <code>opencode</code>)</td>
+</tr>
+<tr>
+<td><code>--with-postgres</code> / <code>--with-sqlite</code> / <code>--with-redis</code> / <code>--with-qdrant</code> / <code>--with-ollama</code></td>
+<td>services + starter resources</td>
+</tr>
+<tr>
+<td><code>--with-mcp-server</code></td>
+<td>agents as MCP tools alongside FastAPI (<code>web</code>/<code>full</code> only)</td>
+</tr>
+<tr>
+<td><code>--with-telegram-bot</code> / <code>--with-cron</code> / <code>--cron-events PATH</code></td>
+<td>delivery + scheduling</td>
+</tr>
+<tr>
+<td><code>--observability {none,langfuse}</code> / <code>--proxy {none,nginx,traefik}</code></td>
+<td>infra add-ons</td>
+</tr>
+<tr>
+<td><code>--skills LIST</code></td>
+<td>developer skills to emit (<code>opencode,claude</code>; empty = none)</td>
+</tr>
+<tr>
+<td><code>--force-overwrite</code> / <code>--force-overwrite-all</code></td>
+<td>refresh framework files (safe) / reset everything (destructive)</td>
+</tr>
+<tr>
+<td><code>--no-uv-sync</code></td>
+<td>skip the automatic post-scaffold <code>uv sync</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>oac<span class="w"> </span>init<span class="w"> </span>myproject<span class="w"> </span>--template<span class="w"> </span>full<span class="w"> </span>--llm<span class="w"> </span>openai<span class="w"> </span>--with-cron<span class="w"> </span>--skills<span class="w"> </span>opencode
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
