@@ -29,3 +29,4 @@ examples/*/generated/
 # Claude Code local settings
 .claude/
 examples/*/build_*/
+site/
