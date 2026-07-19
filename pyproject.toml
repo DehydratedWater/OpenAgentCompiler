@@ -1,11 +1,11 @@
 [project]
 name = "open-agent-compiler"
-version = "1.15.0"
-description = "Python-first agent framework: define composable agent trees once, compile them to multiple agent runtimes (opencode, Claude Code, Pi), and auto-optimize them with test-driven improvement loops."
+version = "1.15.1"
+description = "Python-first agent framework: define composable agent trees once, compile them to multiple agent runtimes (opencode, Claude Code, Pi, Codex), auto-optimize them per harness and model with test-driven autoloops, and evolve repo-tailored coding harnesses."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Ignacy Daszkiewicz" }]
-keywords = ["agent", "framework", "compiler", "llm", "ai", "opencode", "claude-code", "pi-agent", "prompt-optimization"]
+keywords = ["agent", "framework", "compiler", "llm", "ai", "opencode", "claude-code", "pi-agent", "codex", "prompt-optimization", "coding-harness"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

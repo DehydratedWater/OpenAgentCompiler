@@ -35,6 +35,13 @@ uv add open-agent-compiler
 - **Multi-dialect compiler** — one agent tree compiles to OpenCode,
   Claude Code, Pi, and Codex agent formats, plus an in-process
   interactive tier.
+- **Per-target adaptation** — autoloops tune the same agent per
+  harness × model (including the realtime tier), with per-target
+  promotion slots, a SQLite run store, and `oac versions` management.
+- **Evolve a coding harness** — `oac evolve <repo>` builds a
+  repo-tailored harness in an isolated clone and evolves it against
+  the repo's own commits and a stronger-model teacher — including
+  structural (workflow/tool) mutation, not just prompt text.
 - **Embedded testing** — capability, tool, and agent tests live next to
   the definitions and run against mocks, so CI never needs credentials.
 - **Improvement loop** — mutate prompts and parameters, evaluate against
