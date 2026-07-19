@@ -89,6 +89,13 @@ cd build && pi run --agent primary "Hi"
   native tool form for json-contract tools: `.opencode/tool/*.ts`
   shims (opencode) or a generated MCP tools server (Claude Code /
   Codex), all bridging deterministically to the same Python scripts.
+- **Evolve a coding harness** — `oac evolve <repo>` builds a
+  repo-tailored harness (planner/implementer/reviewer + /plan,
+  /implement, /review-pr skills mined from the repo's docs, commands,
+  and change history) in a fully isolated clone, then evolves it
+  against the repo's own commits (replay similarity) and a
+  stronger-model teacher (gap-driven prompt AND workflow-structure
+  mutation), shipping the result as a zip.
 - **Project scaffolder** — `oac init` generates a Docker-compose'd
   project with FastAPI + cron + optional Postgres / Redis / Qdrant /
   Ollama / Langfuse. Cron POSTs JSON events to the FastAPI server which

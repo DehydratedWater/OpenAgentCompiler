@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 import open_agent_compiler
 from open_agent_compiler.cli.commands import compile as compile_cmd
+from open_agent_compiler.cli.commands import evolve as evolve_cmd
 from open_agent_compiler.cli.commands import improve as improve_cmd
 from open_agent_compiler.cli.commands import info as info_cmd
 from open_agent_compiler.cli.commands import init as init_cmd
@@ -28,6 +29,7 @@ from open_agent_compiler.cli.commands import versions as versions_cmd
 
 _COMMANDS: dict[str, Any] = {
     "compile": compile_cmd,
+    "evolve": evolve_cmd,
     "improve": improve_cmd,
     "info": info_cmd,
     "init": init_cmd,

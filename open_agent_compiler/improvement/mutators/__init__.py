@@ -34,6 +34,14 @@ from open_agent_compiler.improvement.mutators.fields import (
     NumericFieldMutator,
 )
 from open_agent_compiler.improvement.mutators.llm import LLMMutatorClient, LLMPromptRewriter
+from open_agent_compiler.improvement.mutators.structural import (
+    LLMWorkflowEditor,
+    ToolAttachMutator,
+    ToolDetachMutator,
+    WorkflowStepAppendMutator,
+    WorkflowStepRemoveMutator,
+)
+from open_agent_compiler.improvement.mutators.teacher_gap import TeacherGapRewriter
 from open_agent_compiler.improvement.mutators.opencode_teacher import (
     OpencodeMutatorClient,
     install_teacher_agent,
@@ -69,6 +77,12 @@ __all__ = [
     "ToolSequenceMutator",
     "LLMMutatorClient",
     "LLMPromptRewriter",
+    "LLMWorkflowEditor",
+    "TeacherGapRewriter",
+    "ToolAttachMutator",
+    "ToolDetachMutator",
+    "WorkflowStepAppendMutator",
+    "WorkflowStepRemoveMutator",
     "OpencodeMutatorClient",
     "normalize_model_ref",
     "teacher_agent_name",

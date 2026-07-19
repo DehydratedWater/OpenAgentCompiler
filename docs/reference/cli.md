@@ -116,6 +116,26 @@ oac promote improved/primary/3fa2b1c9.json --class local --force
 oac promote improved/summarizer/pi+fast/LATEST.json --target pi+fast
 ```
 
+## `oac evolve`
+
+Evolve a repo-tailored coding harness: isolated clone (no remotes) →
+repo recon → synthesized agents/skills compiled into the workspace →
+replay + teacher-gap evolution scaffolding → zip. See
+[the evolve guide](../guides/evolve-coding-harness.md).
+
+| Argument | Meaning |
+|---|---|
+| `repo` | path to the repository to adapt to |
+| `--out DIR` | workspace for the isolated copy (default `./evolved_<name>`) |
+| `-i, --interactive` | prompt for every option |
+| `--dialect NAME` | harness dialect (default `opencode`) |
+| `--model M` | model for the synthesized agents |
+| `--reference-model M` | stronger teacher model for gap evolution |
+| `--commits N` | replay commits for evolution scoring (default 5) |
+| `--skills LIST` | developer skill bundles to deploy (default `opencode,claude`) |
+| `--zip PATH` / `--no-zip` | package the workspace (default `<out>.zip`) |
+| `--native-tools` | compile the harness with native tool calling |
+
 ## `oac versions`
 
 Browse, load, unload, and roll back autolooped versions. Reads the run
