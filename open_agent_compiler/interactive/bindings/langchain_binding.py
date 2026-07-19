@@ -24,6 +24,7 @@ from open_agent_compiler.interactive.events import (
     as_sink,
     invoke_runner,
 )
+from open_agent_compiler.interactive.schema import model_from_input_schema
 from open_agent_compiler.interactive.spec import InteractiveAgentSpec, ToolSpec
 
 # (tool_name, args_dict) -> result text. The consumer wires execution
@@ -82,36 +83,60 @@ def build_chat_model(
     return ChatOpenAI(**kwargs)
 
 
+def _run_tool(
+    tool: ToolSpec,
+    runner: ToolRunner | None,
+    sink: EventSink | None,
+    args: dict[str, Any],
+) -> str:
+    """Route one call to the runner, bracketed with events when a sink is on."""
+    if runner is None:
+        raise RuntimeError(
+            f"tool '{tool.name}' was called but no tool_runner is configured"
+        )
+    if sink is None:
+        return runner(tool.name, args)
+    # Eventing on: bracket the call with tool.start/end/error and hand the
+    # runner an emitter so it (or a subagent it dispatches) can emit
+    # progress on the same stream.
+    emitter = EventEmitter(sink, source=tool.name)
+    emitter.tool_start(args=args)
+    try:
+        result = invoke_runner(runner, tool.name, args, emitter)
+    except Exception as exc:  # surface the failure as an event, then re-raise
+        emitter.tool_error(error=str(exc))
+        raise
+    emitter.tool_end(result=str(result))
+    return result
+
+
 def _make_tool(
     tool: ToolSpec,
     runner: ToolRunner | None,
     sink: EventSink | None = None,
 ):
     langchain_core_tools = _require("langchain_core.tools")
+
+    args_model = model_from_input_schema(tool.name, tool.input_schema)
+    if args_model is not None:
+        # Rich schema (derived from the ScriptTool's Pydantic Input model):
+        # a StructuredTool so the model calls with real typed arguments.
+        def _call_structured(**kwargs: Any) -> str:
+            return _run_tool(tool, runner, sink, kwargs)
+
+        return langchain_core_tools.StructuredTool.from_function(
+            func=_call_structured,
+            name=tool.name,
+            description=tool.description,
+            args_schema=args_model,
+        )
+
     Tool = langchain_core_tools.Tool
 
     def _call(query: str) -> str:
-        if runner is None:
-            raise RuntimeError(
-                f"tool '{tool.name}' was called but no tool_runner is configured"
-            )
-        # Best-effort arg shape: pass the raw query under 'input'. Bindings with
-        # a richer input_schema can override by supplying their own runner.
-        args = {"input": query}
-        if sink is None:
-            return runner(tool.name, args)
-        # Eventing on: bracket the call with tool.start/end/error and hand the
-        # runner an emitter so it (or a subagent it dispatches) can emit
-        # progress on the same stream.
-        emitter = EventEmitter(sink, source=tool.name)
-        emitter.tool_start(args=args)
-        try:
-            result = invoke_runner(runner, tool.name, args, emitter)
-        except Exception as exc:  # surface the failure as an event, then re-raise
-            emitter.tool_error(error=str(exc))
-            raise
-        emitter.tool_end(result=str(result))
-        return result
+        # No usable schema: classic single-string contract, raw query
+        # under 'input'.
+        return _run_tool(tool, runner, sink, {"input": query})
 
     return Tool(name=tool.name, description=tool.description, func=_call)
 

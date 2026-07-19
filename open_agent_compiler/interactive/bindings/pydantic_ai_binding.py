@@ -30,6 +30,7 @@ from open_agent_compiler.interactive.events import (
     as_sink,
     invoke_runner,
 )
+from open_agent_compiler.interactive.schema import model_from_input_schema
 from open_agent_compiler.interactive.spec import InteractiveAgentSpec, ToolSpec
 
 # Same contract as the LangChain binding: (tool_name, args_dict) -> result
@@ -73,6 +74,29 @@ def build_model(spec: InteractiveAgentSpec, *, api_key: str | None = None):
     return models_openai.OpenAIChatModel(spec.model_id, provider=provider)
 
 
+def _run_tool(
+    tool: ToolSpec,
+    runner: ToolRunner | None,
+    sink: EventSink | None,
+    args: dict[str, Any],
+) -> str:
+    if runner is None:
+        raise RuntimeError(
+            f"tool '{tool.name}' was called but no tool_runner is configured"
+        )
+    if sink is None:
+        return runner(tool.name, args)
+    emitter = EventEmitter(sink, source=tool.name)
+    emitter.tool_start(args=args)
+    try:
+        result = invoke_runner(runner, tool.name, args, emitter)
+    except Exception as exc:  # surface as an event, then re-raise
+        emitter.tool_error(error=str(exc))
+        raise
+    emitter.tool_end(result=str(result))
+    return result
+
+
 def _make_tool(
     tool: ToolSpec,
     runner: ToolRunner | None,
@@ -81,25 +105,40 @@ def _make_tool(
     pydantic_ai = _require("pydantic_ai")
     Tool = pydantic_ai.Tool
 
-    def _call(input: str) -> str:
-        """Best-effort arg shape, mirroring the LangChain binding: the raw
-        query under 'input'. Richer schemas → supply your own tools."""
-        if runner is None:
-            raise RuntimeError(
-                f"tool '{tool.name}' was called but no tool_runner is configured"
+    args_model = model_from_input_schema(tool.name, tool.input_schema)
+    if args_model is not None:
+        # Rich schema: give the wrapper a real signature so PydanticAI
+        # derives the same typed arguments the ScriptTool validates.
+        import inspect
+
+        def _call_typed(**kwargs: Any) -> str:
+            return _run_tool(tool, runner, sink, kwargs)
+
+        params = [
+            inspect.Parameter(
+                field_name, inspect.Parameter.KEYWORD_ONLY,
+                default=(inspect.Parameter.empty if info.is_required()
+                         else info.default),
+                annotation=info.annotation,
             )
-        args = {"input": input}
-        if sink is None:
-            return runner(tool.name, args)
-        emitter = EventEmitter(sink, source=tool.name)
-        emitter.tool_start(args=args)
-        try:
-            result = invoke_runner(runner, tool.name, args, emitter)
-        except Exception as exc:  # surface as an event, then re-raise
-            emitter.tool_error(error=str(exc))
-            raise
-        emitter.tool_end(result=str(result))
-        return result
+            for field_name, info in args_model.model_fields.items()
+        ]
+        _call_typed.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
+            params, return_annotation=str,
+        )
+        # PydanticAI resolves types via get_type_hints(), which reads
+        # __annotations__ — keep them in lockstep with the signature.
+        _call_typed.__annotations__ = {
+            field_name: info.annotation
+            for field_name, info in args_model.model_fields.items()
+        } | {"return": str}
+        _call_typed.__name__ = tool.name.replace("-", "_")
+        return Tool(_call_typed, name=tool.name, description=tool.description)
+
+    def _call(input: str) -> str:
+        """No usable schema: classic single-string contract, raw query
+        under 'input'."""
+        return _run_tool(tool, runner, sink, {"input": input})
 
     return Tool(_call, name=tool.name, description=tool.description)
 

@@ -90,9 +90,17 @@ def _tool_script_paths(tool: ToolDefinition) -> list[str]:
 
 
 def _tool_to_spec(tool: ToolDefinition) -> ToolSpec:
+    # Reuse the compiler's schema derivation (imports the ScriptTool and
+    # reads its Pydantic Input model) so interactive bindings get REAL
+    # native tool schemas, not a single free-text arg. Best-effort: an
+    # unimportable script yields an empty schema and the bindings fall
+    # back to the classic `input: str` contract.
+    from open_agent_compiler.compiler.dialects.opencode.tool_schema import derive_json_schema
+
     return ToolSpec(
         name=tool.header.name,
         description=tool.header.description,
+        input_schema=derive_json_schema(tool) or {},
         script_paths=_tool_script_paths(tool),
     )
 
