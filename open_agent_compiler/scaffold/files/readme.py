@@ -108,6 +108,35 @@ def render(config: ScaffoldConfig) -> str:
         " model class), promote with `--class <name>`; the resolver"
         " picks the matching slot at next compile, falling back to"
         " the default slot when no class-specific promotion exists.",
+        "",
+        "## Autoloop goals (interview-driven)",
+        "",
+        "`improve/goals.yaml` declares WHAT each agent should accomplish and"
+        " HOW to measure it (targets, probes, judge criteria, floor). Ask"
+        " your coding agent to *\"interview me for the autoloop goals\"* —"
+        " the bundled `improvement-loop` skill walks the questions — then:",
+        "",
+        "```bash",
+        "uv run python improve/run_improve.py --dry-run   # show the plan",
+        "uv run python improve/run_improve.py             # per-target loops",
+        "uv run oac versions list primary                 # browse / rollback",
+        "```",
+        "",
+        "Winners promote into per-target slots"
+        " (`.oac/promoted/<id>__<target>.json`); the run history lives in"
+        " `.oac/improvement.db`.",
+        "",
+        "## Execution lanes",
+        "",
+        "- **Realtime** — `telegram_bot/bot.py` (when enabled): an in-process"
+        " interactive agent answering each message, per-chat history in"
+        " SQLite, `spawn_worker` tool dispatching compiled workers.",
+        "- **Request/response** — the FastAPI service (`app/`): REST"
+        " endpoints spawning compiled agents with modes/variants/retries.",
+        "- **Batch** — `runners/batch.py`: a jobs file in, workers run via"
+        " the dialect-agnostic `app/harness.py` adapter, JSONL results out.",
+        "- **Scheduled** — the cron driver (when enabled) POSTing events to"
+        " the FastAPI service.",
     ]
     return "\n".join(sections) + "\n"
 

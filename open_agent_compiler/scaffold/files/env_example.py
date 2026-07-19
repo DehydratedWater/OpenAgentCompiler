@@ -70,11 +70,15 @@ def render(config: ScaffoldConfig) -> str:
             "LANGFUSE_PUBLIC_KEY=your-langfuse-public-key\n"
             "LANGFUSE_SECRET_KEY=your-langfuse-secret-key\n"
         )
-    if config.with_telegram_bot:
+    if config.with_telegram_bot or config.template == "full":
         blocks.append(
-            "# Telegram bot\n"
-            "BOT_TOKEN=your-telegram-bot-token\n"
+            "# Telegram realtime chat (telegram_bot/bot.py)\n"
+            "TELEGRAM_BOT_TOKEN=your-telegram-bot-token\n"
             "FASTAPI_URL=http://localhost:8002\n"
+            "# The interactive tier's LIVE provider (OpenAI-compatible)\n"
+            "LIVE_MODEL_ID=gpt-4o-mini\n"
+            "LIVE_BASE_URL=\n"
+            "LIVE_API_KEY=\n"
         )
     if config.template in ("web", "full"):
         blocks.append(

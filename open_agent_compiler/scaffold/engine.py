@@ -18,7 +18,11 @@ from open_agent_compiler.scaffold.files import app as app_files
 from open_agent_compiler.scaffold.files import compose as compose_files
 from open_agent_compiler.scaffold.files import cron as cron_files
 from open_agent_compiler.scaffold.files import db as db_files
+from open_agent_compiler.scaffold.files import batch as batch_files
 from open_agent_compiler.scaffold.files import dispatch as dispatch_files
+from open_agent_compiler.scaffold.files import harness_runner as harness_files
+from open_agent_compiler.scaffold.files import improve_starter as improve_files
+from open_agent_compiler.scaffold.files import telegram_bot as telegram_files
 from open_agent_compiler.scaffold.files import dockerfile as dockerfile_files
 from open_agent_compiler.scaffold.files import env_example, gitignore, pyproject, readme
 from open_agent_compiler.scaffold.files import mcp_server as mcp_files
@@ -42,6 +46,13 @@ def _file_map(config: ScaffoldConfig) -> dict[str, FileGenerator]:
         "agents/registry.py": agents_files.render_registry,
         "build_agents.py": agents_files.render_build_agents_script,
     }
+    # The autoloop starter (goals + per-target runner) ships with every
+    # template — collecting goals/metrics and running loops is the
+    # framework's core promise, not a web feature.
+    files.update({
+        "improve/goals.yaml": improve_files.render_goals,
+        "improve/run_improve.py": improve_files.render_run_improve,
+    })
     if config.has_web_app:
         files.update({
             "docker/Dockerfile": dockerfile_files.render,
@@ -53,7 +64,21 @@ def _file_map(config: ScaffoldConfig) -> dict[str, FileGenerator]:
             "app/agent_runner.py": app_files.render_agent_runner,
             # Phase 23: mode-aware + retry-aware dispatcher.
             "app/dispatch.py": dispatch_files.render_dispatch_module,
+            # Dialect-agnostic worker invoker (telegram bot / batch runners).
+            "app/harness.py": harness_files.render_harness_module,
             "run.py": app_files.render_run_py,
+            # Non-realtime lane: jobs file in, workers run, JSONL out.
+            "runners/__init__.py": lambda c: "",
+            "runners/jobs.json": batch_files.render_jobs_sample,
+            "runners/batch.py": batch_files.render_batch_runner,
+        })
+    if (config.with_telegram_bot or config.template == "full") and config.has_web_app:
+        # The compose file has always declared a telegram-bot service
+        # running `python -m telegram_bot.bot`; these files ARE that
+        # service (realtime interactive agent + per-chat SQLite history).
+        files.update({
+            "telegram_bot/__init__.py": telegram_files.render_package_init,
+            "telegram_bot/bot.py": telegram_files.render_bot,
         })
     if config.with_cron:
         files.update({

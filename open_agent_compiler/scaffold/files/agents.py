@@ -36,7 +36,11 @@ def render_registry(config: ScaffoldConfig) -> str:
         "PROJECT_ROOT = Path(__file__).resolve().parent.parent\n"
         "\n"
         "\n"
-        "def _build() -> AgentRegistry:\n"
+        f'STARTER_PROMPT = "You are a helpful agent in the {config.project_name}'
+        ' project."\n'
+        "\n"
+        "\n"
+        "def _build(system_prompt: str | None = None) -> AgentRegistry:\n"
         "    reg = AgentRegistry()\n"
         "\n"
         "    starter = AgentDefinition(\n"
@@ -46,8 +50,7 @@ def render_registry(config: ScaffoldConfig) -> str:
         '            "Greet the user warmly and explain what this agent does."\n'
         "        ),\n"
         '        usage_explanation_short="warm greeting + capability summary",\n'
-        f'        system_prompt="You are a helpful agent in the {config.project_name}'
-        ' project.",\n'
+        "        system_prompt=system_prompt or STARTER_PROMPT,\n"
         "    )\n"
         "    # register_with_improvements auto-merges any promoted snapshot\n"
         "    # under .oac/promoted/ (Phase 10). On a fresh project this is\n"
@@ -73,10 +76,11 @@ def render_registry(config: ScaffoldConfig) -> str:
         "\n"
         "\n"
         "# `oac compile / test / improve` resolve this attribute via\n"
-        "# 'agents:registry'. Either expose the registry directly or wrap _build()\n"
-        "# in a no-arg factory.\n"
-        "def registry() -> AgentRegistry:\n"
-        "    return _build()\n"
+        "# 'agents:registry'. No-arg for the CLI; `system_prompt` lets the\n"
+        "# autoloop (improve/run_improve.py) build candidate registries with a\n"
+        "# mutated prompt — extend the override as your registry grows.\n"
+        "def registry(system_prompt: str | None = None) -> AgentRegistry:\n"
+        "    return _build(system_prompt)\n"
     )
 
 
