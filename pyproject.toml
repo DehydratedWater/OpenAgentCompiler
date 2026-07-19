@@ -1,6 +1,6 @@
 [project]
 name = "open-agent-compiler"
-version = "1.16.4"
+version = "1.16.5"
 description = "Python-first agent framework: define composable agent trees once, compile them to multiple agent runtimes (opencode, Claude Code, Pi, Codex), auto-optimize them per harness and model with test-driven autoloops, and evolve repo-tailored coding harnesses."
 readme = "README.md"
 license = { file = "LICENSE" }

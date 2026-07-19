@@ -93,9 +93,20 @@ def test_codex_runner_wraps_prompt_in_delegation(tmp_path: Path) -> None:
     result = runner.run(agent_name="critic", prompt="judge this")
     assert result.succeeded
     text = result.final_text()
-    assert text.startswith("exec ")
+    # Build trees aren't git repos; codex refuses to run in one without
+    # --skip-git-repo-check, so the runner must pass it by default.
+    assert text.startswith("exec --skip-git-repo-check ")
     assert "`critic`" in text
     assert "judge this" in text
+
+
+def test_codex_runner_git_repo_check_opt_out(tmp_path: Path) -> None:
+    stub = _write_stub_bin(tmp_path / "codex-stub")
+    runner = CodexRunner(
+        build_dir=tmp_path, codex_bin=str(stub), skip_git_repo_check=False,
+    )
+    result = runner.run(agent_name="critic", prompt="judge this")
+    assert "--skip-git-repo-check" not in result.final_text()
 
 
 # ---- ClaudeCodeRunner --------------------------------------------------

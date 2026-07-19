@@ -255,6 +255,11 @@ class CodexRunner:
     are addressed through delegation phrasing. The runner prepends a
     one-line instruction naming the agent, relying on the build tree's
     `AGENTS.md` + `.codex/agents/<name>.toml` for discovery.
+
+    Build trees are compile output, not git repositories, and codex
+    refuses to run outside a trusted/git directory — so the runner
+    passes `--skip-git-repo-check` by default (the codex analog of
+    PiRunner's `--approve` project trust).
     """
 
     build_dir: Path
@@ -263,6 +268,7 @@ class CodexRunner:
     harness_name: str = "codex"
     retry_on_empty_output: bool = True
     retry_backoff_s: float = 2.0
+    skip_git_repo_check: bool = True
 
     def run(
         self,
@@ -276,7 +282,10 @@ class CodexRunner:
             f"Spawn the `{agent_name}` custom agent as a subagent for the"
             " following task and return only its result.\n\n" + prompt
         )
-        cmd = [self.codex_bin, "exec", delegated]
+        cmd = [self.codex_bin, "exec"]
+        if self.skip_git_repo_check:
+            cmd.append("--skip-git-repo-check")
+        cmd.append(delegated)
         return _run_subprocess(
             harness_name=self.harness_name, cmd=cmd, cwd=self.build_dir,
             agent_name=agent_name, prompt=delegated,

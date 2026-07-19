@@ -88,6 +88,11 @@ introspection (opencode's event-stream parsing, dispatch chains,
 blocked-tool details) stays on the concrete result types. Register your
 own harness with `register_runner("myharness", factory)`.
 
+Runners handle each harness's trust model for you: build trees are
+compile output, not git repositories, so `CodexRunner` passes
+`--skip-git-repo-check` by default (set `skip_git_repo_check=False` to
+opt out) the same way `PiRunner` passes `--approve`.
+
 ### 2. The interactive tier — `build_interactive_evaluator`
 
 The realtime runner is one more target. Candidates are scored by
