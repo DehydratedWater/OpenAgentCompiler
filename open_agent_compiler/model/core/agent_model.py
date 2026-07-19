@@ -19,6 +19,17 @@ TodoMode = Literal['strict', 'lazy', 'none']
 class ModelParameters(BaseModel):
     model_name: str
     temperature: float | None = None
+    reasoning_effort: str | None = Field(
+        default=None,
+        description=(
+            "Thinking/reasoning level for runtimes that support it —"
+            " emitted as pi's `thinking:` frontmatter and codex's"
+            " `model_reasoning_effort`. Conventional values: off /"
+            " minimal / low / medium / high / xhigh (pi) — codex accepts"
+            " low / medium / high. Populated from a ModelPreset's"
+            " reasoning config when compiling via variants."
+        ),
+    )
 
 
 class AgentHeader(BaseModel):

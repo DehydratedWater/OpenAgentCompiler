@@ -69,9 +69,10 @@ def compile_pi_agent_markdown(
         skill_names = [skill.name for skill in defn.skills]
         frontmatter["skills"] = ", ".join(skill_names)
 
-    # Thinking level: derive from model_parameters or default
-    # For now, we don't have a thinking level in the OAC model, so we omit it
-    # Users can add it via prompt_sections or custom fields if needed
+    # Thinking level: from model_parameters.reasoning_effort (set directly
+    # or projected from a reasoning-enabled ModelPreset).
+    if agent.model_parameters.reasoning_effort:
+        frontmatter["thinking"] = agent.model_parameters.reasoning_effort
 
     # Max turns: not in OAC model, omit by default
     # Users can set this in pi agent config

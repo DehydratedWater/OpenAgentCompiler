@@ -87,8 +87,18 @@ class ModelPreset(BaseModel):
         return f"{self.provider}/{self.model_id}"
 
     def to_model_parameters(self) -> ModelParameters:
-        """Project to the v0.1 ModelParameters shape for legacy compiler paths."""
+        """Project to the v0.1 ModelParameters shape for legacy compiler paths.
+
+        `reasoning_effort` flows from provider_options["reasoning_effort"]
+        when set, else defaults to "high" for reasoning-enabled presets —
+        so pi emits `thinking:` and codex `model_reasoning_effort` without
+        per-agent hand-editing.
+        """
+        effort = self.provider_options.get("reasoning_effort") or (
+            "high" if self.reasoning else None
+        )
         return ModelParameters(
             model_name=self.qualified_model_name,
             temperature=self.sampling.temperature,
+            reasoning_effort=effort,
         )

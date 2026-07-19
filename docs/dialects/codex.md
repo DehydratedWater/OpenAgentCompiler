@@ -163,8 +163,9 @@ address a specific custom agent, ask for it by name ("spawn the
   `sandbox_mode` plus the advisory SECURITY POLICY block — finer-grained
   denial (e.g. "read but never edit inside a writable sandbox") is prompt
   guidance only.
-- **`model_reasoning_effort` is not emitted**: the OAC model has no
-  reasoning-effort field yet; add it manually to compiled files if needed.
+- **`model_reasoning_effort`** is emitted from
+  `model_parameters.reasoning_effort` (or a reasoning-enabled
+  `ModelPreset`); codex accepts low/medium/high.
 - **Model names pass through verbatim**: `model_parameters.model_name` is
   not translated — use Codex-valid model identifiers in the profile you
   compile for codex (e.g. via a `SplitProfile` preset).

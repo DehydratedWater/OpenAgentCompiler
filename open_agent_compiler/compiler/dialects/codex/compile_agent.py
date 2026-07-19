@@ -195,6 +195,11 @@ def compile_codex_agent_toml(
     lines.append(f"description = {_toml_str(description)}")
 
     lines.append(f"model = {_toml_str(agent.model_parameters.model_name)}")
+    if agent.model_parameters.reasoning_effort:
+        lines.append(
+            "model_reasoning_effort = "
+            + _toml_str(agent.model_parameters.reasoning_effort)
+        )
     lines.append(f"sandbox_mode = {_toml_str(derive_sandbox_mode(agent))}")
 
     instructions = _compose_instructions(agent)

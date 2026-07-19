@@ -83,7 +83,7 @@ build/
 | `tools` | Mapped from tools + permissions | Comma-separated tool allowlist |
 | `skills` | `agent_definition.skills[].name` | Comma-separated skill names |
 | `prompt_mode` | Always `replace` | Pi agents are standalone (not appended to parent) |
-| `thinking` | Not in OAC model | Can be added manually to compiled files |
+| `thinking` | `model_parameters.reasoning_effort` (or a reasoning-enabled `ModelPreset`) | Thinking level (off/minimal/low/medium/high/xhigh) |
 | `max_turns` | Not in OAC model | Can be added manually to compiled files |
 | `memory` | Not in OAC model | Can be added manually (`project`, `local`, `user`) |
 | `disallowed_tools` | From permission negation | Tools to explicitly deny |
@@ -269,7 +269,6 @@ See `examples/80_pi_agents/build_both.py` for a complete example.
 ## Future Enhancements
 
 Potential additions:
-- Support for pi's `thinking` level in the agent model
 - Support for `max_turns` in the agent model
 - Support for `memory` scope in the agent model
 - MCP server → extension tool mapping
