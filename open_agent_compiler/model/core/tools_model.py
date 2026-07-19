@@ -9,6 +9,15 @@ from open_agent_compiler.model.core.test_model import ToolTest
 
 SupportedScriptTypes = Literal['python', 'javascript', 'typescript']
 
+_SUFFIX_TO_SCRIPT_TYPE: dict[str, str] = {
+    '.py': 'python',
+    '.js': 'javascript',
+    '.mjs': 'javascript',
+    '.ts': 'typescript',
+    '.tsx': 'typescript',
+}
+
+
 class ScriptDefinition(BaseModel):
     target_file_path: Path
     source_file_path: Path | None
@@ -20,18 +29,38 @@ class ScriptDefinition(BaseModel):
     def check_if_file_has_correct_extention(cls, data):
         if not isinstance(data, dict):
             return data
-        
-        #TODO
-        # Check if the postfix .py, /ts, .tsx ect matches the list of types
-        # Assign the type extention based on sufix
 
+        target = data.get('target_file_path')
+        suffix = Path(str(target)).suffix.lower() if target else ''
+        inferred = _SUFFIX_TO_SCRIPT_TYPE.get(suffix)
+        declared = data.get('source_file_type')
+        if declared is None:
+            if inferred is not None:
+                data['source_file_type'] = inferred
+        elif inferred is not None and declared != inferred:
+            raise ValueError(
+                f"source_file_type={declared!r} does not match the"
+                f" {suffix!r} extension of {target}"
+                f" (expected {inferred!r})"
+            )
         return data
 
     @model_validator(mode='after')
     def verify_file_existance(self) -> 'ScriptDefinition':
-
-        #TODO verify if the agent is actually having the file
-
+        if self.script_contents is None and self.source_file_path is None:
+            raise ValueError(
+                f"script {self.target_file_path} carries no content:"
+                " provide script_contents or source_file_path"
+            )
+        if (
+            self.script_contents is None
+            and self.source_file_path is not None
+            and self.source_file_path.is_absolute()
+            and not self.source_file_path.exists()
+        ):
+            raise ValueError(
+                f"source file {self.source_file_path} does not exist"
+            )
         return self
 
     
