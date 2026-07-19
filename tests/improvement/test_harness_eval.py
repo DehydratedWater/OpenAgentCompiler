@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from open_agent_compiler.improvement.harness_eval import (
+    ClaudeCodeRunner,
     CodexRunner,
     HarnessResult,
     HarnessRunner,
@@ -93,6 +94,51 @@ def test_codex_runner_wraps_prompt_in_delegation(tmp_path: Path) -> None:
     assert "judge this" in text
 
 
+# ---- ClaudeCodeRunner --------------------------------------------------
+
+
+def test_claude_runner_wraps_prompt_in_delegation(tmp_path: Path) -> None:
+    stub = _write_stub_bin(tmp_path / "claude-stub")
+    runner = ClaudeCodeRunner(build_dir=tmp_path, claude_bin=str(stub))
+    result = runner.run(agent_name="critic", prompt="judge this")
+    assert result.succeeded
+    text = result.final_text()
+    assert text.startswith("-p ")
+    assert "`critic` subagent" in text
+    assert "--output-format text" in text
+
+
+# ---- retry-on-empty ----------------------------------------------------
+
+
+def test_runner_retries_once_on_empty_output(tmp_path: Path) -> None:
+    """First clean-but-empty run retries; the counter file proves 2 calls."""
+    marker = tmp_path / "calls"
+    stub = tmp_path / "pi-stub"
+    stub.write_text(
+        "#!/bin/sh\n"
+        f'echo x >> "{marker}"\n'
+        f'if [ "$(wc -l < {marker})" -ge 2 ]; then echo "second try"; fi\n'
+        "exit 0\n"
+    )
+    stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
+    runner = PiRunner(build_dir=tmp_path, pi_bin=str(stub), retry_backoff_s=0.0)
+    result = runner.run(agent_name="a", prompt="p")
+    assert marker.read_text().count("x") == 2
+    assert result.final_text() == "second try"
+
+
+def test_runner_retry_can_be_disabled(tmp_path: Path) -> None:
+    marker = tmp_path / "calls"
+    stub = tmp_path / "pi-stub"
+    stub.write_text(f'#!/bin/sh\necho x >> "{marker}"\nexit 0\n')
+    stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
+    runner = PiRunner(build_dir=tmp_path, pi_bin=str(stub),
+                      retry_on_empty_output=False)
+    runner.run(agent_name="a", prompt="p")
+    assert marker.read_text().count("x") == 1
+
+
 # ---- registry ----------------------------------------------------------
 
 
@@ -101,6 +147,7 @@ def test_builtin_runners_registered() -> None:
     assert "opencode" in names
     assert "pi" in names
     assert "codex" in names
+    assert "claude" in names
 
 
 def test_get_runner_builds_against_build_dir(tmp_path: Path) -> None:

@@ -165,6 +165,7 @@ from open_agent_compiler.improvement.interactive_eval import (
     score_interactive_spec,
 )
 from open_agent_compiler.improvement.harness_eval import (
+    ClaudeCodeRunner,
     CodexRunner,
     HarnessResult,
     HarnessRunner,
@@ -325,6 +326,7 @@ __all__ = [
     "outcome_from_run",
     "score_interactive_spec",
     # harness-agnostic eval runners
+    "ClaudeCodeRunner",
     "CodexRunner",
     "HarnessResult",
     "HarnessRunner",

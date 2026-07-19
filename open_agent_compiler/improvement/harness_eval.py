@@ -116,35 +116,49 @@ def _run_subprocess(
     prompt: str,
     timeout_s: float,
     extra_env: dict[str, str] | None = None,
+    retry_on_empty: bool = True,
+    retry_backoff_s: float = 2.0,
 ) -> SubprocessHarnessResult:
+    """One subprocess invocation, with the same empty-output safety net
+    OpencodeRunner carries: an exit-0 run that produced no text is
+    retried once — the rare transient blank otherwise quietly becomes
+    score=None for an entire eval row."""
     env = os.environ.copy()
     if extra_env:
         env.update(extra_env)
-    t0 = time.monotonic()
-    try:
-        proc = subprocess.run(
-            cmd, cwd=str(cwd), env=env,
-            capture_output=True, text=True, timeout=timeout_s,
-        )
-        return SubprocessHarnessResult(
-            harness_name=harness_name,
-            agent_name=agent_name, prompt=prompt,
-            stdout=proc.stdout, stderr=proc.stderr,
-            return_code=proc.returncode,
-            elapsed_s=time.monotonic() - t0,
-        )
-    except subprocess.TimeoutExpired as exc:
-        return SubprocessHarnessResult(
-            harness_name=harness_name,
-            agent_name=agent_name, prompt=prompt,
-            stdout=exc.stdout.decode("utf-8", errors="replace") if exc.stdout else "",
-            stderr=(
-                (exc.stderr.decode("utf-8", errors="replace") if exc.stderr else "")
-                + f"\n[{harness_name}] timed out after {timeout_s}s"
-            ),
-            return_code=-1,
-            elapsed_s=time.monotonic() - t0,
-        )
+
+    def _one_try() -> SubprocessHarnessResult:
+        t0 = time.monotonic()
+        try:
+            proc = subprocess.run(
+                cmd, cwd=str(cwd), env=env,
+                capture_output=True, text=True, timeout=timeout_s,
+            )
+            return SubprocessHarnessResult(
+                harness_name=harness_name,
+                agent_name=agent_name, prompt=prompt,
+                stdout=proc.stdout, stderr=proc.stderr,
+                return_code=proc.returncode,
+                elapsed_s=time.monotonic() - t0,
+            )
+        except subprocess.TimeoutExpired as exc:
+            return SubprocessHarnessResult(
+                harness_name=harness_name,
+                agent_name=agent_name, prompt=prompt,
+                stdout=exc.stdout.decode("utf-8", errors="replace") if exc.stdout else "",
+                stderr=(
+                    (exc.stderr.decode("utf-8", errors="replace") if exc.stderr else "")
+                    + f"\n[{harness_name}] timed out after {timeout_s}s"
+                ),
+                return_code=-1,
+                elapsed_s=time.monotonic() - t0,
+            )
+
+    result = _one_try()
+    if retry_on_empty and result.return_code == 0 and not result.final_text():
+        time.sleep(retry_backoff_s)
+        result = _one_try()
+    return result
 
 
 @dataclass
@@ -155,6 +169,8 @@ class PiRunner:
     pi_bin: str = "pi"
     default_timeout_s: float = 180.0
     harness_name: str = "pi"
+    retry_on_empty_output: bool = True
+    retry_backoff_s: float = 2.0
 
     def run(
         self,
@@ -170,6 +186,49 @@ class PiRunner:
             agent_name=agent_name, prompt=prompt,
             timeout_s=timeout_s or self.default_timeout_s,
             extra_env=extra_env,
+            retry_on_empty=self.retry_on_empty_output,
+            retry_backoff_s=self.retry_backoff_s,
+        )
+
+
+@dataclass
+class ClaudeCodeRunner:
+    """Sync `claude -p` invoker for a `--dialect claude` build tree.
+
+    Claude Code has no per-agent invocation flag for compiled subagents;
+    like Codex, the runner addresses the agent through delegation
+    phrasing and relies on the build tree's `.claude/agents/*.md` for
+    discovery. Permissions come from the tree's `.claude/settings.json`
+    (emitted by the claude dialect).
+    """
+
+    build_dir: Path
+    claude_bin: str = "claude"
+    default_timeout_s: float = 300.0
+    harness_name: str = "claude"
+    retry_on_empty_output: bool = True
+    retry_backoff_s: float = 2.0
+
+    def run(
+        self,
+        *,
+        agent_name: str,
+        prompt: str,
+        timeout_s: float | None = None,
+        extra_env: dict[str, str] | None = None,
+    ) -> SubprocessHarnessResult:
+        delegated = (
+            f"Use the `{agent_name}` subagent for the following task and"
+            " return only its result.\n\n" + prompt
+        )
+        cmd = [self.claude_bin, "-p", delegated, "--output-format", "text"]
+        return _run_subprocess(
+            harness_name=self.harness_name, cmd=cmd, cwd=self.build_dir,
+            agent_name=agent_name, prompt=delegated,
+            timeout_s=timeout_s or self.default_timeout_s,
+            extra_env=extra_env,
+            retry_on_empty=self.retry_on_empty_output,
+            retry_backoff_s=self.retry_backoff_s,
         )
 
 
@@ -187,6 +246,8 @@ class CodexRunner:
     codex_bin: str = "codex"
     default_timeout_s: float = 300.0
     harness_name: str = "codex"
+    retry_on_empty_output: bool = True
+    retry_backoff_s: float = 2.0
 
     def run(
         self,
@@ -206,6 +267,8 @@ class CodexRunner:
             agent_name=agent_name, prompt=delegated,
             timeout_s=timeout_s or self.default_timeout_s,
             extra_env=extra_env,
+            retry_on_empty=self.retry_on_empty_output,
+            retry_backoff_s=self.retry_backoff_s,
         )
 
 
@@ -221,6 +284,7 @@ _RUNNERS: dict[str, RunnerFactory] = {
     "opencode": lambda build_dir: OpencodeRunner(build_dir=build_dir),
     "pi": lambda build_dir: PiRunner(build_dir=build_dir),
     "codex": lambda build_dir: CodexRunner(build_dir=build_dir),
+    "claude": lambda build_dir: ClaudeCodeRunner(build_dir=build_dir),
 }
 
 
