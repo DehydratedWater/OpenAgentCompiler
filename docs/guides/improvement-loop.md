@@ -57,9 +57,22 @@ Bundled mutators from `open_agent_compiler.improvement.mutators`:
 | `ToolDescriptionAppendMutator(suffix)` / `ToolRuleAddMutator(rule)` | tool | Tool-targeted doc/rule mutations |
 | `ToolFormatMutator("bash"\|"json"\|"both")` | agent | Varies the tool contract format to see which the model handles best |
 | `ImprovementAgentMutator(invoker)` | agent | Delegates to a compiled improvement agent that reads the JSONL and proposes one minimal patch |
+| `WorkflowStepAppendMutator(step)` / `WorkflowStepRemoveMutator(name)` | agent | Structural: add or drop a workflow step — the loop can grow the process, not just the prose |
+| `ToolAttachMutator(tool)` / `ToolDetachMutator(name)` | agent | Structural: grant or revoke a tool on the candidate |
+| `LLMWorkflowEditor(...)` | agent | An LLM proposes one structural workflow edit (optionally fed teacher-gap evidence via `gap_source`) |
+| `TeacherGapRewriter(...)` | agent | Rewrites the prompt from the gaps a stronger teacher model exposed (see [evolve guide](evolve-coding-harness.md)) |
 
-Wire an LLM mutator's client through opencode, never a raw provider API:
-`MutationContext(llm=OpencodeMutatorClient(model=...))`.
+LLM-backed mutators take a client via
+`MutationContext(llm=...)`. Two clients ship:
+
+- `OpencodeMutatorClient(model=...)` — routes the rewrite through an
+  opencode session (no provider keys in your code).
+- `OpenAICompatMutatorClient.from_env()` — talks to any
+  OpenAI-compatible endpoint directly; reads `OAC_MUTATOR_MODEL`,
+  `OAC_MUTATOR_BASE_URL`, `OAC_MUTATOR_API_KEY` (falling back to
+  `LIVE_MODEL_ID` / `LIVE_BASE_URL` / `LIVE_API_KEY`) and returns
+  `None` when unconfigured — so loops can degrade gracefully to
+  deterministic mutators.
 
 ## 3. Run the loop
 

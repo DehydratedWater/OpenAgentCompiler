@@ -187,3 +187,26 @@ multi-turn agent scenarios — executes without a database, API key, or
 LLM call. Point CI at `uv run oac test … --config prod` and it's
 hermetic. The same artifacts then feed the
 [improvement loop](improvement-loop.md) as its scoring evidence.
+
+## 7. Assert against compiled artifacts — any dialect
+
+When a test needs to inspect what the compiler actually wrote (does the
+prompt contain the rule? did the tool get attached?), don't parse
+per-dialect files by hand — `open_agent_compiler.testing` ships a
+universal loader that knows every dialect's layout, including codex's
+TOML:
+
+```python
+from open_agent_compiler.testing import load_agent_artifact, list_agent_artifacts
+
+art = load_agent_artifact(build_dir, "support-triage", dialect="pi")
+assert "escalation" in art.body            # the compiled prompt/instructions
+assert art.config["model"].endswith("glm-4.7")   # parsed frontmatter / TOML
+
+assert "support-triage" in list_agent_artifacts(build_dir, "codex")
+```
+
+`AgentArtifact` normalizes all four dialects to the same shape —
+`config` (frontmatter dict, or the TOML table for codex) plus `body`
+(markdown body, or `developer_instructions` for codex) plus `path` — so
+one parametrized test covers opencode, claude, pi, and codex compiles.

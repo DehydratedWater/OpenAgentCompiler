@@ -118,6 +118,12 @@ What gets written:
 - `<project>/.opencode/skills/<name>/SKILL.md` + a `.skill_version` sidecar
 - `<project>/.claude/skills/<name>/SKILL.md` + sidecar, plus an aggregated
   `CLAUDE.md` index pointing at every skill
+- `<project>/.pi/skills/<name>/SKILL.md` + sidecar (`--skills pi`)
+- `<project>/.codex/skills/<name>/SKILL.md` + sidecar (`--skills codex`)
+
+All four use the same cross-agent `SKILL.md` standard — one directory
+per skill, YAML frontmatter with `name` and `description` — so a bundle
+authored once deploys to every harness.
 
 The sidecar stores the bundle's content hash, making sync idempotent:
 `--check` reports each skill as fresh / stale / missing without writing, and
@@ -127,7 +133,8 @@ already knows how to author agents, tools, and tests.
 
 Programmatic access mirrors the CLI: `open_agent_compiler.skills` exposes
 `list_skills()`, `get_skill(name)`, `emit_opencode(...)`, `emit_claude(...)`,
-and `check_drift(...)` if you want to embed the sync in your own tooling.
+`emit_pi(...)`, `emit_codex(...)`, and `check_drift(...)` if you want to
+embed the sync in your own tooling.
 
 ## Related pages
 

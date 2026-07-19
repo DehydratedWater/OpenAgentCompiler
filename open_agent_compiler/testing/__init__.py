@@ -10,6 +10,12 @@ This package implements:
                      landing in Phase 5.3+.
 """
 
+from open_agent_compiler.testing.artifacts import (
+    AgentArtifact,
+    agents_dir,
+    list_agent_artifacts,
+    load_agent_artifact,
+)
 from open_agent_compiler.testing.artifact import (
     ArtifactWriter,
     EvidenceEntry,
@@ -52,4 +58,8 @@ __all__ = [
     "GreenIndex",
     "IncrementalDecision",
     "decide",
+    "AgentArtifact",
+    "agents_dir",
+    "list_agent_artifacts",
+    "load_agent_artifact",
 ]

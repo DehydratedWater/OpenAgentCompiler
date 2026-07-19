@@ -88,6 +88,7 @@ frontier, snapshot round winners. See the
 | `--max-iters N` | loop rounds (default 3) |
 | `--frontier N` | frontier size kept between rounds (default 3) |
 | `--output DIR` | snapshot directory (default `improved/`) |
+| `--store [URL]` | record rounds/candidates/winners in the run store; bare `--store` uses the default `sqlite:///.oac/improvement.db`, or pass a connection URL — browse afterwards with `oac versions` |
 
 ```bash
 oac improve agents:registry --target primary --config prod \

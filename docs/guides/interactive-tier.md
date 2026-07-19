@@ -100,6 +100,10 @@ sink = QueueSink(asyncio.Queue())           # drain in your SSE/websocket loop
 runnable = bind(spec, tool_runner=my_tool_runner, sink=sink)
 ```
 
+The framework-owned loop (below) emits on the same sink, and adds a
+`message` event per assistant turn — so a UI draining the queue sees
+each reply as it lands, interleaved with the tool events.
+
 ## 6. Or use the framework-owned loop (records tool calls)
 
 `run_interactive` runs one full turn in-process — model call, tool
@@ -118,6 +122,22 @@ print(result.output_text, result.tool_calls)
 
 Tool failures are recorded and fed back to the model as the tool
 result — never raised — so the agent can recover.
+
+From an async server (FastAPI handler, Telegram callback), use
+`run_interactive_async` — the same turn executed off-thread via
+`asyncio.to_thread`, so concurrent chats don't block the event loop:
+
+```python
+from open_agent_compiler.interactive import run_interactive_async
+
+result = await run_interactive_async(spec, user_text,
+                                     tool_runner=my_tool_runner,
+                                     sink=sink, history=history)
+```
+
+Identical signature and `RunResult`; token-level streaming remains the
+job of the bindings (`bind(...).astream(...)`) — this wrapper is for
+turn-level concurrency with full tool-loop recording.
 
 ## 7. Structured output
 

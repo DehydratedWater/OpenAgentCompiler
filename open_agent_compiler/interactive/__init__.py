@@ -44,6 +44,7 @@ from open_agent_compiler.interactive.runner import (
     OpenAICompatClient,
     RunResult,
     run_interactive,
+    run_interactive_async,
 )
 from open_agent_compiler.interactive.spec import (
     InteractiveAgentSpec,
@@ -64,6 +65,7 @@ __all__ = [
     "OpenAICompatClient",
     "RunResult",
     "run_interactive",
+    "run_interactive_async",
     # event sink / emitter (optional; used by the LangChain binding + workflows)
     "Event",
     "EventKind",
