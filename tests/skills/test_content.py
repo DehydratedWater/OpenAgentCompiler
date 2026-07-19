@@ -18,6 +18,8 @@ EXPECTED_NAMES = {
     "variants-and-profiles",
     "docker-and-compose",
     "improvement-loop",
+    "optimization-targets",
+    "autoloop-interview",
     "sandboxed-scripting",
     "dynamic-extractor",
     "interactive-agents",

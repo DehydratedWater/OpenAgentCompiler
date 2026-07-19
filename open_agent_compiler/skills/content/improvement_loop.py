@@ -407,6 +407,21 @@ See also: `writing-tests`, `variants-and-profiles`,
 """
 
 
+BODY += """
+
+## Beyond one loop: targets, store, versions
+
+- Tune per **harness × model** (opencode/pi/codex/claude AND the
+  realtime tier) with `run_per_target_loops` + per-target promotion
+  slots — see the **optimization-targets** skill.
+- Collect goals/metrics from the user first — see the
+  **autoloop-interview** skill; scaffolded projects ship
+  `improve/goals.yaml` + `improve/run_improve.py` pre-wired.
+- Loop history records to `.oac/improvement.db` (`open_store()`);
+  browse/load/unload/rollback winners with `oac versions`.
+"""
+
+
 def build() -> SkillBundle:
     return SkillBundle(
         name="improvement-loop",
