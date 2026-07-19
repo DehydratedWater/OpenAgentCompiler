@@ -1,8 +1,9 @@
 # open-agent-compiler
 
 Composable agent-tree compiler for [OpenCode](https://opencode.ai),
-[Claude Code](https://claude.com/claude-code), and
-[Pi](https://pi.dev) (via [@tintinweb/pi-subagents](https://pi.dev/packages/@tintinweb/pi-subagents)).
+[Claude Code](https://claude.com/claude-code),
+[Pi](https://pi.dev) (via [@tintinweb/pi-subagents](https://pi.dev/packages/@tintinweb/pi-subagents)),
+and the [OpenAI Codex CLI](https://developers.openai.com/codex/subagents).
 Define agents once as typed Python, compile them to any supported
 runtime, test them with mocks, and improve them with closed-loop
 optimization.
@@ -84,8 +85,9 @@ cd build && pi run --agent primary "Hi"
   invokes the compiled agents.
 - **Multi-dialect** — OpenCode (default) + Claude Code + Pi (via
   [@tintinweb/pi-subagents](https://pi.dev/packages/@tintinweb/pi-subagents)
-  and [pi-permission-system](https://github.com/MasuRii/pi-permission-system)),
-  with a plug-in `Dialect` protocol for future runtimes.
+  and [pi-permission-system](https://github.com/MasuRii/pi-permission-system))
+  + Codex (`.codex/agents/*.toml` custom agents for the OpenAI Codex
+  CLI), with a plug-in `Dialect` protocol for future runtimes.
 - **Developer skill bundles** — `oac sync-skills` deploys opinionated
   markdown skill files into a project's `.opencode/skills/` and
   `.claude/skills/` so coding agents working in the repo know how to

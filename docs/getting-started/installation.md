@@ -51,9 +51,9 @@ Then authenticate opencode with your model provider (for example
 itself never calls an LLM at compile time, so no credentials are needed until
 you actually *run* an agent.
 
-### Where Claude Code and pi fit
+### Where Claude Code, pi, and Codex fit
 
-opencode is one of three built-in output dialects. The same agent tree also
+opencode is one of four built-in output dialects. The same agent tree also
 compiles to:
 
 - **`claude`** — a `.claude/` tree runnable with the Claude Code CLI.
@@ -62,9 +62,13 @@ compiles to:
   spawning via the `Agent()` tool) and `pi-permission-system` (enforces the
   compiled `tools:`/`disallowed_tools:` frontmatter at tool-call time). See
   [the pi dialect page](../dialects/pi.md#runtime-requirements-two-extensions).
+- **`codex`** — a `.codex/agents/` tree of TOML custom agents plus an
+  `AGENTS.md` index for the OpenAI Codex CLI. No extensions needed —
+  subagent spawning and sandboxing are built into Codex. See
+  [the codex dialect page](../dialects/codex.md).
 
-You only need those CLIs installed if you compile with `--dialect claude` or
-`--dialect pi`. Nothing about the Python-side definitions changes — see
+You only need those CLIs installed if you compile with `--dialect claude`,
+`--dialect pi`, or `--dialect codex`. Nothing about the Python-side definitions changes — see
 [the opencode dialect page](../dialects/opencode.md) and the
 [first agent tutorial](first-agent.md) for the one-line switch.
 
@@ -87,8 +91,9 @@ oac info --dialects
 ```
 
 ```text
-Dialects (3):
+Dialects (4):
   claude
+  codex
   opencode
   pi
 ```

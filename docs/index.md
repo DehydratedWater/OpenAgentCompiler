@@ -33,7 +33,8 @@ uv add open-agent-compiler
 ## Highlights
 
 - **Multi-dialect compiler** — one agent tree compiles to OpenCode,
-  Claude Code, and Pi agent formats, plus an in-process interactive tier.
+  Claude Code, Pi, and Codex agent formats, plus an in-process
+  interactive tier.
 - **Embedded testing** — capability, tool, and agent tests live next to
   the definitions and run against mocks, so CI never needs credentials.
 - **Improvement loop** — mutate prompts and parameters, evaluate against

@@ -10,6 +10,7 @@ from open_agent_compiler.compiler.compile import build
 from open_agent_compiler.compiler.core.compiler import Compiler
 from open_agent_compiler.compiler.dialects import get, list_dialects, register
 from open_agent_compiler.compiler.dialects.claude_code.compiler import ClaudeCodeCompiler
+from open_agent_compiler.compiler.dialects.codex.compiler import CodexCompiler
 from open_agent_compiler.compiler.dialects.opencode.compiler import OpenCodeCompiler
 from open_agent_compiler.compiler.dialects.pi_agent.compiler import PiAgentCompiler
 from open_agent_compiler.compiler.script import CompileScript
@@ -32,12 +33,14 @@ def test_bundled_dialects_registered() -> None:
     assert "opencode" in names
     assert "claude" in names
     assert "pi" in names
+    assert "codex" in names
 
 
 def test_get_returns_class() -> None:
     assert get("opencode") is OpenCodeCompiler
     assert get("claude") is ClaudeCodeCompiler
     assert get("pi") is PiAgentCompiler
+    assert get("codex") is CodexCompiler
 
 
 def test_get_unknown_raises() -> None:
@@ -63,6 +66,7 @@ def test_compiler_base_carries_dialect_name_on_subclasses() -> None:
     assert OpenCodeCompiler.dialect_name == "opencode"
     assert ClaudeCodeCompiler.dialect_name == "claude"
     assert PiAgentCompiler.dialect_name == "pi"
+    assert CodexCompiler.dialect_name == "codex"
 
 
 def test_opencode_supports_expected_features() -> None:
@@ -107,6 +111,12 @@ def _factory():
 def test_build_with_opencode_dialect_writes_opencode_tree(tmp_target: Path) -> None:
     build(tmp_target, _factory(), "c", dialect="opencode")
     assert (tmp_target / ".opencode" / "agents" / "primary.md").exists()
+
+
+def test_build_with_codex_dialect_writes_codex_tree(tmp_target: Path) -> None:
+    build(tmp_target, _factory(), "c", dialect="codex")
+    assert (tmp_target / ".codex" / "agents" / "primary.toml").exists()
+    assert not (tmp_target / ".opencode").exists()
 
 
 def test_build_with_claude_dialect_writes_claude_tree(tmp_target: Path) -> None:

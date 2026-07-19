@@ -3,7 +3,8 @@
 A Dialect is responsible for turning the resolved compilation tree
 into platform-specific artifacts. OpenCodeDialect writes the
 `.opencode/agents/` shape; ClaudeCodeDialect writes the `.claude/`
-variant; PiAgentDialect stubs the surface for future Pi-agent runtime.
+variant; PiAgentDialect writes `.pi/agents/` markdown; CodexCompiler
+writes `.codex/agents/` TOML for the OpenAI Codex CLI.
 
 CompileScript picks one via its `dialect` field (default "opencode").
 External packages can register their own dialects via `register()`.
@@ -54,3 +55,7 @@ def _autoregister() -> None:
     from open_agent_compiler.compiler.dialects.pi_agent.compiler import PiAgentCompiler
 
     register("pi", PiAgentCompiler)
+
+    from open_agent_compiler.compiler.dialects.codex.compiler import CodexCompiler
+
+    register("codex", CodexCompiler)

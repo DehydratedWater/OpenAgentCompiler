@@ -35,6 +35,9 @@ needs:
               fire-and-forget "workers"          request/response chat layer
 ```
 
+(The worker tier also compiles to `.codex/agents/*.toml` for the OpenAI
+Codex CLI — omitted from the diagram for width.)
+
 Around that core sit:
 
 - **`oac` CLI** — scaffold projects, compile, introspect, test, improve,
@@ -53,7 +56,7 @@ Around that core sit:
 
 | | **Worker** (compiled dialect) | **Interactive** (binding) |
 |---|---|---|
-| Emits | `.opencode/` / `.claude/` / `.pi/` markdown trees | an in-process `InteractiveAgentSpec` → LangChain runnable |
+| Emits | `.opencode/` / `.claude/` / `.pi/` / `.codex/` agent trees | an in-process `InteractiveAgentSpec` → LangChain runnable |
 | Tools bind to | bash / JSON emission inside a coding-agent runtime | native tool-calling |
 | Contract | fire-and-forget, side-effects, returns a handle | streaming, request/response, returns a value |
 | Latency profile | seconds-to-minutes, autonomous | sub-second first token, conversational |
@@ -189,7 +192,7 @@ CompileScript(
 ```bash
 uv run oac compile agents:registry --config prod --target build            # opencode
 uv run oac compile agents:registry --config prod --target build --dialect pi
-uv run oac info --dialects     # lists: claude, opencode, pi
+uv run oac info --dialects     # lists: claude, codex, opencode, pi
 uv run oac info agents:registry
 ```
 
@@ -244,7 +247,7 @@ CompileScript(
     target=Path("build"),          # output dir
     factory=registry,              # or factory_spec="agents:registry"
     config="prod",                 # CompilationConfig name
-    dialect="opencode",            # opencode | claude | pi | <registered>
+    dialect="opencode",            # opencode | claude | pi | codex | <registered>
     clean=True,                    # or clean_strategy="per_variant"
     variants=[...],                # optional multi-pass (see §9)
     access_profile="prod",         # optional resource bindings (see §6)
@@ -256,14 +259,14 @@ CompileScript(
 
 What each dialect emits:
 
-| | `opencode` (default) | `claude` | `pi` |
-|---|---|---|---|
-| Agent files | `.opencode/agents/*.md` | `.claude/` tree | `.pi/agents/*.md` |
-| Tool scripts | `scripts/` + bundled infra (`subagent_todo.py`, `workspace_io.py`, `opencode_manager.py`) | scripts | `scripts/` (per-tool only) |
-| Permissions | `permission:` block + `tools:` toggles | equivalent | `tools:` allowlist + `disallowed_tools:` frontmatter |
-| Subagent spawn | Task tool; primary-mode via `opencode_manager.py` | Task tool | `Agent()` tool (pi-subagents) — single mechanism |
-| Todos | `todoread`/`todowrite` | equivalent | `TODO.md` conventions |
-| MCP | `permission.mcp.<name>` per server | equivalent | **not mapped** — compile warning, configure `ext:mcp/<tool>` manually |
+| | `opencode` (default) | `claude` | `pi` | `codex` |
+|---|---|---|---|---|
+| Agent files | `.opencode/agents/*.md` | `.claude/` tree | `.pi/agents/*.md` | `.codex/agents/*.toml` + `AGENTS.md` index |
+| Tool scripts | `scripts/` + bundled infra (`subagent_todo.py`, `workspace_io.py`, `opencode_manager.py`) | scripts | `scripts/` (per-tool only) | `scripts/` (per-tool only) |
+| Permissions | `permission:` block + `tools:` toggles | equivalent | `tools:` allowlist + `disallowed_tools:` frontmatter | `sandbox_mode` (read-only / workspace-write) |
+| Subagent spawn | Task tool; primary-mode via `opencode_manager.py` | Task tool | `Agent()` tool (pi-subagents) — single mechanism | natural-language delegation (no spawn tool) |
+| Todos | `todoread`/`todowrite` | equivalent | `TODO.md` conventions | `TODO.md` conventions |
+| MCP | `permission.mcp.<name>` per server | equivalent | **not mapped** — compile warning, configure `ext:mcp/<tool>` manually | `[mcp_servers.<name>]` for url servers; stdio warns |
 
 Dialects are pluggable — register your own:
 
@@ -273,6 +276,7 @@ register("mydialect", MyCompiler)   # subclass open_agent_compiler.compiler.core
 ```
 
 See [pi-agent-dialect.md](./dialects/pi.md) for the full pi
+mapping, [the codex dialect page](./dialects/codex.md) for the Codex
 mapping, and `examples/80_pi_agents/build_both.py` for compiling the
 same tree to two runtimes side by side.
 

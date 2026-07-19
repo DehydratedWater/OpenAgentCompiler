@@ -59,6 +59,7 @@ nav:
       - OpenCode: dialects/opencode.md
       - Claude Code: dialects/claude-code.md
       - Pi: dialects/pi.md
+      - Codex: dialects/codex.md
   - Reference:
       - CLI: reference/cli.md
       - Examples Index: reference/examples.md
