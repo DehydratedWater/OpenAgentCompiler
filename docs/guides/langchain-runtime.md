@@ -186,9 +186,29 @@ framework's unified interface. What changes is the delivery:
 | Model/provider | worker profile | live profile (often a local OpenAI-compatible server) |
 | Lifecycle | fire-and-forget, side-effects | streaming request/response |
 
+## Alternative binding: PydanticAI
+
+The same spec binds to PydanticAI
+(`bindings/pydantic_ai_binding.py`, extra:
+`open-agent-compiler[pydantic-ai]`): `bind(spec, tool_runner=...)`
+returns a ready `pydantic_ai.Agent` with the spec's tools routed
+through the identical `ToolRunner`/event contract, and `output_type=`
+uses PydanticAI's native structured output instead of the JSON-
+instruction fallback. Both bindings are ~one-file adapters — that
+swappability is the point of the spec layer.
+
+## Optimizing the runtime agent
+
+The realtime tier is an autoloop target of its own:
+`build_interactive_evaluator` scores loop candidates by running them
+through `run_interactive`, so the interactive rendering gets tuned on
+what it actually sends — see
+[optimization targets](optimization-targets.md).
+
 ## See Also
 
 - [The Interactive Tier](interactive-tier.md) — step-by-step how-to
 - [Execution Tiers](../concepts/execution-tiers.md) — when to use which tier
 - `open_agent_compiler/interactive/bindings/langchain_binding.py` — the binding source
 - `examples/35_fastapi_dispatch/` — interactive front + worker dispatch over HTTP
+- `examples/85_matrix_live_chat/` — a realtime agent dispatching compiled workers across harnesses

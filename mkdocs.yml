@@ -54,6 +54,8 @@ nav:
       - Variants & Split Profiles: guides/variants-and-profiles.md
       - Testing: guides/testing.md
       - The Improvement Loop: guides/improvement-loop.md
+      - Optimization Targets: guides/optimization-targets.md
+      - Native Tool Calling: guides/native-tools.md
       - The Interactive Tier: guides/interactive-tier.md
       - LangChain Runtime Agents: guides/langchain-runtime.md
   - Dialects:

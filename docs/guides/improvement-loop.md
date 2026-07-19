@@ -153,3 +153,10 @@ workspace, ports, snapshots, and promoted dir per target model and run
 them in parallel — see
 [variants and profiles](../guides/variants-and-profiles.md) for
 per-class loops (`run_per_class_loops`, `oac promote --class`).
+
+To go beyond one model dimension — tuning per **harness × model**
+(opencode/pi/codex *and* the interactive tier), recording every run in
+the SQLite store, browsing/rolling back with `oac versions`, and
+judging with an LLM — see
+[optimization targets](optimization-targets.md); the full flow runs
+offline in `examples/85_matrix_live_chat/`.

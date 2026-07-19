@@ -79,6 +79,16 @@ cd build && pi run --agent primary "Hi"
 - **Iterative improvement loop** — `oac improve` mutates prompts/tools/
   resources, evaluates candidates against your `OptimisationCriterion`,
   promotes winners.
+- **Per-target adaptation** — `run_per_target_loops` tunes the same
+  agent per (harness × model) cell — opencode/pi/codex *and* the
+  in-process interactive tier — with per-target promotion slots
+  (`oac promote --target pi+fast`), pluggable `HarnessRunner`s, and
+  LLM-as-judge scoring. History lives in a SQLite run store; browse,
+  load, unload, and roll back versions with `oac versions`.
+- **Native tool calling** — `--native-tools` emits each harness's
+  native tool form for json-contract tools: `.opencode/tool/*.ts`
+  shims (opencode) or a generated MCP tools server (Claude Code /
+  Codex), all bridging deterministically to the same Python scripts.
 - **Project scaffolder** — `oac init` generates a Docker-compose'd
   project with FastAPI + cron + optional Postgres / Redis / Qdrant /
   Ollama / Langfuse. Cron POSTs JSON events to the FastAPI server which
@@ -130,6 +140,7 @@ oac info <factory>                                   # introspect registry
 | `examples/10_multi_provider/` | one agent compiled three ways: z.ai glm-4.5-air + glm-5.1 + local vLLM Qwen3.5-27B |
 | `examples/20_optimization_run/` | weak agent improved via `oac improve` with glm-5.1 as the optimiser |
 | `examples/80_pi_agents/` | orchestrator + subagents compiled for Pi runtime with pi-subagents |
+| `examples/85_matrix_live_chat/` | capstone: one tree → 2 harnesses × 2 models, per-target autoloops (incl. interactive tier), live chat dispatching any variant |
 
 All examples are tested end-to-end against real LLMs (see
 `examples/README.md`).

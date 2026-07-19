@@ -20,6 +20,7 @@ Compile a registered configuration to a target directory.
 | `--target DIR` *(required)* | output directory for compiled artifacts |
 | `--dialect NAME` | output dialect (default `opencode`; list with `oac info --dialects`) |
 | `--clean` | delete the target directory before writing |
+| `--native-tools` | also emit the harness's native tool-calling form for json-contract tools (see [native tool calling](../guides/native-tools.md)) |
 | `--dry-run` | resolve the configuration but write nothing |
 | `-v, --verbose` | per-run summary |
 
@@ -107,10 +108,35 @@ Stage a winning snapshot so the next compile picks it up (copies it into
 | `--project DIR` | project root (default: cwd) |
 | `--force` | overwrite an existing promotion for the same component |
 | `--class LABEL` | promote into a per-model-class slot (`.oac/promoted/<id>__<class>.json`) |
+| `--target KEY` | promote into a per-target slot (`pi+fast`, `interactive`, …); load-time resolution is target → class → default |
 | `--show` | print the snapshot's metrics + definition instead of promoting |
 
 ```bash
 oac promote improved/primary/3fa2b1c9.json --class local --force
+oac promote improved/summarizer/pi+fast/LATEST.json --target pi+fast
+```
+
+## `oac versions`
+
+Browse, load, unload, and roll back autolooped versions. Reads the run
+store at `<project>/.oac/improvement.db` (see the
+[optimization targets guide](../guides/optimization-targets.md)).
+
+| Action | Meaning |
+|---|---|
+| `list <component>` | recorded versions with scores; `*` marks the loaded one |
+| `show <component> <hash>` | one candidate in full (definition + metrics) |
+| `load <component> <hash>` | write that version into the promoted slot |
+| `unload <component>` | remove the promotion — the baseline passes through |
+| `rollback <component>` | re-load the previously promoted version |
+| `apply-source <component> <file.py>` | rewrite the `system_prompt` literal in the Python source |
+
+Shared flags: `--project`, `--store URL`, `--target KEY`, `--class LABEL`,
+`--client ID`, `--force`.
+
+```bash
+oac versions list summarizer --target pi+fast
+oac versions rollback summarizer --target pi+fast
 ```
 
 ## `oac sync-skills`

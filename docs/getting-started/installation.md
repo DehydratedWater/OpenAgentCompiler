@@ -21,19 +21,20 @@ The distribution name is `open-agent-compiler`, the import name is
 `open_agent_compiler`, and the CLI it installs is `oac`. The core package is
 dependency-light (Pydantic, PyYAML, loguru) and requires **Python >= 3.12**.
 
-## 2. Optional: the `langchain` extra
+## 2. Optional: interactive-tier extras
 
-The compiler core never imports LangChain. Only install the extra if you plan to
-use the in-process interactive tier (`build_interactive_spec` + the LangChain
-binding for streaming chat), described in
+The compiler core never imports an LLM framework. Only install an extra
+if you plan to use the in-process interactive tier
+(`build_interactive_spec` + a binding for streaming chat), described in
 [execution tiers](../concepts/execution-tiers.md):
 
 ```bash
-uv add "open-agent-compiler[langchain]"
-# or: pip install "open-agent-compiler[langchain]"
+uv add "open-agent-compiler[langchain]"     # LangChain binding
+uv add "open-agent-compiler[pydantic-ai]"   # PydanticAI binding (alternative)
 ```
 
-This pulls in `langchain-core` and `langchain-openai`.
+These pull in `langchain-core`/`langchain-openai` or
+`pydantic-ai-slim[openai]` respectively.
 
 ## 3. Install the opencode CLI
 

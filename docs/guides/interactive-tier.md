@@ -13,12 +13,20 @@ spec / binding / loop split and each piece's contract), see
 
 ## 1. Install the extra
 
-The core package stays dependency-light; the LangChain binding is an
-extra, imported lazily:
+The core package stays dependency-light; the bindings are extras,
+imported lazily. Pick your realtime framework:
 
 ```bash
-pip install "open-agent-compiler[langchain]"
+pip install "open-agent-compiler[langchain]"     # LangChain binding (this guide)
+pip install "open-agent-compiler[pydantic-ai]"   # PydanticAI binding (alternative)
 ```
+
+The PydanticAI binding
+(`open_agent_compiler.interactive.bindings.pydantic_ai_binding`) mirrors
+the LangChain one over the same spec: `bind(spec, tool_runner=...)`
+returns a ready `pydantic_ai.Agent`; pass `output_type=` for native
+structured output. Everything below applies to either — only step 4's
+import changes.
 
 ## 2. Point a live profile at your interactive provider
 

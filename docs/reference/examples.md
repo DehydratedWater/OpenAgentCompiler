@@ -67,6 +67,7 @@ opencode run --agent primary "Hi, I'm Dana"
 |---|---|---|
 | `80_pi_agents` | The same orchestrator + subagents tree compiled for opencode **and** pi (`build_both.py`) | [Dialects](../dialects/opencode.md) |
 | `81_pi_exploration` | Delegating to pi's built-in Explore agent via the `Agent()` tool | [Dialects](../dialects/opencode.md) |
+| `85_matrix_live_chat` | **Capstone**: one tree → 2 harnesses × 2 models, per-target autoloops (incl. the interactive tier, LLM-judged), per-target promotion, and one live chat dispatching any compiled variant | [Optimization targets](../guides/optimization-targets.md) |
 
 ## Scaffolds
 
