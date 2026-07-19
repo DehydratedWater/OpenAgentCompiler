@@ -34,6 +34,9 @@ from open_agent_compiler.improvement.mutators.fields import (
     NumericFieldMutator,
 )
 from open_agent_compiler.improvement.mutators.llm import LLMMutatorClient, LLMPromptRewriter
+from open_agent_compiler.improvement.mutators.openai_compat import (
+    OpenAICompatMutatorClient,
+)
 from open_agent_compiler.improvement.mutators.structural import (
     LLMWorkflowEditor,
     ToolAttachMutator,
@@ -83,6 +86,7 @@ __all__ = [
     "ToolDetachMutator",
     "WorkflowStepAppendMutator",
     "WorkflowStepRemoveMutator",
+    "OpenAICompatMutatorClient",
     "OpencodeMutatorClient",
     "normalize_model_ref",
     "teacher_agent_name",

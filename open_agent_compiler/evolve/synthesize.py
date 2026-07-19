@@ -471,8 +471,8 @@ from open_agent_compiler.evolve import (  # noqa: E402
 )
 from open_agent_compiler.improvement import (  # noqa: E402
     Criterion, IdentityMutator, IterativeLoop, LLMWorkflowEditor,
-    MutationContext, OptimisationCriterion, TeacherGapRewriter,
-    open_store, promote, write_snapshot,
+    MutationContext, OpenAICompatMutatorClient, OptimisationCriterion,
+    TeacherGapRewriter, open_store, promote, write_snapshot,
 )
 from open_agent_compiler.improvement.version import ComponentVersion  # noqa: E402
 
@@ -520,9 +520,15 @@ def main() -> None:
         registry_factory=lambda d: registry(overrides=d),
         dialect="{dialect}", gap_sink=gaps,
     )
-    # TODO: wire your LLM rewriter client (LLMMutatorClient impl) here —
-    # without it the LLM-driven mutators no-op and only Identity runs.
-    ctx = MutationContext(llm=None)
+    # The rewriter LLM: OAC_MUTATOR_MODEL / OAC_MUTATOR_BASE_URL /
+    # OAC_MUTATOR_API_KEY env vars (falling back to LIVE_*). Without a
+    # configured model the LLM-driven mutators skip and only the
+    # deterministic mutators run.
+    llm = OpenAICompatMutatorClient.from_env()
+    if llm is None:
+        print("note: no OAC_MUTATOR_MODEL/LIVE_MODEL_ID configured —"
+              " running with deterministic mutators only")
+    ctx = MutationContext(llm=llm)
     store = open_store(project_root=WORKSPACE)
     loop = IterativeLoop(
         baseline=baseline,
