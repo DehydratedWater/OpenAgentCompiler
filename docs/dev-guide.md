@@ -553,6 +553,23 @@ improvement loop.
 Local-model tip: Qwen3.x via vLLM needs `enable_thinking=false` (or
 structured output), otherwise `content` comes back empty.
 
+An alternative realtime binding exists for PydanticAI
+(`bindings/pydantic_ai_binding.py`, extra `[pydantic-ai]`) — same
+spec, same ToolRunner/event contracts, native `output_type` support.
+
+### Per-target adaptation (harness × model)
+
+The loop generalizes beyond one model class: `run_per_target_loops`
+runs one loop per `(harness, model_class)` target — opencode / pi /
+codex / claude via `build_compiled_evaluator` + pluggable
+`HarnessRunner`s, plus the in-process `interactive` tier via
+`build_interactive_evaluator`. Winners promote into per-target slots
+(`oac promote --target pi+fast`; resolution target → class → default),
+history records to the SQLite run store (`.oac/improvement.db`,
+`open_store()`), and `oac versions` manages what's loaded. Full story:
+[optimization targets](guides/optimization-targets.md);
+offline-runnable capstone: `examples/85_matrix_live_chat/`.
+
 ---
 
 ## 13. `oac` CLI reference
@@ -564,8 +581,13 @@ structured output), otherwise `content` comes back empty.
 | `oac info <factory>` / `oac info --dialects` | introspect registry / list dialects |
 | `oac test <factory> --config C [--kind K] [--filter S] [--force]` | run embedded tests |
 | `oac improve <factory> --target T --config C [...]` | run the improvement loop |
-| `oac promote <snapshot.json>` | stage a snapshot for the next compile |
+| `oac promote <snapshot.json> [--class L] [--target K]` | stage a snapshot for the next compile (per-class / per-target slots) |
+| `oac versions <action> <component> [...]` | browse / load / unload / rollback autolooped versions; `apply-source` rewrites the Python prompt |
 | `oac sync-skills <dir> [--skills opencode,claude] [--check]` | deploy/refresh developer skills |
+
+`oac compile` also accepts `--native-tools` (emit the harness's native
+tool-calling form — TS shims for opencode, an MCP tools server for
+claude/codex; see [native tool calling](guides/native-tools.md)).
 
 `<factory>` is always `module:callable` returning an `AgentRegistry`;
 the CWD is on the import path, so `agents:registry` works from a

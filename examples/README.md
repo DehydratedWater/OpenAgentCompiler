@@ -20,6 +20,10 @@ repo root with `uv run`.
 | `34_mcp_per_agent/` | Two agents declaring different MCP server subsets in the same compile (Phase 12) | — |
 | `35_fastapi_dispatch/` | FastAPI dispatch — sync / async / fire-and-forget modes, variant routing, composable RetryPolicy with fallback_chain (Phase 23) | — |
 | `36_mcp_server/` | `--with-mcp-server` exposes compiled agents as MCP tools alongside the FastAPI REST API (Phase 24) | — |
+| `40_subagents/`, `50_primary_dispatch/`, `60_workflow_agent/`, `70_oac_test/` | Subagent trees, primary→primary dispatch, workflow agents, embedded testing | glm-4.5-air |
+| `80_pi_agents/`, `81_pi_exploration/` | The pi dialect: same tree compiled for opencode **and** pi; delegating to pi's built-in Explore agent | glm-4.5-air |
+| `85_matrix_live_chat/` | **Capstone**: one tree → 2 harnesses × 2 models, per-target autoloops (incl. the interactive tier, LLM-judged), per-target promotion, live chat dispatching any compiled variant — fully offline-runnable | — (offline) |
+| `90_init_scaffold/`, `91_saas_personalized/` | `oac init` template gallery; the per-client personalization SaaS shape | — |
 
 ## Pre-requisites
 
