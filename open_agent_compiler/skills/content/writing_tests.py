@@ -58,7 +58,7 @@ ToolDefinition(
 
 ## Evaluator catalog
 
-Nine evaluator kinds ship today:
+Eleven evaluator kinds ship today:
 
 | Kind | What it checks |
 |------|----------------|
@@ -68,9 +68,11 @@ Nine evaluator kinds ship today:
 | `json_path` | Dotted-path resolution + equality |
 | `tool_called` | Recorded tool calls include name (+ optional arg subset) |
 | `tool_not_called` | No tool call with this name |
+| `path_order` | Tool calls happened in the given relative order |
 | `permission_present` | Permission key allow / bash pattern allow |
 | `permission_absent` | Permission key NOT allowed (deny / missing) |
 | `llm_judge` | Delegate to a JudgeClient (StubJudge in tests) |
+| `fact_recall` | Recalled facts against an expected fact set |
 
 Skipped evaluators (missing context or no implementation) don't count
 as failures — the overall test passes as long as the non-skipped
@@ -146,7 +148,7 @@ def build() -> SkillBundle:
     return SkillBundle(
         name="writing-tests",
         description=(
-            "CapabilityTest / ToolTest / AgentTest + nine evaluator kinds +"
+            "CapabilityTest / ToolTest / AgentTest + eleven evaluator kinds +"
             " how to embed, run with `oac test`, and read the JSONL artifacts."
         ),
         body_markdown=BODY,

@@ -1,7 +1,12 @@
-# open-agent-compiler — Developer Guide
+# open-agent-compiler — All-in-One Guide
 
-The complete guide to defining, compiling, running, testing, and
-auto-improving agents with `open-agent-compiler`.
+Everything on one page: defining, compiling, running, testing, and
+auto-improving agents with `open-agent-compiler`. If you prefer
+focused, step-by-step pages, start with
+[Your First Agent](getting-started/first-agent.md), the
+[concept pages](concepts/philosophy.md), and the
+[tutorials](tutorials/index.md) instead — this page is the reference
+version of the same material.
 
 ---
 
@@ -64,20 +69,29 @@ unified interface.
 
 ## 2. Installation & setup
 
-Requirements: Python ≥ 3.12, [uv](https://docs.astral.sh/uv/).
+Requirements: Python ≥ 3.12.
 
 ```bash
-git clone <this-repo> open-agent-compiler
-cd open-agent-compiler
-uv sync            # installs the framework + dev deps
-uv run pytest -q   # ~1300 tests, all green, no credentials needed
-uv run oac --help
+pip install open-agent-compiler
+# or
+uv add open-agent-compiler
+oac --help
 ```
 
-The package is not on PyPI yet (it ships as `open-agent-compiler`
-v1.0.0 later). Projects scaffolded by `oac init` automatically get a
-`[tool.uv.sources]` entry pointing back at your framework checkout, so
-their `uv sync` resolves `open-agent-compiler` without a registry.
+For development on the framework itself, clone the repo and use
+[uv](https://docs.astral.sh/uv/):
+
+```bash
+git clone https://github.com/DehydratedWater/OpenAgentCompiler
+cd OpenAgentCompiler
+uv sync            # installs the framework + dev deps
+uv run pytest -q   # ~1300 tests, all green, no credentials needed
+```
+
+Projects scaffolded by `oac init` depend on the published
+`open-agent-compiler` package; when the running `oac` comes from a
+source checkout, the scaffold also adds a `[tool.uv.sources]` entry
+pointing back at that checkout so it tracks your local framework.
 
 Optional extra for the interactive tier:
 
@@ -214,7 +228,10 @@ Key `AgentDefinition` fields (all optional unless noted):
 | `mcp_servers` | `MCPServerDefinition`s with per-server tool allowlists |
 | `model_class` | routing key for `SplitProfile` (see §9) |
 | `agent_tests` / `capability_tests` / `tool_tests` | embedded tests (see §10) |
-| `also_compile_as_primary` | additionally emit a `-primary` twin invocable directly |
+
+(`also_compile_as_primary` — emitting a directly-invocable `-primary`
+twin for a subagent — is a `TemplateSlot` field, set where the agent is
+placed in the tree, not on the definition itself.)
 
 ---
 
@@ -255,7 +272,7 @@ from open_agent_compiler.compiler.dialects.registry import register
 register("mydialect", MyCompiler)   # subclass open_agent_compiler.compiler.core.compiler.Compiler
 ```
 
-See [pi-agent-dialect.md](./pi-agent-dialect.md) for the full pi
+See [pi-agent-dialect.md](./dialects/pi.md) for the full pi
 mapping, and `examples/80_pi_agents/build_both.py` for compiling the
 same tree to two runtimes side by side.
 
@@ -588,4 +605,4 @@ All examples run end-to-end against real LLMs (see `examples/README.md`).
   quality; a rejected config scores every probe zero.
 - **Pi build ignores MCP** — expected; watch for the compile warning
   and configure `ext:mcp/<tool>` manually (see
-  [pi-agent-dialect.md](./pi-agent-dialect.md)).
+  [pi-agent-dialect.md](./dialects/pi.md)).

@@ -24,17 +24,47 @@ theme:
         name: Switch to light mode
   features:
     - navigation.sections
+    - navigation.expand
     - navigation.top
     - content.code.copy
     - search.suggest
 
 nav:
   - Home: index.md
-  - Developer Guide: dev-guide.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Your First Agent: getting-started/first-agent.md
+      - Scaffolding a Project: getting-started/project-scaffold.md
+  - Concepts:
+      - Philosophy & Assumptions: concepts/philosophy.md
+      - The Agent Model: concepts/agent-model.md
+      - Registry & Compilation: concepts/registry-and-compilation.md
+      - Execution Tiers (Fast & Slow): concepts/execution-tiers.md
+  - Tutorials:
+      - Overview: tutorials/index.md
+      - Support Triage Bot: tutorials/support-triage-bot.md
+      - Database Reporting Tool: tutorials/database-reporting-tool.md
+      - One Agent, Three Models: tutorials/one-agent-three-models.md
+      - Self-Improving Agent: tutorials/self-improving-agent.md
+      - Fast Chat, Slow Worker: tutorials/fast-chat-slow-worker.md
+  - Guides:
+      - Tools: guides/tools.md
+      - Workflows & Subagents: guides/workflows-and-subagents.md
+      - Skills: guides/skills.md
+      - Variants & Split Profiles: guides/variants-and-profiles.md
+      - Testing: guides/testing.md
+      - The Improvement Loop: guides/improvement-loop.md
+      - The Interactive Tier: guides/interactive-tier.md
   - Dialects:
-      - Pi Agent Dialect: pi-agent-dialect.md
-  - Testing:
-      - Retrieval Testing: retrieval-testing.md
+      - OpenCode: dialects/opencode.md
+      - Claude Code: dialects/claude-code.md
+      - Pi: dialects/pi.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Examples Index: reference/examples.md
+      - Troubleshooting: reference/troubleshooting.md
+      - Retrieval Testing: reference/retrieval-testing.md
+      - All-in-One Guide: dev-guide.md
   - Field Lessons:
       - Optimize the Real Goal: lessons/optimize-the-real-goal-not-text-correctness.md
       - Thinking Models & Scoring: lessons/thinking-models-and-opencode-scoring.md

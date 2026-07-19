@@ -47,15 +47,35 @@ uv add open-agent-compiler
 
 ## Where to go next
 
-- [Developer Guide](dev-guide.md) — the complete tour, from first agent
-  to improvement loops.
-- [Pi Agent Dialect](pi-agent-dialect.md) — compiling to the Pi runtime.
-- [Retrieval Testing](retrieval-testing.md) — fact-recall evaluation
-  packs.
-- Field lessons: hard-won notes from production deployments —
-  [optimize the real goal](lessons/optimize-the-real-goal-not-text-correctness.md),
-  [thinking models & scoring](lessons/thinking-models-and-opencode-scoring.md),
-  [tuning a local agent fleet](lessons/tuning-a-local-agent-fleet.md).
-- [Examples](https://github.com/DehydratedWater/OpenAgentCompiler/tree/main/examples)
-  — 20+ runnable examples from hello-world to per-model optimization
-  fleets and SaaS scaffolds.
+**New here?** Follow the path:
+
+1. [Installation](getting-started/installation.md) — get `oac` running.
+2. [Your First Agent](getting-started/first-agent.md) — define, compile,
+   and run an agent in ten minutes.
+3. [Philosophy & Assumptions](concepts/philosophy.md) — the mental model
+   behind the framework.
+4. [Execution Tiers](concepts/execution-tiers.md) — the fast/slow split:
+   in-process interactive agents vs compiled long-running workers.
+
+**Want to see features earn their keep?** Each
+[tutorial](tutorials/index.md) is a mini-project built around one
+feature: a [triage bot](tutorials/support-triage-bot.md) (agent trees),
+a [database reporting tool](tutorials/database-reporting-tool.md)
+(tools + mocked tests), [one agent on three
+models](tutorials/one-agent-three-models.md) (variants), a
+[self-improving agent](tutorials/self-improving-agent.md) (the
+improvement loop), and [fast chat + slow
+worker](tutorials/fast-chat-slow-worker.md) (execution tiers).
+
+**Building something specific?** The [guides](guides/tools.md) cover
+tools, workflows, skills, variants, testing, the improvement loop, and
+the interactive tier; the [dialect pages](dialects/opencode.md) cover
+each compile target; the [CLI reference](reference/cli.md) and
+[troubleshooting](reference/troubleshooting.md) round it out.
+
+**Prefer one long read?** The original
+[all-in-one guide](dev-guide.md) still exists, and the field lessons —
+[optimize the real goal](lessons/optimize-the-real-goal-not-text-correctness.md),
+[thinking models & scoring](lessons/thinking-models-and-opencode-scoring.md),
+[tuning a local agent fleet](lessons/tuning-a-local-agent-fleet.md) —
+capture hard-won production experience.

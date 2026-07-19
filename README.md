@@ -136,7 +136,7 @@ All examples are tested end-to-end against real LLMs (see
 walkthrough: setup, core concepts, all three dialects, the worker vs
 interactive tier split, tools, workflows, variants, testing, the
 improvement loop, CLI reference, and a full examples index. Dialect
-deep-dive: [pi-agent-dialect.md](docs/pi-agent-dialect.md).
+deep-dive: [pi-agent-dialect.md](docs/dialects/pi.md).
 
 ## Documentation: developer skills
 
