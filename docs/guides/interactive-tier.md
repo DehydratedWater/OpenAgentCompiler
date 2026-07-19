@@ -7,7 +7,9 @@ framework's own tool loop), stream events, get structured output, and
 dispatch heavy work back to compiled workers. For *why* the two tiers
 exist and when to use which, read
 [execution tiers](../concepts/execution-tiers.md) first — this page is
-the how.
+the how. For an architectural description of the runtime layer (the
+spec / binding / loop split and each piece's contract), see
+[LangChain runtime agents](langchain-runtime.md).
 
 ## 1. Install the extra
 

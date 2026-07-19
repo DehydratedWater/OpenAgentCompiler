@@ -55,6 +55,7 @@ nav:
       - Testing: guides/testing.md
       - The Improvement Loop: guides/improvement-loop.md
       - The Interactive Tier: guides/interactive-tier.md
+      - LangChain Runtime Agents: guides/langchain-runtime.md
   - Dialects:
       - OpenCode: dialects/opencode.md
       - Claude Code: dialects/claude-code.md

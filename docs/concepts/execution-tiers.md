@@ -168,6 +168,9 @@ definition improves both: promote a better prompt section and the next worker
 compile *and* the next `build_interactive_spec` call pick it up.
 
 To go deeper: [Interactive tier guide](../guides/interactive-tier.md) for
-events, sinks, and structured output; [Variants and profiles](../guides/variants-and-profiles.md)
+events, sinks, and structured output;
+[LangChain runtime agents](../guides/langchain-runtime.md) for the
+architecture of the in-process runtime layer;
+[Variants and profiles](../guides/variants-and-profiles.md)
 for split live/worker providers; or start from
 [your first agent](../getting-started/first-agent.md).
