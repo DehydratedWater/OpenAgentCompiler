@@ -214,9 +214,13 @@ def promote(
     model_class: str | None = None,
     client_id: str | None = None,
     target: str | None = None,
+    store=None,
 ) -> Path:
     """Copy a snapshot into the project's `.oac/promoted/` so a registry
     factory can pick it up on next compile.
+
+    `store` (a RunStore, see improvement/store.py) records the promotion
+    in the promotions table — the history `oac versions rollback` walks.
 
     Without `model_class`/`target`, writes the default slot:
         <project_root>/.oac/promoted/<safe_id>.json
@@ -246,6 +250,15 @@ def promote(
             f"{dest} already exists; pass --force to overwrite"
         )
     shutil.copy(snapshot_path, dest)
+    if store is not None:
+        store.record_promotion(
+            component_id=snap.version.component_id,
+            slot=target or model_class,
+            client_id=client_id,
+            content_hash=snap.version.content_hash,
+            metrics=dict(snap.version.metrics),
+            dest_path=str(dest),
+        )
     return dest
 
 

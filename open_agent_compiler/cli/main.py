@@ -24,6 +24,7 @@ from open_agent_compiler.cli.commands import init as init_cmd
 from open_agent_compiler.cli.commands import promote as promote_cmd
 from open_agent_compiler.cli.commands import sync_skills as sync_skills_cmd
 from open_agent_compiler.cli.commands import test as test_cmd
+from open_agent_compiler.cli.commands import versions as versions_cmd
 
 _COMMANDS: dict[str, Any] = {
     "compile": compile_cmd,
@@ -33,6 +34,7 @@ _COMMANDS: dict[str, Any] = {
     "promote": promote_cmd,
     "sync-skills": sync_skills_cmd,
     "test": test_cmd,
+    "versions": versions_cmd,
 }
 
 

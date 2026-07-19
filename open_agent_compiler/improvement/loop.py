@@ -20,6 +20,12 @@ Each round:
 The loop terminates when max_rounds is hit OR when a round produces no
 new candidates (every mutator returned None or every candidate was a
 duplicate of one already registered).
+
+Observability: pass `store` (see improvement/store.py) and the loop
+records every round/candidate/winner into the database as it runs —
+the intermediate history lives there, queryable, while the *finalized*
+result is exported as a single snapshot JSON (write_snapshot /
+`oac promote`) that gets loaded and version-controlled.
 """
 
 from __future__ import annotations
@@ -31,6 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from open_agent_compiler.improvement.criteria import OptimisationCriterion
 from open_agent_compiler.improvement.mutators import Mutator, MutationContext
 from open_agent_compiler.improvement.scoring import aggregate_score, hard_pass
+from open_agent_compiler.improvement.store import RunStore
 from open_agent_compiler.improvement.version import (
     ComponentRegistry,
     ComponentVersion,
@@ -92,11 +99,39 @@ class IterativeLoop(BaseModel):
     max_rounds: int = 3
     frontier_size: int = 3
     mutation_context: MutationContext | None = None
+    store: RunStore | None = Field(
+        default=None,
+        description=(
+            "Optional run store (improvement/store.py). When set, every"
+            " round/candidate/winner is recorded to the database for"
+            " observability — file output stays the finalized-export path."
+        ),
+    )
+    run_notes: str = Field(default="", description="Free-form note on the run row.")
 
     def run(self) -> LoopResult:
         result = LoopResult()
+        run_id: str | None = None
+        if self.store is not None:
+            meta = self.baseline.definition.get("_oac_meta") or {}
+            run_id = self.store.begin_run(
+                component_id=self.baseline.component_id,
+                kind=self.baseline.kind,
+                target=meta.get("target"),
+                criterion=self.criterion.name,
+                notes=self.run_notes,
+            )
         # Make sure baseline is in the registry + has metrics.
         self._ensure_baseline()
+        if self.store is not None and run_id is not None:
+            registered = self.registry.get(self.baseline.content_hash)
+            if registered is not None:
+                self.store.record_candidate(
+                    run_id, registered, round_index=-1,
+                    aggregate_score=aggregate_score(
+                        self.criterion, registered.metrics,
+                    ),
+                )
         frontier: list[ComponentVersion] = [
             self.registry.get(self.baseline.content_hash)  # type: ignore[list-item]
         ]
@@ -120,6 +155,11 @@ class IterativeLoop(BaseModel):
                     round_out.scores[candidate.content_hash] = aggregate_score(
                         self.criterion, candidate.metrics,
                     )
+                    if self.store is not None and run_id is not None:
+                        self.store.record_candidate(
+                            run_id, candidate, round_index=round_index,
+                            aggregate_score=round_out.scores[candidate.content_hash],
+                        )
 
             if not round_out.candidates:
                 result.rounds.append(round_out)
@@ -133,6 +173,13 @@ class IterativeLoop(BaseModel):
                 reverse=True,
             )
             round_out.survivors = survivors[: self.frontier_size]
+            if self.store is not None and run_id is not None:
+                for s in round_out.survivors:
+                    self.store.record_candidate(
+                        run_id, s, round_index=round_index,
+                        aggregate_score=aggregate_score(self.criterion, s.metrics),
+                        survived=True,
+                    )
             result.rounds.append(round_out)
             # Update frontier for next round.
             frontier = round_out.survivors or [self.baseline]
@@ -152,6 +199,19 @@ class IterativeLoop(BaseModel):
         result.archive = [
             v for v in all_versions if v not in result.winners
         ]
+        if self.store is not None and run_id is not None:
+            for w in result.winners:
+                self.store.record_candidate(
+                    run_id, w,
+                    aggregate_score=aggregate_score(self.criterion, w.metrics),
+                    winner=True,
+                )
+            self.store.finish_run(
+                run_id,
+                rounds=len(result.rounds),
+                candidate_count=sum(len(r.candidates) for r in result.rounds),
+                winner_count=len(result.winners),
+            )
         return result
 
     def _ensure_baseline(self) -> None:

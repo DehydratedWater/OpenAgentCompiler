@@ -37,6 +37,8 @@ from typing import Callable
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from open_agent_compiler.improvement.store import RunStore
+
 from open_agent_compiler.improvement.criteria import OptimisationCriterion
 from open_agent_compiler.improvement.loop import Evaluator, IterativeLoop, LoopResult
 from open_agent_compiler.improvement.mutators import Mutator, MutationContext
@@ -143,12 +145,20 @@ def run_per_target_loops(
     frontier_size: int = 3,
     output: Path | None = None,
     mutation_context: MutationContext | None = None,
+    store: RunStore | None = None,
 ) -> dict[str, PerTargetResult]:
     """One IterativeLoop per target; results keyed by `target.key`.
 
     When `output` is set, each target's winners are snapshotted under
     <output>/<component>/<target-key>/<hash>.json (LATEST.json
     alongside), ready for `oac promote --target <target-key>`.
+
+    When `store` is ALSO set, the intermediate history (every round,
+    candidate, and metric) is recorded to the database and the file
+    output shrinks to the finalized export only — one best-winner
+    snapshot per target (LATEST.json + its hash file). The database is
+    the observability surface; the single JSON is what gets promoted,
+    loaded, and version-controlled.
 
     `mutation_context` is forwarded into every loop so LLM-backed
     mutators (LLMPromptRewriter, ImprovementAgentMutator) keep their
@@ -165,6 +175,8 @@ def run_per_target_loops(
             max_rounds=max_rounds,
             frontier_size=frontier_size,
             mutation_context=mutation_context,
+            store=store,
+            run_notes=f"target:{target.key}",
         )
         loop_out = loop.run()
         if output is not None:
@@ -172,7 +184,13 @@ def run_per_target_loops(
             target_dir = output / safe_component / target.key
             target_dir.mkdir(parents=True, exist_ok=True)
             label = f"{criterion.name}:{target.key}"
-            for v in loop_out.winners:
+            if store is not None:
+                # Intermediates live in the store — export the finalized
+                # winner only.
+                to_write = [loop_out.best()] if loop_out.best() else []
+            else:
+                to_write = loop_out.winners
+            for v in to_write:
                 snap = Snapshot(version=v, notes=label)
                 path = target_dir / f"{v.content_hash[:12]}.json"
                 path.write_text(snap.model_dump_json(indent=2))

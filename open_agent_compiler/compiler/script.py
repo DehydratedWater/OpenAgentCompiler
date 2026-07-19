@@ -114,6 +114,15 @@ class CompileScript(BaseModel):
             " bucket. None = the base, single-tenant build (unchanged)."
         ),
     )
+    store_url: str | None = Field(
+        default=None,
+        description=(
+            "Run-store connection URL (e.g. 'sqlite:///.oac/improvement.db')."
+            " When set, the compile's artifacts (dialect, config, written"
+            " files) are recorded in the store's compiles table so builds"
+            " are traceable next to the improvement runs that shaped them."
+        ),
+    )
 
     @model_validator(mode="after")
     def _dialect_is_registered(self) -> Self:
@@ -265,6 +274,19 @@ class CompileScript(BaseModel):
                 f"[oac compile] wrote {len(written)} file(s) for {n_variants}"
                 f" variant(s) to {self.target}"
             )
+
+        if self.store_url and not self.dry_run:
+            from open_agent_compiler.improvement.store import open_store
+            store = open_store(self.store_url)
+            record = getattr(store, "record_compile", None)
+            if record is not None:
+                record(
+                    target=str(self.target),
+                    dialect=self.dialect,
+                    config=self.config,
+                    variants=[v.name for v in (self.variants or [])],
+                    files=[str(p) for p in written],
+                )
 
         return CompileResult(
             target=self.target,

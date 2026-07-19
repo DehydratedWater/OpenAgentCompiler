@@ -145,6 +145,18 @@ from open_agent_compiler.improvement.probe_cache import (
     ProbeResult,
     ProbeSynthesizer,
 )
+from open_agent_compiler.improvement.source_apply import (
+    SourceApplyError,
+    apply_prompt_to_source,
+)
+from open_agent_compiler.improvement.store import (
+    RunStore,
+    SqliteRunStore,
+    default_store_path,
+    open_store,
+    register_store_scheme,
+    version_from_candidate_row,
+)
 from open_agent_compiler.improvement.interactive_eval import (
     SpecFactory,
     build_interactive_evaluator,
@@ -297,6 +309,15 @@ __all__ = [
     "PerTargetResult",
     "run_per_target_loops",
     "targets_from_split_profile",
+    # run store (autoloop observability) + source apply
+    "RunStore",
+    "SqliteRunStore",
+    "SourceApplyError",
+    "apply_prompt_to_source",
+    "default_store_path",
+    "open_store",
+    "register_store_scheme",
+    "version_from_candidate_row",
     # interactive-tier evaluator (realtime runner as a target)
     "SpecFactory",
     "build_interactive_evaluator",
