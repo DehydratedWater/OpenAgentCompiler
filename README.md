@@ -52,7 +52,8 @@ cd build && opencode run --agent primary "Hi"
 Hello there! Nice to meet you.
 ```
 
-Or compile for Pi and run with pi-subagents:
+Or compile for Pi (requires the `@tintinweb/pi-subagents` extension for
+subagent spawning plus `pi-permission-system` for permission enforcement):
 
 ```bash
 uv run oac compile myproj.agents:registry --config prod --target build --dialect pi
@@ -82,7 +83,8 @@ cd build && pi run --agent primary "Hi"
   Ollama / Langfuse. Cron POSTs JSON events to the FastAPI server which
   invokes the compiled agents.
 - **Multi-dialect** — OpenCode (default) + Claude Code + Pi (via
-  [@tintinweb/pi-subagents](https://pi.dev/packages/@tintinweb/pi-subagents)),
+  [@tintinweb/pi-subagents](https://pi.dev/packages/@tintinweb/pi-subagents)
+  and [pi-permission-system](https://github.com/MasuRii/pi-permission-system)),
   with a plug-in `Dialect` protocol for future runtimes.
 - **Developer skill bundles** — `oac sync-skills` deploys opinionated
   markdown skill files into a project's `.opencode/skills/` and

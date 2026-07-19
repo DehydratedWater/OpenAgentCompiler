@@ -38,7 +38,19 @@ Pi-subagents provides three built-in agent types:
 
 You can also define custom agent types in `.pi/agents/*.md`.
 
+## Runtime Requirements
+
+The pi runtime must run with two extensions: `@tintinweb/pi-subagents`
+(the `Agent()` spawn tool) and `pi-permission-system` (permission
+enforcement for the compiled `tools:` allowlists):
+
+```bash
+pi install npm:@tintinweb/pi-subagents
+pi install npm:pi-permission-system
+```
+
 ## See Also
 
 - `examples/80_pi_agents/` — custom subagents compiled from Python definitions
 - https://pi.dev/packages/@tintinweb/pi-subagents — pi-subagents docs
+- https://github.com/MasuRii/pi-permission-system — pi-permission-system docs

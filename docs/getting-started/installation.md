@@ -57,8 +57,11 @@ opencode is one of three built-in output dialects. The same agent tree also
 compiles to:
 
 - **`claude`** — a `.claude/` tree runnable with the Claude Code CLI.
-- **`pi`** — a `.pi/agents/` tree for the pi coding agent (with the
-  `@tintinweb/pi-subagents` extension for subagent spawning).
+- **`pi`** — a `.pi/agents/` tree for the pi coding agent. The pi runtime
+  needs **two** extensions installed: `@tintinweb/pi-subagents` (subagent
+  spawning via the `Agent()` tool) and `pi-permission-system` (enforces the
+  compiled `tools:`/`disallowed_tools:` frontmatter at tool-call time). See
+  [the pi dialect page](../dialects/pi.md#runtime-requirements-two-extensions).
 
 You only need those CLIs installed if you compile with `--dialect claude` or
 `--dialect pi`. Nothing about the Python-side definitions changes — see

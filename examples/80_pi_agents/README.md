@@ -3,6 +3,16 @@
 Demonstrates compiling an agent tree for the pi runtime using the
 `@tintinweb/pi-subagents` extension.
 
+> **Runtime requirements:** pi must run with two extensions — 
+> `@tintinweb/pi-subagents` (the `Agent()` spawn tool) **and**
+> `pi-permission-system` (enforces the compiled `tools:` /
+> `disallowed_tools:` frontmatter at tool-call time):
+>
+> ```bash
+> pi install npm:@tintinweb/pi-subagents
+> pi install npm:pi-permission-system
+> ```
+
 ## What it shows
 
 - An orchestrator agent that delegates to two subagents via pi's `Agent()` tool

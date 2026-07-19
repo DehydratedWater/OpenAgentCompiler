@@ -15,6 +15,29 @@ can load and execute. Each file contains:
   skills, etc.)
 - **Markdown body** containing the system prompt
 
+## Runtime Requirements: Two Extensions
+
+Compiled agents assume the pi runtime is running with **two** extensions
+installed — one for subagents, one for permissions:
+
+| Extension | Role | Install |
+|-----------|------|---------|
+| [`@tintinweb/pi-subagents`](https://pi.dev/packages/@tintinweb/pi-subagents) | Subagent spawning — provides the `Agent()` tool the compiled prompts reference, plus background execution, the live agent widget, skill preloading, and worktree isolation | `pi install npm:@tintinweb/pi-subagents` |
+| [`pi-permission-system`](https://github.com/MasuRii/pi-permission-system) | Permission enforcement — deterministic allow/deny/ask gates for tools, bash, MCP, and skills, evaluated at tool-call time; also forwards `ask` confirmations from non-UI subagents back to the main session | `pi install npm:pi-permission-system` |
+
+Why both matter:
+
+- Without **pi-subagents**, every `Agent()` call in a compiled orchestrator
+  prompt fails — there is no other spawn mechanism in the pi output.
+- Without **pi-permission-system**, the `tools:` allowlist and
+  `disallowed_tools:` frontmatter this dialect emits are not *enforced* at
+  tool-call time — the SECURITY POLICY block in the prompt body becomes
+  advisory text the model is merely asked to respect.
+
+The compiler does not verify the extensions are installed (it never talks
+to the pi runtime); check with `pi list extensions` before running the
+compiled agents.
+
 ## Compilation
 
 Compile agents for Pi using the `--dialect pi` flag:
